@@ -1,7 +1,7 @@
 {
   "name": "colosse",
   "productName": "Colosse",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Colosse : extraction en monde ouvert, flottes de robots et base à défendre.",
   "main": "electron/main.js",
   "author": "azertyuser09876-spec",

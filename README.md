@@ -31,13 +31,15 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
 
 Le bouton **Tutoriel** de l'écran titre lance une partie d'entraînement jouable, d'environ dix minutes. Il est aussi proposé à la toute première entrée dans la base.
 
-En 33 étapes guidées (consignes adaptées au clavier ou à l'écran tactile, flèche vers chaque objectif, boutons à toucher mis en évidence), le tutoriel apprend à :
+En 34 étapes guidées (consignes adaptées au clavier ou à l'écran tactile, flèche vers chaque objectif, boutons à toucher mis en évidence), le tutoriel apprend à :
 - se déplacer, tirer, esquiver et piloter un robot ;
-- assembler un robot et le déployer ;
-- en raid : ramasser le butin, fouiller une caisse, lire la carte, combattre ;
+- assembler un robot à la forge (affûts sur l'aperçu, comparaison des armes) et le déployer depuis le hangar ;
+- en raid : ramasser le butin, fouiller une caisse, démonter au tir cristaux et épaves, lire la carte, combattre ;
 - commander la flotte : sélectionner, envoyer, rappeler, ordonner une attaque ;
 - activer un pylône, poser la balise, la défendre et réussir l'extraction ;
-- à la base : récolter, construire une tourelle, lancer une recherche, repousser une attaque et accepter un contrat.
+- à la base : récolter, construire une tourelle, lancer une recherche dans l'arbre par familles, repousser une attaque et accepter un contrat.
+
+La dernière étape présente ce qui se dévoile ensuite : badges « Nouveau », poste d'expédition et géants du Chantier titanesque.
 
 Le tutoriel se joue dans une **partie à part** :
 - votre vraie partie n'est pas touchée ;
@@ -70,6 +72,37 @@ L'interface est une **console de commandement** sombre, dans le même style que 
   - survoler une arme ou un châssis montre l'aperçu et la comparaison des caractéristiques (barres et écarts) avant de choisir ;
   - une silhouette de châssis ou d'arme mène à sa recherche.
 - **Hangar** : filtres (déployés, en réserve, abîmés, en expédition), tri (rang, puissance, nom, récents), interrupteur de déploiement, réglages repliés (cerveau, groupe, tir, pilotage, plans de fabrication).
+
+### Intelligence des robots
+
+Les robots, alliés comme ennemis, se déplacent et tirent avec plus de jugeote (version 1.8).
+
+- **Ils ne restent plus coincés** :
+  - chaque robot calcule un chemin praticable selon sa taille et ce qu'il peut écraser, et contourne falaises, murs, remparts et bâtiments ;
+  - s'il bloque malgré tout, il recalcule son chemin, perce l'obstacle devant lui s'il est destructible, recule pour se dégager et, en dernier recours, se replace sur une case libre hors de votre vue ;
+  - un robot arrêté par la foule tout près de son but considère qu'il est arrivé, au lieu de pousser sans fin.
+- **Ils ne tirent plus dans les murs** :
+  - avant de tirer, chaque arme vérifie sa ligne de tir, en tenant compte de sa dispersion ;
+  - les cibles qu'on peut toucher passent avant celles cachées derrière un rocher ;
+  - sans ligne de tir, le robot se déplace pour trouver un angle ;
+  - un arbre, un cristal ou une épave tout proche ne gêne pas : on tire au travers, et on le récolte au passage ;
+  - les tirs des robots volants, et ceux visant un volant, passent au-dessus des obstacles.
+- **Au combat** :
+  - choix de cible selon la menace, les cibles affaiblies et la ligne de tir ;
+  - les ennemis s'écartent pour encercler au lieu d'arriver en file ;
+  - un robot très abîmé et pris pour cible se met à l'abri derrière le pilote sans cesser de tirer ;
+  - les pillards contournent les défenses de la base pour atteindre leur cible.
+- **Récolte** :
+  - le cerveau **Récolteur** ramasse le butin, ouvre lui-même les caisses quand aucun ennemi n'est à proximité, et abat cristaux et épaves à distance avec ses armes ;
+  - quand le pilote avance, il reste dans son sillage et ne ramasse que ce qui est sur le chemin ;
+  - au repos, sans ennemi en vue, l'escorte abat elle aussi les cristaux et épaves à portée de tir.
+- **Expéditions** : les escouades autonomes profitent des mêmes règles.
+
+Mesures sur un banc d'essai (mêmes mondes, trois graines, simulation à pas fixe), avant et après :
+- escorte d'un pilote sur un parcours encombré : 45 robots-secondes bloqués → 13 ;
+- ordres de déplacement à travers les obstacles : 85 arrivées sur 90 → 90 sur 90 ;
+- tirs alliés perdus dans le décor : 37 % → 25 %, à victoire égale ;
+- performances inchangées.
 
 ### Expéditions
 
