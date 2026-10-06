@@ -1,0 +1,96 @@
+name: Compiler Colosse (.exe et .apk)
+
+# Se lance à chaque tag "v*" (ex. v1.0.0) et à la demande depuis l'onglet Actions.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer les outils de compilation
+        run: npm install --no-audit --no-fund
+      - name: Construire le .exe (portable et installeur)
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: colosse-windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Embarquer le jeu dans l'application
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html android/app/src/main/assets/index.html
+      - name: Construire l'APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+      - name: Renommer
+        run: cp android/app/build/outputs/apk/release/app-release.apk "Colosse-${GITHUB_REF_NAME//\//-}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: colosse-android
+          path: Colosse-*.apk
+          if-no-files-found: error
+
+  linux:
+    name: Linux (.AppImage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx electron-builder --linux AppImage --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: colosse-linux
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Publier la release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, android, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: Préparer le paquet serveur et web
+        uses: actions/checkout@v4
+        with:
+          path: src
+      - run: |
+          cd src && zip -r ../Colosse-web-et-serveur.zip index.html manifest.webmanifest sw.js icons server/server.js README.md
+      - name: Créer la release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" out/*/* Colosse-web-et-serveur.zip \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Colosse ${GITHUB_REF_NAME}" \
+            --notes "Version compilée automatiquement. Windows : .exe portable ou installeur. Android : .apk (autorisez les sources inconnues). Linux : .AppImage. Le zip contient la version web et le serveur en ligne."

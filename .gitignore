@@ -1,0 +1,11 @@
+node_modules/
+dist/
+server/data.json
+server/data.json.tmp
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/index.html
+.DS_Store
+Thumbs.db

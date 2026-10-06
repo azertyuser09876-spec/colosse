@@ -1,0 +1,29 @@
+{
+  "name": "colosse",
+  "productName": "Colosse",
+  "version": "1.1.0",
+  "description": "Colosse : extraction en monde ouvert, flottes de robots et base à défendre.",
+  "main": "electron/main.js",
+  "author": "azertyuser09876-spec",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/azertyuser09876-spec/colosse.git" },
+  "scripts": {
+    "serveur": "node server/server.js",
+    "start": "electron .",
+    "exe": "electron-builder --win --publish never",
+    "linux": "electron-builder --linux AppImage --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "io.github.azertyuser09876spec.colosse",
+    "productName": "Colosse",
+    "directories": { "output": "dist" },
+    "files": ["index.html", "manifest.webmanifest", "sw.js", "icons/**", "electron/**"],
+    "win": { "target": ["portable", "nsis"], "icon": "icons/icon-256.png", "artifactName": "Colosse-${version}-${arch}-${target}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Colosse" },
+    "linux": { "target": ["AppImage"], "icon": "icons/icon-512.png", "category": "Game" }
+  }
+}

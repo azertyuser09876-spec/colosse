@@ -1,0 +1,56 @@
+name: Version web (GitHub Pages)
+
+# Publie le jeu sur https://azertyuser09876-spec.github.io/colosse/
+# À activer une seule fois : Settings → Pages → Build and deployment → Source : « GitHub Actions ».
+# Tant que Pages n'est pas activé, ce workflow se termine sans erreur et l'explique dans son résumé.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Vérifier que Pages est activé
+    runs-on: ubuntu-latest
+    outputs:
+      actif: ${{ steps.pages.outputs.actif }}
+    steps:
+      - id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" --silent 2>/dev/null; then
+            echo "actif=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "actif=false" >> "$GITHUB_OUTPUT"
+            echo "### GitHub Pages n'est pas encore activé" >> "$GITHUB_STEP_SUMMARY"
+            echo "Settings → Pages → Build and deployment → Source : **GitHub Actions**, puis relancez ce workflow (onglet Actions → Run workflow)." >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::GitHub Pages n'est pas activé : version web ignorée. Settings → Pages → Source : GitHub Actions."
+          fi
+
+  deployer:
+    name: Publier la version web
+    needs: verifier
+    if: needs.verifier.outputs.actif == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p site && cp -r index.html manifest.webmanifest sw.js icons site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
