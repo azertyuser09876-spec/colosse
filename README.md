@@ -1,6 +1,6 @@
 # COLOSSE
 
-Extraction en monde ouvert, flottes de robots, base à défendre, équipes rivales et assauts en ligne.
+Extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre, expéditions autonomes, équipes rivales et assauts en ligne.
 Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance : il s'ouvre dans n'importe quel navigateur, sur ordinateur comme sur téléphone.
 
 ## Contenu du dossier
@@ -24,7 +24,8 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
   - Touchez un robot pour le sélectionner, puis le sol pour l'y envoyer, ou un ennemi pour l'attaquer.
   - Deux doigts : zoomer. Bouton « Tactique » : temps ralenti et sélection au cadre en glissant.
   - Boutons : Esquive, Agir (maintenir pour ouvrir une caisse), Capacité, Piloter, Balise, Flotte, Carte, menu ☰.
-  - À la base, « Base » ouvre la construction, la forge, le hangar, la recherche, les raids et le mode en ligne.
+  - À la base, « Base » ouvre la construction, la forge, le hangar, la recherche, les raids, les expéditions et le mode en ligne.
+  - Vue d'une expédition : glisser pour déplacer la vue, deux doigts pour zoomer, toucher un robot pour le suivre.
 
 ### Tutoriel
 
@@ -46,6 +47,57 @@ Le tutoriel se joue dans une **partie à part** :
 À la fin, ou à tout moment avec « Quitter », vous choisissez :
 - **garder** cette partie d'entraînement : elle remplace votre partie, après confirmation si vous aviez déjà progressé ;
 - ou la **supprimer** : vous retrouvez votre partie là où vous l'aviez laissée.
+
+### Expéditions
+
+Une expédition envoie une escouade de robots fouiller une région **sans vous**. C'est une vraie partie, avec son monde, ses ennemis, sa météo et sa balise, qui tourne en même temps que la vôtre, pendant que vous jouez à la base ou en raid.
+
+- **Poste d'expédition** : à construire à la base. Chaque niveau permet une expédition de plus en même temps, jusqu'à trois (niveau 2 : QG 2 ; niveau 3 : QG 3).
+- **Départ** (onglet Expéditions, à la base) : région, difficulté, durée de fouille (5, 9 ou 14 minutes), consigne et robots. L'escouade utilise son propre commandement, sans toucher à celui de votre armée de raid.
+- **Consignes** :
+  - Prudente : évite les zones gardées et rentre tôt.
+  - Équilibrée : fouille ce qui est à sa mesure.
+  - Audacieuse : force les coffres militaires et rentre tard.
+- **Déroulement** :
+  - L'escouade reste groupée autour d'un meneur invisible qui choisit les objectifs : caisses, coffres, archives, pylônes, butin au sol.
+  - Elle évite ce qui la dépasse, se replie quand elle saigne et attend ses traînards.
+  - Au retour, elle cherche un coin calme, de préférence près d'un pylône relais, pose sa balise, la défend, puis entre dans le cercle à la fenêtre d'extraction.
+  - Elle rentre plus tôt si ses soutes sont pleines, si elle est trop abîmée, si elle a perdu trop de robots ou si vous la rappelez.
+  - La balise d'une expédition émet un signal plus discret que la vôtre : moitié moins de renforts ennemis.
+- **Butin** : sans pilote, seules les soutes des robots le ramènent. Une Mule ou un Vautour change tout. Comme en raid, un robot détruit ou resté hors du cercle est perdu.
+- **Observer** :
+  - Depuis la base, cliquez sur une ligne du panneau Expéditions (en haut à droite), ou sur Observer dans l'onglet ou au hangar.
+  - Vue en direct : Échap pour revenir, Espace pour suivre l'escouade, Tab ou 1 à 9 pour suivre un robot, glisser ou ZQSD pour déplacer la vue, molette pour zoomer, R deux fois pour rappeler.
+  - En raid, le panneau sous la minicarte résume chaque expédition.
+- **Jeu fermé** : l'expédition est enregistrée dans la sauvegarde. À la réouverture, elle reprend là où elle en était et rattrape le temps écoulé en accéléré, quelques millisecondes par image, pendant que vous jouez.
+
+### Démesure : géants et armes colossales
+
+Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à six fois sa taille, s'ajoutent à la recherche et à la forge.
+
+- **Construire un géant** :
+  - recherche au laboratoire de niveau 5 (Géant Rempart, Arachné, Porte-nef, puis Cyclope, Forge-mère, Aéropole, puis Ville-machine et Astre) ;
+  - **Chantier titanesque** à la base (QG niveau 5) : niveau 1 pour le rang 7, niveau 2 pour le rang 8, niveau 3 pour le rang 9 ;
+  - forge de niveau 5 et des Cœurs de Colosse.
+- **Les géants** :
+  - Rang 7 : Rempart (forteresse chenillée), Arachné (araignée rapide), Porte-nef (volant, fabrique des robots).
+  - Rang 8 : Cyclope (bipède), Forge-mère (usine roulante), Aéropole (cité volante).
+  - Rang 9 : Ville-machine (une ville sur chenilles, 14 affûts) et Astre (vaisseau-mère volant, 12 affûts).
+- **Fabrication** : le Porte-nef, la Forge-mère, la Ville-machine et l'Astre fabriquent en raid des robots de trois rangs en dessous au plus (rang 4, 5 ou 6).
+  - Au hangar, choisissez jusqu'à trois de vos robots comme plans, ou laissez « Automatique » (les meilleurs modèles débloqués).
+  - Ce sont des renforts temporaires : ils se battent et ramassent, puis sont démontés à l'extraction. Le chargement de ceux qui sont dans le cercle est gardé.
+- **Nouveaux robots plus petits** : Grillon (sauteur), Hérisson (pointes qui blessent au contact), Scarabée (volant blindé), Hydre (cinq têtes armées), Wyverne (bombardier volant), Mammouth (transporteur de siège à quatre armes titanesques).
+- **20 nouvelles armes**, dont deux nouvelles tailles réservées aux géants :
+  - légères à titanesques : lance-harpon, projecteur d'acide, canon de DCA, lance-disques, roquettes thermobariques, lance-foudre, désintégrateur, canon de Gauss ;
+  - **colossales** (rangs 7 et 8) : canon de bataille, mur de missiles, rayon annihilateur, fournaise, tempête ionique, hangar de chasseurs, dôme de bouclier, nuée réparatrice ;
+  - **apocalyptiques** (rang 9) : lance de fission, projecteur de singularité (un trou noir qui aspire puis implose), missile Crépuscule, pluie de météores.
+- **Géants ennemis** : quand votre armée grossit, les régions répondent avec des Colosses renégats, le Dévoreur, la Forge noire (qui assemble des renforts), le Léviathan volant et la Nécropole.
+- **Zoom** : plus votre plus grand robot est gros, plus le zoom recule, jusqu'à voir presque toute la région. De loin, le jeu simplifie l'affichage (sol en basse résolution, petites unités en points) pour rester fluide.
+- **À savoir** :
+  - un géant compte dans le cercle d'extraction dès que sa carcasse le couvre ;
+  - les petits robots alliés passent sous les géants ;
+  - à la base, les géants se garent autour de la zone constructible ;
+  - les géants ne participent pas aux assauts de base en ligne : ils sont trop grands.
 
 ### Armes en pilotage et tir fractionné
 
