@@ -26,6 +26,27 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
   - Boutons : Esquive, Agir (maintenir pour ouvrir une caisse), Capacité, Piloter, Balise, Flotte, Carte, menu ☰.
   - À la base, « Base » ouvre la construction, la forge, le hangar, la recherche, les raids et le mode en ligne.
 
+### Tutoriel
+
+Le bouton **Tutoriel** de l'écran titre lance une partie d'entraînement jouable, d'environ dix minutes. Il est aussi proposé à la toute première entrée dans la base.
+
+En 33 étapes guidées (consignes adaptées au clavier ou à l'écran tactile, flèche vers chaque objectif, boutons à toucher mis en évidence), le tutoriel apprend à :
+- se déplacer, tirer, esquiver et piloter un robot ;
+- assembler un robot et le déployer ;
+- en raid : ramasser le butin, fouiller une caisse, lire la carte, combattre ;
+- commander la flotte : sélectionner, envoyer, rappeler, ordonner une attaque ;
+- activer un pylône, poser la balise, la défendre et réussir l'extraction ;
+- à la base : récolter, construire une tourelle, lancer une recherche, repousser une attaque et accepter un contrat.
+
+Le tutoriel se joue dans une **partie à part** :
+- votre vraie partie n'est pas touchée ;
+- rien n'est envoyé au serveur ni publié ;
+- chaque étape peut être passée.
+
+À la fin, ou à tout moment avec « Quitter », vous choisissez :
+- **garder** cette partie d'entraînement : elle remplace votre partie, après confirmation si vous aviez déjà progressé ;
+- ou la **supprimer** : vous retrouvez votre partie là où vous l'aviez laissée.
+
 ### Sauvegarde et compte
 
 - **Invité** (par défaut, sans serveur) : la partie est enregistrée dans le navigateur ou l'application, sur cet appareil seulement.
@@ -81,6 +102,13 @@ Options :
 Les comptes, bases et pillages sont dans `server/data.json`, les parties des joueurs dans `server/saves/` (un fichier par compte). Gardez ces deux éléments si vous déplacez le serveur.
 
 **Mise à jour d'un serveur existant** : remplacez `server/server.js`, puis relancez-le. Les anciens joueurs créent leur compte depuis le même appareil, et leur score et leur base sont repris.
+
+**Si la connexion ou la création de compte échoue**, le message indique la cause :
+- *Cette page n'est pas un serveur Colosse (erreur 404)* : le champ Serveur contient l'adresse de la page du jeu, par exemple la version GitHub Pages, au lieu de celle de votre serveur. Entrez l'adresse affichée par la fenêtre du serveur.
+- *Aucun serveur Colosse à l'adresse…* : l'adresse ou le port mènent à autre chose qu'un serveur Colosse.
+- *Serveur trop ancien* : remplacez `server/server.js`, puis relancez le serveur.
+- *Serveur injoignable* : le serveur n'est pas lancé, l'adresse ou le port sont faux, ou le pare-feu bloque le port 8787.
+- *Cette page est en https…* : la version GitHub Pages ne joint qu'un serveur en `https`. Ouvrez plutôt directement l'adresse du serveur dans le navigateur (`http://…:8787`), ou utilisez le `.exe` ou l'`.apk`.
 
 Pour jouer hors de votre réseau local :
 - en **IPv6**, ouvrez le port 8787 dans le pare-feu de la box ou de la machine. L'adresse IPv6 publique suffit, sans redirection de port ;

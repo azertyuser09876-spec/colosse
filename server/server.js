@@ -25,7 +25,7 @@ const NAME = String(process.env.NAME || 'Serveur Colosse').slice(0, 40);
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.resolve(process.env.DATA || path.join(__dirname, 'data.json'));
 const SAVES = path.resolve(process.env.SAVES || path.join(path.dirname(DATA), 'saves'));
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const MAX_BODY = 1024 * 1024;
 const MAX_SAVE = 900 * 1024;
 const MAX_PLAYERS = 5000;
@@ -54,7 +54,7 @@ process.on('SIGINT', quit); process.on('SIGTERM', quit);
 const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
 const int = (v, a, b) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : a; };
 const cleanName = s => String(s || '').replace(/[^\p{L}\p{N} _.\-]/gu, '').trim().slice(0, 20);
-const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Cache-Control': 'no-store' };
+const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Private-Network': 'true', 'Cache-Control': 'no-store' };
 function send(res, code, obj) { res.writeHead(code, HEADERS); res.end(JSON.stringify(obj)); }
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -345,7 +345,8 @@ setInterval(() => {
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.css': 'text/css' };
 const ALLOWED = new Set(['index.html', 'manifest.webmanifest', 'sw.js']);
 function staticRoute(req, res, url) {
-  let rel = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
+  let rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+  const ic = rel.match(/(?:^|\/)(icons\/[\w.-]+)$/); rel = ic ? ic[1] : rel.split('/').pop() || 'index.html';
   const ok = ALLOWED.has(rel) || /^icons\/[\w.-]+\.(png|svg|ico)$/.test(rel);
   if (!ok) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Introuvable'); }
   const file = path.join(ROOT, rel);
@@ -360,6 +361,8 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'OPTIONS') return send(res, 204, {});
+    // une adresse saisie avec un chemin en trop (/colosse/api/…, /index.html/api/…) reste comprise
+    const ai = url.pathname.indexOf('/api/'); if (ai > 0) url.pathname = url.pathname.slice(ai);
     if (url.pathname.startsWith('/api/')) return await apiRoute(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') return staticRoute(req, res, url);
     send(res, 405, { error: 'méthode refusée' });
@@ -367,7 +370,7 @@ const server = http.createServer(async (req, res) => {
 });
 server.on('upgrade', (req, socket) => {
   const key = req.headers['sec-websocket-key'];
-  if (!key || !/^\/ws\/?$/.test((req.url || '').split('?')[0]) || String(req.headers.upgrade || '').toLowerCase() !== 'websocket') { socket.destroy(); return; }
+  if (!key || !/(^|\/)ws\/?$/.test((req.url || '').split('?')[0]) || String(req.headers.upgrade || '').toLowerCase() !== 'websocket') { socket.destroy(); return; }
   const acc = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + acc + '\r\n\r\n');
   socket.setNoDelay(true); socket.setTimeout(0);
