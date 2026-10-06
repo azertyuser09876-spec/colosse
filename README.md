@@ -26,7 +26,14 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
   - Boutons : Esquive, Agir (maintenir pour ouvrir une caisse), Capacité, Piloter, Balise, Flotte, Carte, menu ☰.
   - À la base, « Base » ouvre la construction, la forge, le hangar, la recherche, les raids et le mode en ligne.
 
-La progression est enregistrée sur l'appareil.
+### Sauvegarde et compte
+
+- **Invité** (par défaut, sans serveur) : la partie est enregistrée dans le navigateur ou l'application, sur cet appareil seulement.
+- **Compte** (bouton « Compte » sur l'écran titre) : sur un serveur Colosse, chaque joueur crée un compte avec un **identifiant et un mot de passe**. Sa partie est alors enregistrée **sur le serveur, une par compte**, et on la retrouve en se connectant depuis n'importe quel PC ou téléphone. À la création du compte, la partie invitée de l'appareil peut être reprise.
+- Si deux appareils jouent avec le même compte, la partie enregistrée le plus récemment l'emporte.
+- Sans réseau, la partie continue sur l'appareil et se renvoie au serveur à la connexion suivante.
+- Sur claude.ai, la partie suit automatiquement le compte claude.ai.
+- Le mot de passe est chiffré sur le serveur (scrypt) et n'est jamais gardé sur l'appareil : seul un jeton de session l'est.
 
 ### Son
 
@@ -49,13 +56,31 @@ Réseau   : http://[2001:db8::42]:8787
 Réseau   : http://192.168.1.20:8787
 ```
 
-Ensuite :
-1. Chaque joueur ouvre **Réglages → En ligne**, choisit un pseudo, colle l'adresse du serveur, puis « Se connecter ».
-2. Ou plus simple : ouvrez directement l'adresse du serveur dans un navigateur, le jeu s'y connecte tout seul.
+Ensuite, chaque joueur clique sur **Compte** (écran titre), entre l'adresse du serveur, puis crée son compte avec un identifiant et un mot de passe. Si vous ouvrez directement l'adresse du serveur dans un navigateur, elle est déjà remplie.
 
-En ligne, vous avez un classement, votre base publiée automatiquement, des assauts sur les bases des autres joueurs (3 minutes, jusqu'à 3 étoiles, aucun vol réel de ressources) et un journal des attaques subies.
+En ligne, vous avez :
+- **Raids partagés en direct** (onglet *En ligne*, ou « Raid partagé à plusieurs… » dans *Partir en raid*) : de 2 à 4 pilotes dans la même zone, chacun avec sa flotte.
+  - **Coopération** : vous êtes alliés, chacun pose sa balise et s'extrait quand il veut.
+  - **PvP** : chacun pour soi, et le butin d'un pilote abattu tombe au sol pour qui le ramasse. Les monstres et les équipes rivales attaquent tout le monde.
+  - On peut rejoindre une partie déjà lancée.
+  - L'hôte fait vivre le monde. S'il part, un autre joueur prend le relais. Gardez la fenêtre du jeu ouverte pendant le raid.
+- **Pillage des bases** : votre armée attaque la base d'un autre joueur pendant 3 minutes (jusqu'à 3 étoiles) et emporte une **vraie part de ses stocks**.
+  - Le QG et l'entrepôt protègent une partie des stocks (jusqu'à 70 % avec un entrepôt amélioré).
+  - La base pillée passe sous bouclier : 1, 2 ou 4 h selon les étoiles.
+  - Attaquer retire votre propre bouclier.
+  - Le défenseur voit le pillage dans son journal à sa prochaine connexion.
+- le classement et le journal des pillages subis et menés.
 
-Options : `PORT=9000`, `HOST=0.0.0.0` (IPv4 seul), `NAME="Mon serveur"`, `DATA=/chemin/donnees.json`. Les données sont dans `server/data.json`.
+Options :
+- `PORT=9000` ;
+- `HOST=0.0.0.0` (IPv4 seul) ;
+- `NAME="Mon serveur"` ;
+- `DATA=/chemin/donnees.json` ;
+- `SAVES=/chemin/dossier`.
+
+Les comptes, bases et pillages sont dans `server/data.json`, les parties des joueurs dans `server/saves/` (un fichier par compte). Gardez ces deux éléments si vous déplacez le serveur.
+
+**Mise à jour d'un serveur existant** : remplacez `server/server.js`, puis relancez-le. Les anciens joueurs créent leur compte depuis le même appareil, et leur score et leur base sont repris.
 
 Pour jouer hors de votre réseau local :
 - en **IPv6**, ouvrez le port 8787 dans le pare-feu de la box ou de la machine. L'adresse IPv6 publique suffit, sans redirection de port ;

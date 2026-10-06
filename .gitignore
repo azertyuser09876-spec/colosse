@@ -2,6 +2,7 @@ node_modules/
 dist/
 server/data.json
 server/data.json.tmp
+server/saves/
 android/.gradle/
 android/build/
 android/app/build/

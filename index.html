@@ -284,8 +284,10 @@ body.touch #cv{cursor:default}
         <button class="btn hot big" data-act="enter">Entrer dans la base</button>
         <button class="btn" data-act="help">Commandes</button>
         <button class="btn" data-act="settings">Réglages</button>
+        <button class="btn" data-act="account" id="accBtn">Compte</button>
         <button class="btn" data-act="reset">Effacer la sauvegarde</button>
       </div>
+      <p class="small-note" id="accLine">Invité (partie sur cet appareil)</p>
       <p class="small-note" id="titleNote">Clavier et souris, ou écran tactile en mode paysage. ZQSD ou WASD : les touches suivent la position physique du clavier.</p>
     </div>
   </section>
@@ -322,6 +324,7 @@ body.touch #cv{cursor:default}
   </div></div>
   <div id="result" class="overlay"><div class="dlg" id="resultBox"></div></div>
   <div id="settings" class="overlay"><div class="dlg" id="settingsBox"></div></div>
+  <div id="account" class="overlay"><div class="dlg" id="accountBox"></div></div>
   <div id="help" class="overlay"><div class="dlg">
     <h3>Commandes</h3>
     <div class="keys" id="helpKeys"></div>
@@ -739,9 +742,9 @@ const Mus = {
       musScanT = .5; let n = 0, boss = false; const F = player.inside || player;
       for (const u of units) {
         if (u.team === 0 || u.dead || !u.active || u.kind === 'building' || u.etype === 'cible') continue;
-        const q = d2(u.x, u.y, F.x, F.y);
-        if (q < 1000 * 1000 && u.target) n += u.boss ? 6 : u.elite ? 3 : 1;
-        if (u.boss && q < 1500 * 1500 && u.target) { boss = true; if (!u.roared) { u.roared = true; SFX.play('bossroar', 1, u.x, u.y); buzz([100, 50, 100]); } }
+        const q = d2(u.x, u.y, F.x, F.y), engaged = u.target || (u.net && time - (u.lastFire || -9) < 3);
+        if (q < 1000 * 1000 && engaged) n += u.boss ? 6 : u.elite ? 3 : 1;
+        if (u.boss && q < 1500 * 1500 && engaged) { boss = true; if (!u.roared) { u.roared = true; SFX.play('bossroar', 1, u.x, u.y); buzz([100, 50, 100]); } }
       }
       musCombat = Math.min(.42, n * .045); musBoss = boss;
     }
@@ -1230,7 +1233,7 @@ function bCost(type, lvl) { const b = BUILD[type], m = Math.pow(2.15, lvl - 1), 
 function bTime(type, lvl) { return Math.round(BUILD[type].t * Math.pow(1.9, lvl - 1)); }
 const instantB = type => BUILD[type].t === 0;
 function prodRate(b) { const B_ = BUILD[b.type]; return B_.rate ? B_.rate * b.lvl * (1 + (b.lvl - 1) * .15) : 0; } // par minute
-function prodCap(b) { return prodRate(b) * 45; }
+function prodCap(b) { return prodRate(b) * 45 * (1 + .4 * bLevel('warehouse')); }
 
 // ================= SAUVEGARDE =================
 const SAVE_KEY = 'colosse_save_v4';
@@ -1258,11 +1261,24 @@ function fixSave(o) {
   if (!PWEAPONS[o.pweapon]) o.pweapon = 'pistol';
   return o;
 }
-function loadSave() {
-  try { const s = localStorage.getItem(SAVE_KEY); if (s) { const o = JSON.parse(s); if (o && o.v === 4) return fixSave(o); } } catch (e) { }
+// Compte : « invité » (partie gardée sur cet appareil) ou compte d'un serveur Colosse (identifiant + mot de passe,
+// partie enregistrée sur le serveur et retrouvée sur n'importe quel appareil). Sur claude.ai, la partie suit le compte claude.ai.
+const ACC_KEY = 'colosse_account_v1';
+function accLoad() { try { const a = JSON.parse(localStorage.getItem(ACC_KEY) || 'null'); if (a && a.mode === 'server' && a.id && a.srv) return a; } catch (e) { } return { mode: 'guest' }; }
+let ACC = accLoad();
+function accStore() { try { localStorage.setItem(ACC_KEY, JSON.stringify(ACC)); } catch (e) { } }
+const accountKey = a => a.mode === 'server' && a.id ? SAVE_KEY + '@' + a.srv + '#' + a.id : SAVE_KEY;
+function parseSave(str) { try { const o = typeof str === 'string' ? JSON.parse(str) : str; if (o && o.v === 4) return fixSave(o); } catch (e) { } return null; }
+function loadSave(key) {
+  try { const s = localStorage.getItem(key || accountKey(ACC)); if (s) { const o = parseSave(s); if (o) return o; } } catch (e) { }
   return newSave();
 }
-function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
+function hasLocalSave(key) { try { return !!localStorage.getItem(key); } catch (e) { return false; } }
+function writeSave() {
+  save.ut = Date.now();
+  try { localStorage.setItem(accountKey(ACC), JSON.stringify(save)); } catch (e) { }
+  if (typeof cloudDirty === 'function') cloudDirty();
+}
 
 const has = id => !!save.research[id];
 const bLevel = type => save.base.b.reduce((m, b) => b.type === type ? Math.max(m, b.lvl) : m, 0);
@@ -1337,7 +1353,7 @@ Object.assign(ENEMIES, {
 Object.assign(BUILD, {
   contracts: { n: 'Bureau des contrats', w: 3, h: 3, max: 3, ui: 'raid', cost: { scrap: 100, alloy: 20 }, t: 12, d: 'Propose les contrats rémunérés. Chaque niveau ajoute un contrat proposé par région et +15 % de récompense.' },
   radar: { n: 'Station radar', w: 2, h: 2, max: 5, cost: { scrap: 90, circuits: 30 }, t: 14, d: 'À l\'insertion, révèle la carte autour de vous ; niveau 2 : localise les pylônes ; niveau 3 : suit les équipes rivales.' },
-  warehouse: { n: 'Entrepôt blindé', w: 3, h: 3, max: 5, cost: { scrap: 150, alloy: 40 }, t: 16, d: '+40 % de stock pour les producteurs par niveau, et protège une partie des ressources en cas de pillage.' },
+  warehouse: { n: 'Entrepôt blindé', w: 3, h: 3, max: 5, cost: { scrap: 150, alloy: 40 }, t: 16, d: '+40 % de stock pour les producteurs par niveau. Protège vos stocks des pillages des autres joueurs (25 % au niveau 1, +10 % par niveau) et réduit les pertes face aux pillards.' },
   turret_beam: { n: 'Tourelle laser', w: 2, h: 2, max: 5, def: 1, hp: 1100, weapon: 'beam', wmul: .6, cost: { crystals: 70, circuits: 60, cores: 1 }, t: 20, d: 'Rayon continu qui fait fondre les blindés.' },
   turret_flak: { n: 'Tour antiaérienne', w: 2, h: 2, max: 5, def: 1, hp: 900, weapon: 'flak', wmul: 1, cost: { scrap: 110, alloy: 30, circuits: 20 }, t: 14, d: 'Shrapnel qui inflige le triple de dégâts aux aériens.' },
 });
@@ -2566,12 +2582,14 @@ function collideTiles(u) {
   u.x = clamp(u.x, r, WPX - r); u.y = clamp(u.y, r, WPX - r);
 }
 function hitTile(tx, ty, dmg) {
-  if (tx < 0 || ty < 0 || tx >= WT || ty >= WT) return false;
+  if (NETVIS || tx < 0 || ty < 0 || tx >= WT || ty >= WT) return false;
   const i = ty * WT + tx, o = W.obs[i]; if (!o || o >= 7) return false;
   W.ohp[i] -= dmg; if (W.ohp[i] <= 0) { destroyTile(tx, ty, o, null); return true; } return false;
 }
 function destroyTile(tx, ty, o, crusher) {
+  if (NETVIS) return;
   const i = ty * WT + tx; W.obs[i] = 0; W.ohp[i] = 0; miniSetTile(tx, ty);
+  if (LIVE.game) LIVE.tileGone(tx, ty);
   const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2, D = OBS[o];
   const n = crusher && crusher.r > 80 ? 3 : 7;
   for (let k = 0; k < n; k++) parts.push({ type: 'debris', x: x + rnd(-14, 14), y: y + rnd(-14, 14), vx: rnd(-90, 90), vy: rnd(-90, 90), life: rnd(.4, .9), max: .9, size: rnd(2, 5), col: D.mm, rot: rnd(0, 6) });
@@ -2583,6 +2601,7 @@ function destroyTile(tx, ty, o, crusher) {
 // ================= BUTIN =================
 function spawnItem(res, amt, x, y) {
   if (amt <= 0) return;
+  if (LIVE.guest()) { LIVE.drop(res, amt, x, y); return; }
   const a = Math.random() * TAU, s = rnd(30, 120);
   items.push({ res, amt, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, dead: false });
 }
@@ -2614,6 +2633,12 @@ function updateItems(dt) {
     const w = RES[it.res].w; const free = P.cargoMax - P.cargoW;
     if (it.t > .35 && dd < (reach + 70) ** 2 && free >= w) { const d = Math.sqrt(dd) || 1; it.x += (P.x - it.x) / d * 300 * dt; it.y += (P.y - it.y) / d * 300 * dt; }
     if (it.t > .35 && dd < reach * reach) {
+      if (LIVE.guest()) { // en raid partagé, l'hôte attribue le butin
+        let who = free >= w ? P : null;
+        if (!who) { let bd = 420 * 420; for (const r of fleet) { if (r.dead || r === P || r.cargoMax - r.cargoW < w) continue; const q = d2(r.x, r.y, P.x, P.y); if (q < bd) { bd = q; who = r; } } }
+        if (who) LIVE.pick(it, who); else if (fullWarnT <= 0) { msg('Soute pleine : aucun robot de transport à portée.', '#f2c14e', 3); fullWarnT = 4; }
+        continue;
+      }
       let got = addCargo(P, it.res, it.amt);
       if (got > 0) { it.amt -= got; floatText(it.x, it.y - 10, '+' + got + ' ' + RES[it.res].n, RES[it.res].c); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[it.res] || 880, chord: it.res === 'heart' || it.res === 'cores' }); if (it.res === 'heart') msg('Cœur de Colosse récupéré. Ramenez-le vivant.', '#ff8a5c', 8); }
       if (it.amt > 0) { // transfert vers le robot de soute le plus proche
@@ -2630,16 +2655,17 @@ function updateItems(dt) {
     if (r.dead || r.brain !== 'gatherer' || r.piloted || r.cargoMax <= 0) continue;
     for (const it of items) {
       if (it.dead || it.t < .35) continue;
+      if (d2(it.x, it.y, r.x, r.y) < (r.r + 18) ** 2 && LIVE.guest()) { if (r.cargoMax - r.cargoW >= RES[it.res].w) LIVE.pick(it, r); continue; }
       if (d2(it.x, it.y, r.x, r.y) < (r.r + 18) ** 2) { const g = addCargo(r, it.res, it.amt); if (g > 0) { it.amt -= g; floatText(r.x, r.y - r.r - 8, '+' + g + ' ' + RES[it.res].n, '#6fe3c8'); } if (it.amt <= 0) it.dead = true; }
     }
   }
   if (fullWarnT > 0) fullWarnT -= dt;
-  if (items.length > 50 && Math.random() < .05) items = items.filter(i => !i.dead);
+  if (!LIVE.game && items.length > 50 && Math.random() < .05) items = items.filter(i => !i.dead);
 }
 
 // ================= COMBAT =================
 function shoot(x, y, a, spd, dmg, team, range, kind, col, pierce, src, splash, sc) {
-  const b = { kind, x, y, px: x, py: y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, dmg, team, range, dist: 0, col, pierce: pierce || 0, hits: null, src, splash: splash || 0, sc: sc || 1, life: 0, homing: null, maxSpd: spd };
+  const b = { kind, x, y, px: x, py: y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, dmg, team, range, dist: 0, col, pierce: pierce || 0, hits: null, src, splash: splash || 0, sc: sc || 1, life: 0, homing: null, maxSpd: spd, vis: NETVIS };
   bullets.push(b); return b;
 }
 function muzzle(x, y, a, col, sc) { parts.push({ type: 'flash', x, y, vx: 0, vy: 0, life: .06, max: .06, size: 7 * sc, col, a }); }
@@ -2650,6 +2676,7 @@ function fireMount(u, m, tx, ty, tgt) {
 function fireMount0(u, m, tx, ty, tgt) {
   const w = m.w; u.lastFire = time; const nb0 = bullets.length;
   const res = fireMountCore(u, m, tx, ty, tgt, w);
+  if (res !== false) { m.fc = ((m.fc || 0) + 1) & 255; m.td = Math.round(Math.hypot(tx - u.x, ty - u.y)); }
   if (w.slow || w.aa || w.pull || w.cluster) for (let i = nb0; i < bullets.length; i++) { const b = bullets[i]; b.slow = w.slow; b.aa = w.aa; b.pull = w.pull; b.cluster = w.cluster; }
   return res;
 }
@@ -2672,33 +2699,33 @@ function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u,
       const dx = tx - mx, dy = ty - my, dd = Math.hypot(dx, dy), rr2 = clamp(dd, w.minRange || 0, w.range), ang = Math.atan2(dy, dx), err = rr2 * (w.kind === 'nuke' ? .02 : .07) * spr;
       const fx = mx + Math.cos(ang) * rr2 + rnd(-err, err), fy = my + Math.sin(ang) * rr2 + rnd(-err, err);
       const nuke = w.kind === 'nuke';
-      bullets.push({ kind: 'mortar', nuke, x: sx, y: sy, x0: sx, y0: sy, tx: fx, ty: fy, t: 0, T: nuke ? 2.6 + rr2 / 900 : .35 + rr2 / 900, arc: nuke ? 420 : w.arc, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc: nuke ? sc * 1.6 : sc * .7 });
-      muzzle(sx, sy, a, '#ffe0a0', sc); if (nuke) { addShakeNear(sx, sy, 6); msg('Missile Aube lancé. Impact dans ' + Math.ceil(2.6 + rr2 / 900) + ' s.', '#fff1b0', 4); }
+      bullets.push({ kind: 'mortar', nuke, x: sx, y: sy, x0: sx, y0: sy, tx: fx, ty: fy, t: 0, T: nuke ? 2.6 + rr2 / 900 : .35 + rr2 / 900, arc: nuke ? 420 : w.arc, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc: nuke ? sc * 1.6 : sc * .7, vis: NETVIS });
+      muzzle(sx, sy, a, '#ffe0a0', sc); if (nuke && !NETVIS) { addShakeNear(sx, sy, 6); msg('Missile Aube lancé. Impact dans ' + Math.ceil(2.6 + rr2 / 900) + ' s.', '#fff1b0', 4); }
       break;
     }
     case 'chain': chainShot(u, sx, sy, tgt, w, dmg); break;
     case 'orbital': {
       const dx = tx - mx, dy = ty - my, dd = Math.hypot(dx, dy), rr2 = clamp(dd, w.minRange || 0, w.range), ang = Math.atan2(dy, dx), cx = mx + Math.cos(ang) * rr2, cy = my + Math.sin(ang) * rr2;
-      for (let i = 0; i < w.strikes; i++) { const a2 = Math.random() * TAU, d3 = Math.sqrt(Math.random()) * 280, px = cx + Math.cos(a2) * d3, py = cy + Math.sin(a2) * d3; bullets.push({ kind: 'mortar', drop: true, x: px, y: py, x0: px, y0: py, tx: px, ty: py, t: 0, T: 1 + i * .22, arc: 1000, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc: 1.3 }); }
+      for (let i = 0; i < w.strikes; i++) { const a2 = Math.random() * TAU, d3 = Math.sqrt(Math.random()) * 280, px = cx + Math.cos(a2) * d3, py = cy + Math.sin(a2) * d3; bullets.push({ kind: 'mortar', drop: true, x: px, y: py, x0: px, y0: py, tx: px, ty: py, t: 0, T: 1 + i * .22, arc: 1000, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc: 1.3, vis: NETVIS }); }
       muzzle(sx, sy, a, '#ffe6a8', sc); addShakeNear(sx, sy, 3); break;
     }
     case 'mortar': {
       const dx = tx - mx, dy = ty - my, dd = Math.hypot(dx, dy), rr2 = clamp(dd, w.minRange || 0, w.range), ang = Math.atan2(dy, dx), err = rr2 * .06 * spr;
       const fx = mx + Math.cos(ang) * rr2 + rnd(-err, err), fy = my + Math.sin(ang) * rr2 + rnd(-err, err);
-      bullets.push({ kind: 'mortar', x: sx, y: sy, x0: sx, y0: sy, tx: fx, ty: fy, t: 0, T: .8 + rr2 / 650, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc, burn: w.burn });
+      bullets.push({ kind: 'mortar', x: sx, y: sy, x0: sx, y0: sy, tx: fx, ty: fy, t: 0, T: .8 + rr2 / 650, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc, burn: w.burn, vis: NETVIS });
       muzzle(sx, sy, a, '#ffe0a0', sc * 1.5); addShakeNear(sx, sy, 2.5); break;
     }
     case 'rail': rail(u, sx, sy, a, w.range, dmg, w.col); addShakeNear(sx, sy, 3); break;
     case 'melee': {
       if (!tgt || tgt.dead || tgt.hidden) return false;
       const reach = u.r + tgt.r + 18 * sc; if (d2(u.x, u.y, tgt.x, tgt.y) > reach * reach) return false;
-      damage(tgt, dmg, u); sparks(lerp(u.x, tgt.x, .6), lerp(u.y, tgt.y, .6), 6, '#e8f0ff'); m.recoil = 1; SFX.play(w.snd || 'melee', vol, u.x, u.y, { size: w.size || 1, self: u.piloted }); if (u.piloted) buzz(12); return true;
+      damage(tgt, dmg, u); sparks(lerp(u.x, tgt.x, .6), lerp(u.y, tgt.y, .6), 6, '#e8f0ff'); m.recoil = 1; SFX.play(w.snd || 'melee', vol, u.x, u.y, { size: w.size || 1, self: u.piloted && !u.net }); if (u.piloted && !u.net) buzz(12); return true;
     }
     default: return false;
   }
   m.recoil = 1;
   if (w.snd === 'flame') SFX.hold('f' + u.id + '_' + u.mounts.indexOf(m), 'flame', vol * .7, sx, sy);
-  else if (w.snd) { SFX.play(w.snd, vol, sx, sy, { size: w.size || (u.mscale > 1.6 ? 2 : 1), self: u.piloted }); if (u.piloted && (w.size || 1) >= 2) buzz((w.size || 1) >= 3 ? 30 : 14); }
+  else if (w.snd) { SFX.play(w.snd, vol, sx, sy, { size: w.size || (u.mscale > 1.6 ? 2 : 1), self: u.piloted && !u.net }); if (u.piloted && !u.net && (w.size || 1) >= 2) buzz((w.size || 1) >= 3 ? 30 : 14); }
   return true;
 }
 function addShakeNear(x, y, v) { const F = focus(); const d = Math.hypot(x - F.x, y - F.y); if (d < 900) addShake(v * (1 - d / 900)); }
@@ -2721,7 +2748,7 @@ function rail(u, sx, sy, a, range, dmg, col) {
   sparks(ex, ey, 10, col);
 }
 function explode(x, y, rad, dmg, team, src, burn, pull) {
-  if (burn) fires.push({ x, y, r: burn.r, t: burn.t, max: burn.t, dps: burn.dps * diffDmg(team), team, tick: 0 });
+  if (burn) fires.push({ x, y, r: burn.r, t: burn.t, max: burn.t, dps: burn.dps * diffDmg(team), team, tick: 0, vis: NETVIS });
   const hits = [];
   query(x - rad, y - rad, x + rad, y + rad, v => { if (v.team === team || v.dead || v.hidden) return; const d = Math.hypot(v.x - x, v.y - y) - v.r; if (d < rad) hits.push([v, d]); });
   if (pull) { for (const [v] of hits) { if (v.static || v.boss || v.dead) continue; const dx = x - v.x, dy = y - v.y, dd = Math.hypot(dx, dy) || 1, pd = Math.min(dd * .6, 150); v.x += dx / dd * pd; v.y += dy / dd * pd; } parts.push({ type: 'ring', x, y, vx: 0, vy: 0, life: .45, max: .45, size: rad * 1.4, col: '#b9a0ff', thin: true }); }
@@ -2745,6 +2772,9 @@ function boom(x, y, rad) {
 }
 function damage(u, amt, src) {
   if (u.dead || u.hidden) return;
+  if (NETVIS) return; // tir reproduit d'un autre joueur : c'est lui qui compte les dégâts
+  if (u.net) { LIVE.hit(u, amt, src); u.hitFlash = .1; return; } // unité d'un autre joueur ou du monde de l'hôte
+
   if (u.kind === 'player' && u.inv > 0) return;
   if (u.jumping) return;
   if (u.dodge && Math.random() < u.dodge) { if (Math.random() < .3) floatText(u.x, u.y - u.r - 6, 'esquive', '#e8dcc4'); return; }
@@ -2756,7 +2786,7 @@ function damage(u, amt, src) {
   u.hp -= amt; u.hitFlash = .1;
   if (u.kind === 'player') { u.lastHurt = time; addShake(Math.min(7, amt * .25)); }
   if (isMine(u) && amt > .5) playerHurt(u, amt, src);
-  if (u.kind === 'enemy' && src && src.team === 0 && !src.dead && !src.hidden && (!u.target || u.target.dead)) u.target = src;
+  if (u.kind === 'enemy' && src && src.team !== 1 && src.team !== undefined && !src.dead && !src.hidden && (!u.target || u.target.dead)) u.target = src;
   if (u.hp <= 0) kill(u, src);
 }
 function kill(u, src) {
@@ -2764,7 +2794,9 @@ function kill(u, src) {
   if (state === 'base' && u.kind === 'player') { u.hp = u.maxhp; const sp = W.spawn; boom(u.x, u.y, 40); u.x = sp.x; u.y = sp.y; u.vx = u.vy = 0; u.inv = 3; msg('Pilote évacué vers le QG.', '#ec6b74', 4); return; }
   u.dead = true; u.hp = 0; u.sel = false;
   if (u.kind === 'building') { buildingDestroyed(u); return; }
-  if ((u.kind === 'enemy' || u.kind === 'rival') && src) { creditKill(u, src); if (isMine(src)) { killMarkT = .4; SFX.play('kill', .7); } }
+  const remote = !!(src && src.net); // abattu par un autre joueur : c'est lui qui est crédité
+  if (remote && LIVE.game) LIVE.killNote(u, src);
+  if ((u.kind === 'enemy' || u.kind === 'rival') && src && !remote) { creditKill(u, src); if (isMine(src)) { killMarkT = .4; SFX.play('kill', .7); } }
   if (u.kind === 'robot' && u.selfBoom) { const x = u.x, y = u.y, r = u.r, mh = u.maxhp; deferred.push(() => explode(x, y, r * 3 + 60, 150 + mh * .25, 0, null)); }
   const rad = Math.max(30, u.r * 2.2);
   if (u.kind !== 'player') boom(u.x, u.y, rad);
@@ -2772,10 +2804,14 @@ function kill(u, src) {
   if (u.kind === 'minion') return;
   if (u.kind === 'rival' || u.kind === 'beacon2') { rivalDown(u, src); return; }
   if (u.kind === 'enemy') {
-    if (raidStats) { raidStats.kills++; raidStats.byType[u.etype] = (raidStats.byType[u.etype] || 0) + 1; }
+    if (raidStats && !remote) { raidStats.kills++; raidStats.byType[u.etype] = (raidStats.byType[u.etype] || 0) + 1; }
     if (u.baseRaid) attackLoot(u); else dropTable(ENEMIES[u.etype].loot, u.x, u.y);
-    if (u.elite) msg('Mastodonte abattu.', '#f2c14e');
-    if (u.boss) { msg(ENEMIES[u.etype].n.toUpperCase() + ' EST TOMBÉ' + (u.etype === 'souverain' || u.etype === 'archonte' ? '. Son cœur gît dans le cratère.' : ' !'), '#ff8a5c', 10); if (raidStats) { raidStats.boss = true; raidStats.bossType = u.etype; } if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; SFX.play('explo', 1, u.x, u.y, { size: 5, reach: 3 }); SFX.play('success', .6); buzz([60, 40, 90]); addShake(25); }
+    if (u.elite && !remote) msg('Mastodonte abattu.', '#f2c14e');
+    if (u.boss) {
+      const coop = LIVE.game && LIVE.game.mode === 'coop', credit = !remote || coop, txt = ENEMIES[u.etype].n.toUpperCase() + ' EST TOMBÉ' + (u.etype === 'souverain' || u.etype === 'archonte' ? '. Son cœur gît dans le cratère.' : ' !');
+      msg(txt, '#ff8a5c', 10); if (LIVE.game) LIVE.note(txt, '#ff8a5c', coop ? { boss: u.etype } : {});
+      if (raidStats && credit && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = u.etype; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; } SFX.play('explo', 1, u.x, u.y, { size: 5, reach: 3 }); SFX.play('success', .6); buzz([60, 40, 90]); addShake(25);
+    }
   } else if (u.kind === 'robot') {
     for (const k in u.cargo) if (u.cargo[k] > 0) spawnItem(k, u.cargo[k], u.x, u.y);
     u.cargo = {}; u.cargoW = 0;
@@ -2802,11 +2838,12 @@ function ejectPlayer(forced) {
 function updateBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i]; let dead = false;
+    NETVIS = !!b.vis;
     if (b.kind === 'mortar') {
       b.t += dt;
       if (b.t >= b.T) {
         if (b.nuke) nukeBoom(b.tx, b.ty, b.splash, b.dmg, b.team, b.src); else explode(b.tx, b.ty, b.splash, b.dmg, b.team, b.src, b.burn, b.pull);
-        if (b.cluster) for (let i = 0; i < b.cluster; i++) bullets.push({ kind: 'mortar', x: b.tx, y: b.ty, x0: b.tx, y0: b.ty, tx: b.tx + rnd(-95, 95), ty: b.ty + rnd(-95, 95), t: 0, T: .3 + Math.random() * .3, arc: 40, dmg: b.dmg * .7, team: b.team, splash: b.splash * .75, col: b.col, src: b.src, h: 0, sc: .5 });
+        if (b.cluster) for (let i = 0; i < b.cluster; i++) bullets.push({ kind: 'mortar', x: b.tx, y: b.ty, x0: b.tx, y0: b.ty, tx: b.tx + rnd(-95, 95), ty: b.ty + rnd(-95, 95), t: 0, T: .3 + Math.random() * .3, arc: 40, dmg: b.dmg * .7, team: b.team, splash: b.splash * .75, col: b.col, src: b.src, h: 0, sc: .5, vis: b.vis });
         dead = true;
       }
       else {
@@ -2844,7 +2881,7 @@ function updateBullets(dt) {
           if (b.slow && !v.dead) v.slowT = Math.max(v.slowT || 0, b.slow * (v.boss ? .4 : 1));
           if (b.kind === 'plasma') { parts.push({ type: 'ring', x: b.x, y: b.y, vx: 0, vy: 0, life: .25, max: .25, size: 30 * b.sc, col: b.col }); sparks(b.x, b.y, 6, b.col); }
           else if (b.kind !== 'flame') { sparks(b.x, b.y, 3, b.col); SFX.play(v.shield > 0 ? 'shield' : v.human || v.kind === 'player' ? 'hitsoft' : 'hit', .3, b.x, b.y); }
-          if (isMine(b.src) && b.kind !== 'flame') { hitMarkT = .14; SFX.play('hitm', .45); }
+          if (!b.vis && isMine(b.src) && b.kind !== 'flame') { hitMarkT = .14; SFX.play('hitm', .45); }
           if (b.pierce > 0) { b.pierce--; if (!b.hits) b.hits = new Set(); b.hits.add(v.id); }
           else { dead = true; break; }
         }
@@ -2853,6 +2890,7 @@ function updateBullets(dt) {
     }
     if (dead) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
   }
+  NETVIS = false;
 }
 
 // ================= MONTURES =================
@@ -2885,7 +2923,7 @@ function updateMounts(u, dt) {
     if (w.spin) { m.spin = want ? Math.min(1, m.spin + dt / w.spin) : Math.max(0, m.spin - dt * .8); m.spinA += m.spin * dt * 40; }
     if (w.kind === 'beam') { if (want && aimed) beamTick(u, m, dt, mx, my, w); continue; }
     if (w.kind === 'fusion') {
-      if (m.chg > 0) { m.chg -= dt; if (m.chg <= 0) { fusionShot(u, m, mx, my, w); m.cd = 1 / w.rate; } continue; }
+      if (m.chg > 0) { m.chg -= dt; if (m.chg <= 0) { fusionShot(u, m, mx, my, w); m.cd = 1 / w.rate; m.fc = ((m.fc || 0) + 1) & 255; } continue; }
       if (want && aimed && m.cd <= 0) { m.chg = w.charge; SFX.play('charge', 1, mx, my); }
       continue;
     }
@@ -2954,8 +2992,8 @@ function separate(dt) {
       if (dd >= rr2 * rr2 || dd < .01) return;
       const d = Math.sqrt(dd), ov = rr2 - d, nx = dx / d, ny = dy / d;
       if (u.team !== v.team) {
-        if (u.crush >= 2 && v.r < u.r * .55 && v.kind !== 'beacon') crushUnit(v, u, dt);
-        else if (v.crush >= 2 && u.r < v.r * .55 && u.kind !== 'beacon') crushUnit(u, v, dt);
+        if (u.crush >= 2 && !u.net && v.r < u.r * .55 && v.kind !== 'beacon') crushUnit(v, u, dt);
+        else if (v.crush >= 2 && !v.net && u.r < v.r * .55 && u.kind !== 'beacon') crushUnit(u, v, dt);
       }
       const mu = (u.static || u.kind === 'beacon') ? 1e9 : u.r * u.r * (u.crush >= 3 ? 20 : 1), mv = (v.static || v.kind === 'beacon') ? 1e9 : v.r * v.r * (v.crush >= 3 ? 20 : 1), tot = mu + mv;
       const pu = ov * mv / tot, pv = ov * mu / tot;
@@ -3090,7 +3128,7 @@ function enemyAI(e, dt) {
     engage(e, t, dt, e.engRange * (e.etype === 'traqueur' || e.etype === 'essaim' ? .5 : .75), false);
     if (!e.hunter && !e.forced && !e.boss && d2(e.x, e.y, e.home.x, e.home.y) > 1900 * 1900) { e.target = null; e.alerted = false; }
   } else if (e.forced && !e.forced.dead) steer(e, e.forced.x, e.forced.y, dt, 1, 120);
-  else if (e.hunter) { const F = focus(); steer(e, F.x, F.y, dt, .95, 100); }
+  else if (e.hunter) { const F = LIVE.game ? LIVE.nearestFocus(e.x, e.y) : focus(); steer(e, F.x, F.y, dt, .95, 100); }
   else {
     e.wt = (e.wt || 0) - dt;
     if (!e.wp || e.wt <= 0) { e.wp = { x: e.home.x + rnd(-230, 230), y: e.home.y + rnd(-230, 230) }; e.wt = rnd(3, 6); }
@@ -3123,6 +3161,7 @@ function chainShot(u, sx, sy, tgt, w, dmg) {
   }
 }
 function beamTick(u, m, dt, mx, my, w) {
+  if (time - (m.fcT || 0) > .1) { m.fcT = time; m.fc = ((m.fc || 0) + 1) & 255; }
   const a = m.aim, ca = Math.cos(a), sa = Math.sin(a), sc = u.mscale || 1, mz = 14 * sc;
   const sx = mx + ca * mz, sy = my + sa * mz; let len = w.range, hitU = null;
   for (let s = 0; s < w.range; s += 14) {
@@ -3156,7 +3195,7 @@ function fusionShot(u, m, mx, my, w) {
   for (const v of hits) damage(v, w.dmg * diffDmg(u.team), u);
   beams.push({ x1: sx, y1: sy, x2: ex, y2: ey, life: .7, max: .7, col: w.col, w: R * 1.2, fusion: true });
   for (let k = 0; k < 14; k++) { const t2 = Math.random(); boomLite(lerp(sx, ex, t2), lerp(sy, ey, t2), R * 1.2); }
-  addShake(16); SFX.play('fusion', 1, sx, sy); SFX.play('explo', .8, ex, ey, { size: 3 }); if (u.piloted || isMine(u)) buzz([40, 30, 80]); m.recoil = 1;
+  if (NETVIS) addShakeNear(sx, sy, 16); else addShake(16); SFX.play('fusion', 1, sx, sy); SFX.play('explo', .8, ex, ey, { size: 3 }); if ((u.piloted && !u.net) || isMine(u)) buzz([40, 30, 80]); m.recoil = 1;
 }
 function boomLite(x, y, rad) {
   for (let i = 0; i < 3; i++) { const a = Math.random() * TAU, s = rnd(20, rad * 1.5); parts.push({ type: 'fire', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.3, .6), max: .6, size: rnd(rad * .2, rad * .4) }); }
@@ -3197,7 +3236,7 @@ function updateFires(dt) {
     const f = fires[i]; f.t -= dt; f.tick -= dt;
     if (f.t <= 0) { fires.splice(i, 1); continue; }
     if (Math.random() < dt * f.r * .25) parts.push({ type: 'fire', x: f.x + rnd(-f.r, f.r) * .8, y: f.y + rnd(-f.r, f.r) * .8, vx: rnd(-10, 10), vy: -rnd(20, 50), life: .5, max: .5, size: rnd(6, 14) });
-    if (f.tick <= 0) {
+    if (f.tick <= 0 && !f.vis) {
       f.tick = .25; const hits = [];
       query(f.x - f.r, f.y - f.r, f.x + f.r, f.y + f.r, v => { if (v.team !== f.team && !v.dead && !v.hidden && !v.fly && d2(v.x, v.y, f.x, f.y) < (f.r + v.r) ** 2) hits.push(v); });
       for (const v of hits) damage(v, f.dps * .25, null);
@@ -3224,16 +3263,16 @@ function populate() {
   const sp = W.spawn;
   for (let k = 0; k < 88; k++) {
     const p = findWalkableNear(WPX / 2, WPX / 2, 1300, WPX * .48, 20); if (!p) continue;
-    if (d2(p.x, p.y, sp.x, sp.y) < 1750 * 1750) continue;
+    if (d2(p.x, p.y, sp.x, sp.y) < 1750 * 1750 || (LIVE.game && LIVE.nearSpawn(p.x, p.y, 1750))) continue;
     const bi = W.biome[tileAt(p.x, p.y)], RX = REGIONS[regionCur].extra; const comp = (CAMPS[bi] || CAMPS[0]).concat(RX[bi] || [], RX.all || []);
     for (const [type, a, b, ch] of comp) { if (ch && Math.random() > ch) continue; const n = Math.round(rndi(a, b) * armyScale(.3)); for (let i = 0; i < n; i++) { const q = findWalkableNear(p.x, p.y, 0, 110, 15) || p; makeEnemy(type, q.x, q.y); } }
-    if ((bi === 2 || bi === 4) && Math.random() < .05 + save.diff * .03) makeEnemy('mastodonte', p.x, p.y);
+    if ((bi === 2 || bi === 4) && Math.random() < .05 + (LIVE.game ? LIVE.game.diff : save.diff) * .03) makeEnemy('mastodonte', p.x, p.y);
   }
   for (const bs of W.bases) {
     const x0 = bs.x0 * TILE, y0 = bs.y0 * TILE, w = bs.sw * TILE, h = bs.sh * TILE;
     for (const [fx, fy] of [[.2, .2], [.8, .8], [.8, .2]]) { const q = findWalkableNear(x0 + w * fx, y0 + h * fy, 0, 60, 20); if (q) makeEnemy('bastion', q.x, q.y); }
     for (let i = 0; i < 4; i++) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 30, 220, 20); if (q) makeEnemy('pillard', q.x, q.y); }
-    if (Math.random() < .35 + save.diff * .15) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 0, 120, 30); if (q) makeEnemy('mastodonte', q.x, q.y); }
+    if (Math.random() < .35 + (LIVE.game ? LIVE.game.diff : save.diff) * .15) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 0, 120, 30); if (q) makeEnemy('mastodonte', q.x, q.y); }
     for (let i = 0; i < 4; i++) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 40, Math.min(w, h) * .42, 20); if (q) crates.push({ x: q.x, y: q.y, type: 'militaire', open: false }); }
   }
   makeEnemy(REGIONS[regionCur].boss, WPX / 2, WPX / 2);
@@ -3253,11 +3292,12 @@ function populate() {
   for (let k = 0; k < 260; k++) { const p = findWalkableNear(WPX / 2, WPX / 2, 300, WPX * .48, 8); if (p) items.push({ res: Math.random() < .8 ? 'scrap' : 'circuits', amt: rndi(2, 6), x: p.x, y: p.y, vx: 0, vy: 0, t: 1, dead: false }); }
 }
 
-function startRaid() {
+function startRaid(opt) {
   SFX.init();
-  showOverlay('loading', true); $('#loadTxt').textContent = 'Le monde se forme…';
+  const NG = opt && opt.net; // raid partagé : graine, région et difficulté communes
+  showOverlay('loading', true); $('#loadTxt').textContent = NG ? 'Le monde partagé se forme…' : 'Le monde se forme…';
   setTimeout(() => {
-    regionCur = save.region || 0; const RG = REGIONS[regionCur], tr = RG.tier - 1, D0 = DIFFS[save.diff];
+    regionCur = NG ? NG.region : (save.region || 0); const RG = REGIONS[regionCur], tr = RG.tier - 1, D0 = DIFFS[NG ? NG.diff : save.diff];
     diff = Object.assign({}, D0, { hp: D0.hp * (1 + .22 * tr), dmg: D0.dmg * (1 + .15 * tr), loot: D0.loot * (1 + .3 * tr), spawn: D0.spawn * (1 + .08 * tr) });
     setRegionPalette(RG.id);
     units = []; bullets = []; parts = []; items = []; crates = []; beams = []; decals = []; msgs = []; fleet = []; pings = [];
@@ -3265,21 +3305,24 @@ function startRaid() {
     tactical = false; mapOpen = false; paused = false; eProg = 0;
     raidStats = { kills: 0, boss: false, byType: {}, archives: 0, pylons: 0, rivalKills: 0, sabotage: 0, lost: 0, deployed: save.robots.filter(r => r.deploy).length }; fires = []; flashT = 0;
     refillOffers(); raidContracts = save.offers[regionCur].filter(c => save.active.includes(c.id));
-    armyPower = save.robots.filter(r => r.deploy).reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0);
-    genWorld((Math.random() * 1e9) | 0, RG); chunkCache.clear();
-    clearTiles((W.spawn.x / TILE) | 0, (W.spawn.y / TILE) | 0, Math.min(14, 6 + Math.round(Math.sqrt(armyPower) * 1.3)));
+    let dep = save.robots.filter(r => r.deploy);
+    if (NG) { let c = 0; dep = dep.filter(r => (c += CHASSIS[r.chassis].cmd) <= cmdCap() + 1e-6); raidStats.deployed = dep.length; }
+    armyPower = dep.reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0);
+    genWorld(NG ? NG.seed : (Math.random() * 1e9) | 0, RG); chunkCache.clear();
+    if (NG) LIVE.prepWorld(); else clearTiles((W.spawn.x / TILE) | 0, (W.spawn.y / TILE) | 0, Math.min(14, 6 + Math.round(Math.sqrt(armyPower) * 1.3)));
     buildMinimap();
-    player = makePlayer(W.spawn.x, W.spawn.y); units.push(player);
-    const dep = save.robots.filter(r => r.deploy);
+    const sp = NG ? LIVE.spawnPoint(NG.slot) : W.spawn;
+    player = makePlayer(sp.x, sp.y); units.push(player);
     dep.sort((a, b) => CHASSIS[b.chassis].r - CHASSIS[a.chassis].r);
     dep.forEach((sr, i) => {
       const a = i * 2.39996, rad = 60 + CHASSIS[sr.chassis].r + Math.sqrt(i) * 46;
-      const x = clamp(W.spawn.x + Math.cos(a) * rad, 200, WPX - 200), y = clamp(W.spawn.y + Math.sin(a) * rad, 200, WPX - 200);
+      const x = clamp(sp.x + Math.cos(a) * rad, 200, WPX - 200), y = clamp(sp.y + Math.sin(a) * rad, 200, WPX - 200);
       const u = makeRobot(sr, x, y); units.push(u); fleet.push(u);
-      if (u.r > 40) clearTiles((x / TILE) | 0, (y / TILE) | 0, Math.ceil(u.r / TILE) + 1);
+      if (u.r > 40 && !NG) clearTiles((x / TILE) | 0, (y / TILE) | 0, Math.ceil(u.r / TILE) + 1);
     });
     B = { state: 'carried', unit: null, charge: 0, pulseT: 6, windowT: 0, cd: 0 };
-    populate(); spawnRivals();
+    crews = [];
+    if (!NG || NG.isHost) { populate(); spawnRivals(); } // les invités reçoivent le monde de l'hôte
     cam.x = player.x; cam.y = player.y; cam.zoom = cam.userZoom;
     radarLv = bLevel('radar');
     reveal(player.x, player.y, 900 + 450 * radarLv);
@@ -3291,6 +3334,7 @@ function startRaid() {
     msg('Les pylônes relais [' + keyLabel('interact') + '] révèlent la carte et accélèrent l\'ancrage.', '#a59c88', 9);
     save.stats.raids++; writeSave();
     $('#cv').focus && $('#cv').focus();
+    if (NG && LIVE.game === NG) LIVE.ready();
   }, 40);
 }
 
@@ -3344,6 +3388,7 @@ function signalPulse() {
   const u = B.unit; if (!u) return;
   const rad = 800 + B.charge * 1000;
   SFX.play('pulse', .9); parts.push({ type: 'ring', x: u.x, y: u.y, vx: 0, vy: 0, life: 1.2, max: 1.2, size: rad, col: '#f2c14e', thin: true });
+  if (LIVE.guest()) { LIVE.pulse(u, B.charge); return; } // c'est l'hôte qui fait converger les hostiles
   let n = 0;
   for (const e of units) { if (e.kind !== 'enemy' || e.dead || e.static || e.boss) continue; if (d2(e.x, e.y, u.x, u.y) < rad * rad) { e.forced = u; e.active = true; n++; } }
   const count = Math.round((1 + alertLv * .8 + B.charge * 3.5) * diff.spawn * armyScale(.6));
@@ -3369,7 +3414,7 @@ function updateAlert(dt) {
   spawnT -= dt;
   if (spawnT <= 0) {
     spawnT = Math.max(12, (62 - alertLv * 8) / diff.spawn) * (alertLv >= 5 ? .6 : 1);
-    const F = focus();
+    const F = LIVE.game ? LIVE.spawnFocus() : focus();
     const hunt = alertLv >= 2 && Math.random() < .25 + alertLv * .12;
     spawnGroup(F.x, F.y, 1200, 1500, Math.round((1.5 + alertLv * .7) * diff.spawn * armyScale(.45)), hunt ? { hunter: true } : { alerted: true });
   }
@@ -3391,12 +3436,13 @@ function updateInteract(dt) {
     eProg += dt;
     if (eProg >= it.dur) {
       eProg = 0;
-      if (it.kind === 'crate') {
+      if (it.kind === 'crate' && LIVE.guest()) LIVE.openCrate(it.o); // l'hôte ouvre la caisse et répartit le butin
+      else if (it.kind === 'crate') {
         it.o.open = true; dropTable(CRATE_LOOT[it.o.type], it.o.x, it.o.y); SFX.play('open', 1);
         if (it.o.type === 'donnees') { floatText(it.o.x, it.o.y - 20, 'Archive de données', '#7fa9ff'); raidStats.archives++; }
         if (it.o.claimed) it.o.claimed = null;
       } else {
-        it.o.active = true; reveal(it.o.x, it.o.y, 1900); raidStats.pylons++; spawnItem('data', Math.round(4 * diff.loot), it.o.x, it.o.y);
+        it.o.active = true; reveal(it.o.x, it.o.y, 1900); raidStats.pylons++; spawnItem('data', Math.round(4 * diff.loot), it.o.x, it.o.y); if (LIVE.guest()) LIVE.pylon(it.o);
         msg('Pylône relais activé : carte révélée, ancrage ×2,5 dans son rayon.', '#6fe3c8', 6); SFX.play('beacon', 1);
       }
     }
@@ -3435,7 +3481,7 @@ function updatePlayer(dt) {
     if (p.ammo <= 0) { startReload(p); }
     else {
       const a = p.ang, sx = p.x + Math.cos(a) * 18 + Math.cos(a + Math.PI / 2) * 3, sy = p.y + Math.sin(a) * 18 + Math.sin(a + Math.PI / 2) * 3;
-      playerFire(p, w, a, sx, sy);
+      playerFire(p, w, a, sx, sy); p.fc = ((p.fc || 0) + 1) & 255;
       SFX.play(w.snd, .8, undefined, undefined, { self: true }); if (w.rate < 2) buzz(14);
       p.ammo--; p.cd = 1 / w.rate; if (p.ammo <= 0) { SFX.play('empty', .7); startReload(p, .15); }
       p.vx -= Math.cos(a) * 20; p.vy -= Math.sin(a) * 20;
@@ -3446,7 +3492,7 @@ function updatePlayer(dt) {
 function playerFire(p, w, a, sx, sy) {
   if (w.kind === 'chain') {
     let t = null, bd = w.range * w.range;
-    query(mouse.wx - 120, mouse.wy - 120, mouse.wx + 120, mouse.wy + 120, v => { if (v.team === 1 && !v.dead && d2(v.x, v.y, mouse.wx, mouse.wy) < (v.r + 60) ** 2 && d2(v.x, v.y, p.x, p.y) < bd) t = v; });
+    query(mouse.wx - 120, mouse.wy - 120, mouse.wx + 120, mouse.wy + 120, v => { if (v.team !== 0 && !v.dead && !v.hidden && v.etype !== 'cible' && d2(v.x, v.y, mouse.wx, mouse.wy) < (v.r + 60) ** 2 && d2(v.x, v.y, p.x, p.y) < bd) t = v; });
     if (!t) t = findTarget({ x: sx + Math.cos(a) * w.range * .5, y: sy + Math.sin(a) * w.range * .5, team: 0 }, w.range * .55);
     if (t) chainShot(p, sx, sy, t, w, w.dmg); else beams.push({ pts: zig(sx, sy, sx + Math.cos(a) * 120, sy + Math.sin(a) * 120, 6, 8), life: .12, max: .12, col: w.col, w: 2 });
     return;
@@ -3454,7 +3500,7 @@ function playerFire(p, w, a, sx, sy) {
   const n = w.pellets || 1;
   for (let i = 0; i < n; i++) {
     const b = shoot(sx, sy, a + (Math.random() - .5) * 2 * w.spread, (w.kind === 'rocket' ? w.spd * .4 : w.spd) * rnd(.95, 1.05), w.dmg, 0, w.range, w.kind, w.col, w.pierce || 0, p, w.splash || 0, 1);
-    if (w.kind === 'rocket') { b.maxSpd = w.spd; let t = null; query(mouse.wx - 80, mouse.wy - 80, mouse.wx + 80, mouse.wy + 80, v => { if (v.team === 1 && !v.dead) t = v; }); b.homing = t; }
+    if (w.kind === 'rocket') { b.maxSpd = w.spd; let t = null; query(mouse.wx - 80, mouse.wy - 80, mouse.wx + 80, mouse.wy + 80, v => { if (v.team !== 0 && !v.dead && !v.hidden) t = v; }); b.homing = t; }
   }
   muzzle(sx, sy, a, '#ffe6a8', 1.2);
 }
@@ -3501,20 +3547,20 @@ function update(dt) {
   actT -= dt;
   if (!inBase && actT <= 0) {
     actT = .4; const A2 = 1900 * 1900;
-    for (const e of units) { if (e.kind !== 'enemy' || e.dead) continue; e.active = !!(e.forced || e.hunter || d2(e.x, e.y, F.x, F.y) < A2 || (B.unit && d2(e.x, e.y, B.unit.x, B.unit.y) < A2) || fleet.some(r => !r.dead && d2(e.x, e.y, r.x, r.y) < 900 * 900)); }
+    for (const e of units) { if (e.kind !== 'enemy' || e.dead || e.net) continue; e.active = !!(e.forced || e.hunter || d2(e.x, e.y, F.x, F.y) < A2 || (B.unit && d2(e.x, e.y, B.unit.x, B.unit.y) < A2) || fleet.some(r => !r.dead && d2(e.x, e.y, r.x, r.y) < 900 * 900) || (LIVE.game && LIVE.nearPeers(e.x, e.y, A2))); }
   }
   hashBuild();
   for (const u of units) u.wantMove = false;
   indexFleet();
   updatePlayer(dt);
   for (const u of fleet) if (!u.dead) robotAI(u, dt);
-  for (const u of units) if (u.kind === 'minion' && !u.dead) minionAI(u, dt);
-  if (state === 'raid') { crewsTick(dt); for (const u of units) if (u.kind === 'rival' && !u.dead) rivalAI(u, dt); }
+  for (const u of units) if (u.kind === 'minion' && !u.dead && !u.net) minionAI(u, dt);
+  if (state === 'raid') { crewsTick(dt); for (const u of units) if (u.kind === 'rival' && !u.dead && !u.net) rivalAI(u, dt); }
   abilitiesTick(dt);
-  for (const u of units) if (u.kind === 'enemy' && u.active && !u.dead) enemyAI(u, dt);
-  for (const u of units) { if (u.dead || !u.active || (u.hidden && u !== player)) continue; if (u === player && player.inside) continue; physics(u, dt); }
+  for (const u of units) if (u.kind === 'enemy' && u.active && !u.dead && !u.net) enemyAI(u, dt);
+  for (const u of units) { if (u.dead || !u.active || u.net || (u.hidden && u !== player)) continue; if (u === player && player.inside) continue; physics(u, dt); }
   separate(dt);
-  for (const u of units) { if (u.dead || !u.active || u.hidden || !u.mounts.length) continue; updateMounts(u, dt); }
+  for (const u of units) { if (u.dead || !u.active || u.hidden || u.net || !u.mounts.length) continue; updateMounts(u, dt); }
   updateBullets(dt); updateFires(dt);
   for (const u of units) { if (u.shield > 0 && time - (u.shieldT || 0) > 1.5) u.shield = Math.max(0, u.shield - 40 * dt); if (u.shieldHit > 0) u.shieldHit -= dt; }
   if (flashT > 0) flashT -= dt * 1.2;
@@ -3523,11 +3569,11 @@ function update(dt) {
   if (toxT <= 0) {
     toxT = .5;
     for (const u of units) {
-      if (u.dead || u.fly || u.hidden || u.crush >= 3 || !u.active || u.kind === 'beacon') continue;
+      if (u.dead || u.fly || u.hidden || u.net || u.crush >= 3 || !u.active || u.kind === 'beacon') continue;
       const i = tileAt(u.x, u.y); if (i >= 0 && W.ground[i] === 3) { damage(u, u.kind === 'player' ? 2 : u.kind === 'robot' ? 1.5 : 1.5, null); if (u.kind === 'player' && Math.random() < .3) floatText(u.x, u.y - 16, 'toxique', '#b5e86a'); }
     }
   }
-  if (inBase) baseTick(dt); else if (state === 'assault') assaultTick(dt); else { updateItems(dt); updateInteract(dt); updateBeacon(dt); updateAlert(dt); }
+  if (inBase) baseTick(dt); else if (state === 'assault') assaultTick(dt); else { updateItems(dt); updateInteract(dt); updateBeacon(dt); if (!LIVE.guest()) updateAlert(dt); }
   fogT -= dt;
   if (!inBase && fogT <= 0) { fogT = .25; reveal(F.x, F.y, 750 + F.r); for (const r of fleet) if (!r.dead) reveal(r.x, r.y, (380 + r.r) * (r.sightMul || 1)); }
   // particules
@@ -3550,6 +3596,8 @@ function update(dt) {
 
 // ================= FIN DU RAID =================
 function endRaid(success) {
+  const wasLive = LIVE.game ? LIVE.game.mode : null;
+  if (LIVE.game) { if (!success) LIVE.dropAll(); LIVE.finish(success); } // raid partagé : le butin d'un pilote tombé reste au sol
   state = 'result'; tactical = false; mapOpen = false; SFX.play(success ? 'success' : 'fail', 1);
   const gained = {}; const lostRes = {};
   const add = (o, c) => { for (const k in c) if (c[k] > 0) o[k] = (o[k] || 0) + c[k]; };
@@ -3592,7 +3640,7 @@ function endRaid(success) {
   writeSave();
   const resRows = (o, cls, sign) => RES_KEYS.filter(k => o[k]).map(k => `<div><span>${RES[k].n}</span><b class="${cls}">${sign}${fmt(o[k])}</b></div>`).join('') || '<div><span>Rien</span><b>—</b></div>';
   $('#resultBox').innerHTML = `
-    <h3>${success ? 'Extraction réussie' : 'Signal perdu'}</h3>
+    <h3>${success ? 'Extraction réussie' : 'Signal perdu'}</h3>${wasLive ? `<p class="sub">Raid partagé · ${wasLive === 'pvp' ? 'PvP' : 'coopération'}</p>` : ''}
     <p>${success ? 'Le lift orbital a remonté le pilote et tout ce qui se trouvait dans le cercle.' : 'Votre pilote est tombé. Tout ce qui était transporté reste dans la zone.'} Durée ${mmss(raidTime)} · ${raidStats.kills} hostiles abattus${raidStats.boss ? ' · Souverain vaincu' : ''}.</p>
     ${success ? `<div class="slot-h">Butin rapatrié</div><div class="res-list">${resRows(gained, 'good', '+')}</div>` : ''}
     ${Object.keys(lostRes).length ? `<div class="slot-h">Butin perdu</div><div class="res-list">${resRows(lostRes, 'lost', '−')}</div>` : ''}
@@ -3644,6 +3692,7 @@ function spawnDummies() {
   }
 }
 function enterBase() {
+  applyPendingSave();
   state = 'base'; paused = false; tactical = false; mapOpen = false; drawerOpen = false; placing = null; baseSel = null;
   showScreen(null); showOverlay('result', false); showOverlay('loading', false);
   units = []; bullets = []; parts = []; items = []; crates = []; beams = []; decals = []; msgs = []; fleet = []; pings = []; fires = [];
@@ -3817,6 +3866,7 @@ function bEffect(b, L) {
     case 'pad': return L > 1 ? `Balise +${20 * (L - 1)} % · ancrage −${6 * (L - 1)} %.` : 'Lance les raids. Les niveaux suivants renforcent la balise.';
     case 'uplink': return `+${4 * L} points de commandement.`;
     case 'repairbay': return `Réparation gratuite : ${5 * L} % par minute.`;
+    case 'warehouse': return `Stock des producteurs +${40 * L} % · ${Math.round(Math.min(.7, .15 + .1 * L) * 100)} % de vos stocks à l'abri des pillages de joueurs · pertes face aux pillards −${12 * L} %.`;
     case 'range': return `${2 + L} cibles d'entraînement de ${600 * L} PV.`;
     case 'wall': return `${bHP({ type: 'wall', lvl: L })} points de structure.`;
     case 'mine': return `${Math.round(170 * (1 + .45 * (L - 1)))} dégâts dans un rayon de 105 px.` + (b.armed === false ? ' Désarmée.' : '');
@@ -3919,7 +3969,7 @@ function nextWaypoint(u) {
 function issueOrderAt(wx, wy, queue) {
   const sel = selection(); if (!sel.length) return;
   let enemy = null;
-  query(wx - 40, wy - 40, wx + 40, wy + 40, v => { if (v.team === 1 && !v.dead && d2(v.x, v.y, wx, wy) < (v.r + 24) ** 2) { enemy = v; return true; } });
+  query(wx - 40, wy - 40, wx + 40, wy + 40, v => { if (v.team !== 0 && !v.dead && !v.hidden && d2(v.x, v.y, wx, wy) < (v.r + 24) ** 2) { enemy = v; return true; } });
   if (enemy) { for (const r of sel) { r.order = { type: 'attack', t: enemy }; r.queue = []; r.patrol = false; } pings.push({ x: enemy.x, y: enemy.y, t: .7, col: '#ff4d5e', r: enemy.r + 10 }); SFX.play('ui', 1); return; }
   let cx = 0, cy = 0, rs = 0; for (const r of sel) { cx += r.x; cy += r.y; rs += r.r; } cx /= sel.length; cy /= sel.length;
   const ang = Math.atan2(wy - cy, wx - cx), ca = Math.cos(ang), sa = Math.sin(ang), sp = Math.max(48, rs / sel.length * 2.4);
@@ -4066,7 +4116,8 @@ function endAttack(win) {
     for (const k in a.loot) { const n = Math.round(a.loot[k]); if (n > 0) { save.res[k] += n; rows[k] = n; } }
     save.base.threat = 0; save.stats.defenses = (save.stats.defenses || 0) + 1;
   } else {
-    for (const k of ['scrap', 'alloy', 'circuits', 'crystals', 'data']) { const n = Math.floor(save.res[k] * .15); if (n > 0) { save.res[k] -= n; rows[k] = n; } }
+    const keep = 1 - .12 * bLevel('warehouse');
+    for (const k of ['scrap', 'alloy', 'circuits', 'crystals', 'data']) { const n = Math.floor(save.res[k] * .15 * keep); if (n > 0) { save.res[k] -= n; rows[k] = n; } }
     for (const b of save.base.b) if (BUILD[b.type].prod) b.stored = (b.stored || 0) * .5;
     save.base.threat = 10;
   }
@@ -4126,11 +4177,11 @@ function rivalWeapons(ch) {
 }
 function spawnRivals() {
   crews = [];
-  const R = REGIONS[regionCur], n = R.rivals + (save.diff >= 2 ? 1 : 0);
+  const R = REGIONS[regionCur], n = R.rivals + ((LIVE.game ? LIVE.game.diff : save.diff) >= 2 ? 1 : 0);
   const names = CREW_NAMES.slice().sort(() => Math.random() - .5);
   for (let i = 0; i < n; i++) {
     let p = null;
-    for (let k = 0; k < 80 && !p; k++) { const q = findWalkableNear(WPX / 2, WPX / 2, 1500, WPX * .46, 10); if (q && d2(q.x, q.y, W.spawn.x, W.spawn.y) > 2600 * 2600 && crews.every(c => d2(q.x, q.y, c.leader.x, c.leader.y) > 1800 * 1800)) p = q; }
+    for (let k = 0; k < 80 && !p; k++) { const q = findWalkableNear(WPX / 2, WPX / 2, 1500, WPX * .46, 10); if (q && d2(q.x, q.y, W.spawn.x, W.spawn.y) > 2600 * 2600 && !(LIVE.game && LIVE.nearSpawn(q.x, q.y, 2600)) && crews.every(c => d2(q.x, q.y, c.leader.x, c.leader.y) > 1800 * 1800)) p = q; }
     if (!p) continue;
     const crew = { id: i, name: names[i % names.length], pal: CREW_PALS[i % CREW_PALS.length], bots: [], bag: {}, state: 'loot', t: rnd(170, 320) + i * 45, goal: null, crate: null, openT: 0, beacon: null, charge: 0, pulseT: 8, dead: false, out: false };
     const L = baseUnit({ kind: 'rival', team: 2, role: 'leader', x: p.x, y: p.y, r: 12, maxhp: 240 * diff.hp, hp: 240 * diff.hp, spd: 185, human: true, crew, active: true, pw: { gun: 'ar' } });
@@ -4197,7 +4248,7 @@ function rivalExtract(cr) {
   msg(cr.name + ' s\'est extrait avec son butin.', COL.rival, 6);
 }
 function rivalDown(u, src) {
-  const cr = u.crew, byUs = src && src.team === 0;
+  const cr = u.crew, byUs = src && src.team === 0 && !src.net;
   if (u.kind === 'beacon2') {
     boom(u.x, u.y, 60);
     if (cr && !cr.out) { cr.beacon = null; if (cr.state === 'anchor') { cr.state = 'loot'; cr.t = 75; cr.goal = null; } }
@@ -4275,72 +4326,97 @@ function contractLine(c) {
 }
 function rewardHtml(r) { return Object.keys(r).map(k => fmt(r[k]) + ' ' + RES[k].n).join(', '); }
 
-// ================= EN LIGNE : serveur Colosse autonome (HTTP) ou base partagée claude.ai =================
-const NET = { ok: false, kind: null, me: null, token: null, srv: '', names: {}, board: [], bases: [], inbox: [], lastScore: '', lastBase: '', status: 'Hors ligne' };
+// ================= EN LIGNE : comptes, sauvegarde du compte, classement, bases, pillages =================
+// Deux modes : un serveur Colosse autonome (comptes identifiant + mot de passe, raids partagés en direct)
+// ou la base partagée de claude.ai (la partie suit le compte claude.ai).
+const NET = { ok: false, kind: null, me: null, token: null, srv: '', names: {}, board: [], bases: [], inbox: [], sent: [], lastScore: '', lastBase: '', status: 'Hors ligne', shield: 0, info: null };
 const inGame = () => state === 'raid' || state === 'base' || state === 'assault';
 function netScore() {
   const s = save.stats, cd = save.cdone.reduce((a, b) => a + b, 0);
-  return Math.round(s.extract * 10 + s.kills * .2 + s.boss * 50 + cd * 15 + (s.defenses || 0) * 20 + (s.assaults || 0) * 12 + hqLevel() * 25 + Object.keys(save.research).length * 2);
+  return Math.round(s.extract * 10 + s.kills * .2 + s.boss * 50 + cd * 15 + (s.defenses || 0) * 20 + (s.assaults || 0) * 12 + (s.coop || 0) * 8 + (s.pvpKills || 0) * 6 + hqLevel() * 25 + Object.keys(save.research).length * 2);
 }
-function pseudo() { if (!settings.pseudo) { settings.pseudo = 'Pilote-' + rndi(1000, 9999); saveSettings(); } return String(settings.pseudo).replace(/[^\p{L}\p{N} _.\-]/gu, '').trim().slice(0, 20) || 'Pilote'; }
+function pseudo() {
+  if (ACC.mode === 'server' && ACC.name) return ACC.name;
+  if (!settings.pseudo) { settings.pseudo = 'Pilote-' + rndi(1000, 9999); saveSettings(); }
+  return String(settings.pseudo).replace(/[^\p{L}\p{N} _.\-]/gu, '').trim().slice(0, 20) || 'Pilote';
+}
+function normSrv(s) { s = String(s || '').trim(); if (s && !/^https?:\/\//i.test(s)) s = 'http://' + s; return s.replace(/\/+$/, ''); }
 function srvUrl() {
+  if (ACC.mode === 'server' && ACC.srv) return ACC.srv;
   let s = String(settings.server || '').trim();
   if (!s && window.COLOSSE_STANDALONE && /^https?:$/.test(location.protocol)) s = location.origin;
-  if (s && !/^https?:\/\//i.test(s)) s = 'http://' + s;
-  return s.replace(/\/+$/, '');
+  return normSrv(s);
 }
-async function api(path, body) {
-  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 8000);
+async function apiAt(srv, path, body) {
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
   try {
-    const r = await fetch(NET.srv + path, body ? { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), signal: ctl.signal } : { signal: ctl.signal });
-    const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status)); return j;
+    const r = await fetch(srv + path, body ? { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), signal: ctl.signal } : { signal: ctl.signal });
+    let j = {}; try { j = await r.json(); } catch (e) { }
+    if (!r.ok || j.error) { const e = new Error(j.error || ('HTTP ' + r.status)); e.status = r.status; e.body = j; throw e; }
+    return j;
+  } catch (e) {
+    if (e.name === 'AbortError') { const e2 = new Error('le serveur ne répond pas'); e2.status = 0; throw e2; }
+    if (e.status === undefined) { const e2 = new Error(location.protocol === 'https:' && /^http:/.test(srv) ? 'page en https : le navigateur bloque un serveur en http' : 'serveur injoignable'); e2.status = 0; throw e2; }
+    throw e;
   } finally { clearTimeout(to); }
 }
+const api = (path, body) => apiAt(NET.srv, path, body);
 let netPollT = null;
 async function netInit() {
-  Object.assign(NET, { ok: false, kind: null, board: [], bases: [], inbox: [], lastScore: '', lastBase: '' });
+  Object.assign(NET, { ok: false, kind: null, board: [], bases: [], inbox: [], sent: [], lastScore: '', lastBase: '', shield: 0 });
   clearInterval(netPollT);
-  const srv = srvUrl();
-  if (srv) {
-    NET.srv = srv; NET.status = 'Connexion à ' + srv + '…'; netRefreshUI();
+  if (typeof LIVE !== 'undefined') LIVE.disconnect();
+  if (ACC.mode === 'server' && ACC.token) {
+    const srv = NET.srv = ACC.srv; NET.status = 'Connexion à ' + srv + '…'; netRefreshUI();
     try {
-      const info = await api('/api/info'), key = 'colosse_net_' + srv;
-      let cred = null; try { cred = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { }
-      if (!cred || !cred.id) { cred = await api('/api/register', { name: pseudo() }); try { localStorage.setItem(key, JSON.stringify(cred)); } catch (e) { } }
-      Object.assign(NET, { ok: true, kind: 'http', me: cred.id, token: cred.token, status: 'En ligne · ' + (info.name || srv) + ' · ' + (info.players || 0) + ' pilotes' });
+      const info = await api('/api/info'), me = await api('/api/account/me', { token: ACC.token });
+      if (me.name && me.name !== ACC.name) { ACC.name = me.name; accStore(); }
+      Object.assign(NET, { ok: true, kind: 'http', me: me.id, token: ACC.token, info, status: 'En ligne · ' + (info.name || srv) + ' · ' + (info.players || 0) + ' pilotes' });
+      await cloudPull();
       await netPoll(); netPublish();
-      netPollT = setInterval(() => { if (state === 'base' || drawerOpen) netPoll(); }, 25000);
-    } catch (e) { NET.status = 'Serveur injoignable (' + srv + ') : ' + (e && e.message || e); }
-    netRefreshUI(); return;
+      if (typeof LIVE !== 'undefined' && info.ws) LIVE.connect();
+      netPollT = setInterval(() => { if (state === 'base' || state === 'title' || drawerOpen) netPoll(); }, 25000);
+    } catch (e) {
+      if (e.status === 403) accExpired();
+      else NET.status = 'Serveur injoignable (' + srv + ') : ' + e.message + '. La partie continue sur cet appareil.';
+    }
+    netRefreshUI(); refreshAccountUI(); return;
   }
   if (window.claude && typeof window.claude.use === 'function') {
     try {
       const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
       if (!db || !user) { NET.status = 'Fonctions en ligne indisponibles pour ce compte.'; return; }
-      const me = await user.id(); if (!me) { NET.status = 'Connectez-vous pour jouer en ligne.'; return; }
-      Object.assign(NET, { db, user, me, ok: true, kind: 'claude', status: 'En ligne (claude.ai)' });
+      const me = await user.id(); if (!me) { NET.status = 'Connectez-vous à claude.ai pour jouer en ligne.'; return; }
+      Object.assign(NET, { db, user, me, ok: true, kind: 'claude', status: 'En ligne (claude.ai) · la partie suit votre compte claude.ai' });
+      await cloudPull();
       db.collection('scores').orderBy('score', 'desc').limit(50).onSnapshot(sn => { NET.board = sn.docs.map(d => Object.assign({ id: d.id }, d.data())); claudeNames(); netRefreshUI(); }, () => { });
-      db.collection('bases').orderBy('t', 'desc').limit(80).onSnapshot(sn => { NET.bases = sn.docs.map(d => Object.assign({ id: d.id }, d.data())); claudeNames(); netRefreshUI(); }, () => { });
-      db.collection('attacks').where('target', '==', me).limit(40).onSnapshot(sn => { NET.inbox = sn.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => b.t - a.t); claudeNames(); netNotifyInbox(); netRefreshUI(); }, () => { });
+      db.collection('bases').orderBy('t', 'desc').limit(80).onSnapshot(sn => { NET.bases = sn.docs.map(d => { const o = Object.assign({ id: d.id }, d.data()); o.avail = stealCalc(o, 3, 100); return o; }); claudeNames(); netRefreshUI(); }, () => { });
+      db.collection('attacks').where('target', '==', me).limit(60).onSnapshot(sn => { NET.inbox = sn.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => b.t - a.t); claudeNames(); applyThefts(NET.inbox); netNotifyInbox(); netRefreshUI(); }, () => { });
+      db.collection('attacks').where('attacker', '==', me).limit(40).onSnapshot(sn => { NET.sent = sn.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => b.t - a.t); netRefreshUI(); }, () => { });
       netPublish();
     } catch (e) { NET.ok = false; NET.status = 'Fonctions en ligne indisponibles.'; }
-    return;
+    refreshAccountUI(); return;
   }
-  NET.status = 'Hors ligne. Lancez un serveur Colosse et indiquez son adresse dans Réglages → En ligne.';
+  const s = srvUrl();
+  NET.status = s ? 'Serveur ' + s + ' : connectez-vous ou créez un compte pour jouer en ligne.' : 'Invité, hors ligne. Lancez un serveur Colosse puis créez un compte (bouton Compte).';
+  refreshAccountUI();
 }
 async function netPoll() {
   if (NET.kind !== 'http') return;
   try {
     const [sc, bs, at] = await Promise.all([api('/api/scores'), api('/api/bases'), api('/api/attacks?target=' + encodeURIComponent(NET.me))]);
-    NET.board = sc.list || []; NET.bases = bs.list || []; NET.inbox = (at.list || []).sort((a, b) => b.t - a.t);
+    NET.board = sc.list || []; NET.bases = bs.list || [];
+    const all = (at.list || []).sort((a, b) => b.t - a.t);
+    NET.inbox = all.filter(a => a.target === NET.me); NET.sent = all.filter(a => a.attacker === NET.me);
     for (const x of NET.board.concat(NET.bases)) if (x.name) NET.names[x.id] = x.name;
-    for (const a of NET.inbox) if (a.attackerName) NET.names[a.attacker] = a.attackerName;
-    netNotifyInbox(); netRefreshUI();
-  } catch (e) { }
+    for (const a of all) { if (a.attackerName) NET.names[a.attacker] = a.attackerName; if (a.targetName) NET.names[a.target] = a.targetName; }
+    const mine = NET.bases.find(b => b.id === NET.me); NET.shield = mine ? mine.shield || 0 : 0;
+    applyThefts(NET.inbox); netNotifyInbox(); netRefreshUI();
+  } catch (e) { if (e.status === 403) accExpired(); }
 }
 async function claudeNames() {
   if (!NET.user) return;
-  const ids = new Set(); NET.board.forEach(x => ids.add(x.id)); NET.bases.forEach(x => ids.add(x.id)); NET.inbox.forEach(x => ids.add(x.attacker));
+  const ids = new Set(); NET.board.forEach(x => ids.add(x.id)); NET.bases.forEach(x => ids.add(x.id)); NET.inbox.forEach(x => ids.add(x.attacker)); NET.sent.forEach(x => ids.add(x.target));
   try { const ps = await NET.user.profiles([...ids]); for (const id in ps) NET.names[id] = (ps[id] && ps[id].name) || ''; netRefreshUI(); } catch (e) { }
 }
 let lastInboxNote = 0;
@@ -4351,59 +4427,800 @@ function netNotifyInbox() {
 const netName = id => id === NET.me ? 'Vous' : (NET.names[id] || 'Pilote ' + String(id).slice(-4));
 function netRefreshUI() { if (drawerOpen && hubTab === 'online') renderHub(); const st = $('#netStatus'); if (st) st.textContent = NET.status; }
 let netBusy = false;
+const STEAL_KEYS = ['scrap', 'alloy', 'circuits', 'crystals', 'data'];
+const STEAL_BASE = { scrap: 150, alloy: 40, circuits: 30, crystals: 25, data: 10 };
+// même règle que le serveur : part protégée par le QG et l'entrepôt, taux selon les étoiles et la destruction
+function stealCalc(base, stars, pct) {
+  const res = base.res || {}, hq = base.hq || 1, wh = base.wh || 0, loot = {}, rate = [0, .1, .18, .25][stars] * (.4 + .6 * pct / 100);
+  for (const k of STEAL_KEYS) { const have = Math.max(0, res[k] || 0), prot = Math.max(STEAL_BASE[k] * (1 + .5 * hq), have * Math.min(.7, .15 + .1 * wh)); const n = Math.min(5000, Math.floor(Math.max(0, have - prot) * rate)); if (n > 0) loot[k] = n; }
+  return loot;
+}
+const hm = s => { s = Math.max(60, Math.round(s)); const h = Math.floor(s / 3600), m = Math.ceil((s % 3600) / 60); return h ? h + ' h' + (m ? ' ' + String(m).padStart(2, '0') : '') : m + ' min'; };
+const protectPct = () => Math.round(Math.min(.7, .15 + .1 * bLevel('warehouse')) * 100);
+const SHIELD_H = [0, 1, 2, 4];
+function claudeShield(list) { let s = 0; for (const a of list) if (a.stars > 0) s = Math.max(s, a.t + SHIELD_H[a.stars] * 3600e3); return s > Date.now() ? s : 0; }
+// pillages subis : appliqués une seule fois, la date du dernier est gardée dans la sauvegarde (donc sur tous les appareils)
+function applyThefts(list) {
+  if (!NET.me || state === 'raid' || state === 'assault') return;
+  const t0 = save.theftT || 0, tot = {}, who = new Set(); let n = 0, last = t0;
+  for (const a of list) {
+    if (a.target !== NET.me || !a.loot || !(a.t > t0)) continue;
+    for (const k in a.loot) { if (!STEAL_KEYS.includes(k)) continue; const v = Math.min(save.res[k] || 0, Math.max(0, a.loot[k] | 0)); save.res[k] -= v; tot[k] = (tot[k] || 0) + v; }
+    last = Math.max(last, a.t); who.add(netName(a.attacker)); n++;
+  }
+  if (!n) return;
+  save.theftT = last; writeSave();
+  const txt = Object.keys(tot).filter(k => tot[k]).map(k => '−' + fmt(tot[k]) + ' ' + RES[k].n.toLowerCase()).join(', ');
+  const line = [...who].join(', ') + (n > 1 ? ' ont' : ' a') + ' pillé votre base' + (txt ? ' : ' + txt : ' sans rien emporter') + '.';
+  if (state === 'base') msg(line, COL.rival, 9); else toast(line);
+}
 async function netPublish() {
   if (!NET.ok || netBusy) return; netBusy = true;
   try {
     const sc = { score: netScore(), extract: save.stats.extract, kills: save.stats.kills, boss: save.stats.boss, defenses: save.stats.defenses || 0, assaults: save.stats.assaults || 0, hq: hqLevel(), region: REGIONS.filter((_, i) => regionUnlocked(i)).length };
     const b = save.base.b.filter(x => x.lvl > 0).map(x => [BUILD_KEYS.indexOf(x.type), x.tx, x.ty, x.lvl]);
-    const bd = { b, hq: hqLevel(), def: save.base.b.filter(x => BUILD[x.type].def && x.lvl > 0).length };
+    const res = {}; for (const k of STEAL_KEYS) res[k] = Math.floor(save.res[k] || 0);
+    const bd = { b, hq: hqLevel(), def: save.base.b.filter(x => BUILD[x.type].def && x.lvl > 0).length, wh: bLevel('warehouse'), res };
     const k1 = JSON.stringify(sc) + pseudo(), k2 = JSON.stringify(bd);
     if (NET.kind === 'http') {
-      if (k1 !== NET.lastScore) { await api('/api/score', Object.assign({ id: NET.me, token: NET.token, name: pseudo() }, sc)); NET.lastScore = k1; }
-      if (k2 !== NET.lastBase) { await api('/api/base', Object.assign({ id: NET.me, token: NET.token }, bd)); NET.lastBase = k2; }
+      if (k1 !== NET.lastScore) { await api('/api/score', Object.assign({ token: NET.token, name: pseudo() }, sc)); NET.lastScore = k1; }
+      if (k2 !== NET.lastBase) { const r = await api('/api/base', Object.assign({ token: NET.token }, bd)); NET.lastBase = k2; NET.shield = r.shield || 0; }
     } else if (NET.kind === 'claude') {
       if (k1 !== NET.lastScore) { await NET.db.doc('scores/' + NET.me).set(Object.assign({ t: Date.now() }, sc)); NET.lastScore = k1; }
       if (k2 !== NET.lastBase) { await NET.db.doc('bases/' + NET.me).set(Object.assign({ t: Date.now() }, bd)); NET.lastBase = k2; }
     }
-  } catch (e) { }
+  } catch (e) { if (e.status === 403) accExpired(); }
   netBusy = false;
 }
-function netAttack(target, stars, pct) {
-  if (!NET.ok) return;
-  if (NET.kind === 'http') api('/api/attack', { id: NET.me, token: NET.token, target, stars, pct }).catch(() => { });
-  else if (NET.kind === 'claude') NET.db.doc('attacks/' + NET.me + '_' + Date.now()).set({ target, attacker: NET.me, stars, pct, t: Date.now() }).catch(() => { });
-  netPublish();
+// fin d'assaut : le serveur calcule le butin réellement volé et pose le bouclier du défenseur
+async function netAttack(target, stars, pct) {
+  if (!NET.ok) return {};
+  try {
+    if (NET.kind === 'http') { const r = await api('/api/attack', { token: NET.token, target, stars, pct }); netPublish(); return r.loot || {}; }
+    if (NET.kind === 'claude') {
+      const tb = NET.bases.find(b => b.id === target), prev = (await NET.db.collection('attacks').where('target', '==', target).limit(60).get()).docs.map(d => d.data());
+      const loot = tb && stars > 0 && !claudeShield(prev) ? stealCalc(tb, stars, pct) : {};
+      await NET.db.doc('attacks/' + NET.me + '_' + Date.now()).set({ target, attacker: NET.me, stars, pct, loot, t: Date.now() });
+      netPublish(); return loot;
+    }
+  } catch (e) { toast('Butin non transmis : ' + e.message); }
+  return {};
 }
+
+// ---------- sauvegarde du compte (serveur Colosse ou claude.ai) ----------
+const CLOUD = { t: null, busy: false, dirty: false, last: 0, pending: null, state: '' };
+const cloudOn = () => (ACC.mode === 'server' && !!ACC.token && NET.kind === 'http' && NET.ok) || (NET.kind === 'claude' && NET.ok);
+function cloudDirty() {
+  if (!cloudOn()) return;
+  CLOUD.dirty = true; if (CLOUD.t) return;
+  const gap = NET.kind === 'claude' ? 45000 : 12000;
+  CLOUD.t = setTimeout(() => { CLOUD.t = null; cloudPush(); }, Math.max(2500, gap - (Date.now() - CLOUD.last)));
+}
+async function cloudPush(force) {
+  if (!cloudOn()) return;
+  if (CLOUD.busy) { setTimeout(() => cloudPush(force), 3000); return; }
+  clearTimeout(CLOUD.t); CLOUD.t = null;
+  CLOUD.busy = true; CLOUD.dirty = false; CLOUD.last = Date.now();
+  const data = JSON.stringify(save);
+  try {
+    if (NET.kind === 'http') { const r = await api('/api/save/put', { token: ACC.token, rev: ACC.rev || 0, data, force: !!force }); ACC.rev = r.rev; accStore(); }
+    else await NET.db.doc('data/users/' + NET.me + '/save').set({ json: data, ut: save.ut || Date.now() });
+    CLOUD.state = 'Sauvegarde du compte à jour (' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ').';
+  } catch (e) {
+    if (e.status === 409) { CLOUD.busy = false; await cloudResolve(); return; }
+    if (e.status === 403) accExpired();
+    else { CLOUD.dirty = true; CLOUD.state = 'Sauvegarde du compte en attente : ' + e.message + '.'; clearTimeout(CLOUD.t); CLOUD.t = setTimeout(() => { CLOUD.t = null; cloudPush(); }, 30000); }
+  }
+  CLOUD.busy = false;
+}
+async function cloudFetch() {
+  if (NET.kind === 'http') { const r = await api('/api/save/get', { token: ACC.token }); return { rev: r.rev || 0, o: r.data ? parseSave(r.data) : null }; }
+  const d = await NET.db.doc('data/users/' + NET.me + '/save').get();
+  return { rev: 0, o: d.exists ? parseSave(d.data().json) : null };
+}
+// au démarrage ou à la connexion : la partie la plus récente gagne
+async function cloudPull() {
+  try {
+    const { rev, o } = await cloudFetch();
+    if (!o) { cloudPush(true); return; }
+    if ((o.ut || 0) > (save.ut || 0)) { ACC.rev = rev; accStore(); adoptSave(o, 'Partie la plus récente du compte chargée.'); }
+    else if ((o.ut || 0) < (save.ut || 0)) { ACC.rev = rev; cloudPush(true); }
+    else { ACC.rev = rev; accStore(); }
+  } catch (e) { if (e.status === 403) accExpired(); }
+}
+// un autre appareil a enregistré entre-temps : on garde la partie la plus récente
+async function cloudResolve() {
+  try {
+    const { rev, o } = await cloudFetch(); ACC.rev = rev; accStore();
+    if (o && (o.ut || 0) > (save.ut || 0)) adoptSave(o, 'Partie plus récente reçue d\'un autre appareil.');
+    else cloudPush(true);
+  } catch (e) { }
+}
+function adoptSave(o, why) {
+  if (state === 'raid' || state === 'assault') { CLOUD.pending = { o, why }; return; } // appliquée au retour à la base
+  save = o; try { localStorage.setItem(accountKey(ACC), JSON.stringify(save)); } catch (e) { }
+  if (state === 'base') enterBase(); else if (state === 'result') { } else refreshTitle();
+  if (why) toast(why);
+}
+function applyPendingSave() { if (CLOUD.pending && state !== 'raid' && state !== 'assault') { const p = CLOUD.pending; CLOUD.pending = null; save = p.o; try { localStorage.setItem(accountKey(ACC), JSON.stringify(save)); } catch (e) { } if (p.why) toast(p.why); } }
+
+// ---------- compte : connexion, création, déconnexion ----------
+function accExpired() {
+  if (ACC.mode !== 'server') return;
+  ACC.token = null; accStore(); NET.ok = false; NET.kind = null;
+  NET.status = 'Session expirée : reconnectez-vous (bouton Compte). La partie continue sur cet appareil.';
+  refreshAccountUI(); toast('Session expirée : reconnectez-vous.');
+}
+function legacyCred(srv) { try { return JSON.parse(localStorage.getItem('colosse_net_' + srv) || 'null'); } catch (e) { return null; } }
+const guestProgress = () => { const g = loadSave(SAVE_KEY); return g.stats.raids > 0 || g.robots.length > 2 || g.base.b.length > 8 || Object.keys(g.research).length > 0; };
+async function accSignIn(srv, name, pass, create, importGuest) {
+  srv = normSrv(srv); if (!srv) throw new Error('indiquez l\'adresse du serveur');
+  if (state === 'raid' || state === 'assault') throw new Error('terminez d\'abord le raid en cours');
+  const info = await apiAt(srv, '/api/info');
+  if (!info.accounts) throw new Error('ce serveur est trop ancien (version ' + (info.version || '?') + ') : mettez à jour server.js');
+  const body = { name, pass }, leg = legacyCred(srv); if (create && leg) { body.legacyId = leg.id; body.legacyToken = leg.token; }
+  const r = await apiAt(srv, create ? '/api/account/create' : '/api/account/login', body);
+  if (typeof LIVE !== 'undefined') LIVE.disconnect();
+  const guest = loadSave(SAVE_KEY);
+  ACC = { mode: 'server', srv, id: r.id, name: r.name, token: r.token, rev: 0 }; accStore();
+  settings.server = srv; settings.pseudo = r.name; saveSettings();
+  const cached = hasLocalSave(accountKey(ACC)) ? loadSave(accountKey(ACC)) : null;
+  NET.srv = srv;
+  const sv = await apiAt(srv, '/api/save/get', { token: r.token }), remote = sv.data ? parseSave(sv.data) : null;
+  ACC.rev = sv.rev || 0; accStore();
+  let pick = remote || cached;
+  if (importGuest && (!pick || confirm('Ce compte a déjà une partie. La remplacer par votre partie invitée ?'))) pick = guest;
+  save = pick || newSave(); save.ut = Date.now();
+  try { localStorage.setItem(accountKey(ACC), JSON.stringify(save)); } catch (e) { }
+  await netInit();
+  if (NET.kind === 'http') await cloudPush(true);
+  if (state === 'base') enterBase(); else refreshTitle();
+  return r;
+}
+async function accSignOut() {
+  if (state === 'raid' || state === 'assault') { toast('Terminez d\'abord le raid en cours.'); return; }
+  if (ACC.mode === 'server' && ACC.token) { try { if (CLOUD.dirty) await cloudPush(); await apiAt(ACC.srv, '/api/account/logout', { token: ACC.token }); } catch (e) { } }
+  ACC = { mode: 'guest' }; accStore();
+  save = loadSave(SAVE_KEY);
+  await netInit();
+  if (state === 'base') enterBase(); else refreshTitle();
+  toast('Déconnecté : vous jouez en invité sur cet appareil.');
+}
+function accountLabel() {
+  if (ACC.mode === 'server') return (ACC.token ? 'Connecté : ' : 'Déconnecté : ') + ACC.name + ' · ' + ACC.srv.replace(/^https?:\/\//, '');
+  if (NET.kind === 'claude') return 'Compte claude.ai';
+  return 'Invité (partie sur cet appareil)';
+}
+let accTab = 'login';
+function renderAccount(errTxt) {
+  const box = $('#accountBox'); if (!box) return;
+  const srv = ACC.mode === 'server' ? ACC.srv : srvUrl(), logged = ACC.mode === 'server' && ACC.token;
+  const gp = ACC.mode !== 'server' && guestProgress();
+  box.innerHTML = `<h3>Compte</h3>
+    <p>${logged ? `Vous êtes connecté en tant que <b>${esc(ACC.name)}</b> sur <b>${esc(ACC.srv)}</b>. Votre partie est enregistrée sur ce serveur : connectez-vous avec le même identifiant sur un autre PC ou un téléphone pour la retrouver.` : NET.kind === 'claude' ? 'Sur claude.ai, votre partie suit automatiquement votre compte claude.ai. Vous pouvez aussi vous connecter à un serveur Colosse.' : 'Vous jouez en <b>invité</b> : la partie reste sur cet appareil. Un compte sur un serveur Colosse garde votre partie sur le serveur et ouvre les raids partagés.'}</p>
+    ${logged ? `<p class="desc" id="cloudState">${esc(CLOUD.state || '')}</p>
+      <div class="btns"><button class="btn" data-act="accsync">Enregistrer maintenant</button><button class="btn" data-act="acclogout">Se déconnecter</button><button class="btn hot" data-act="accclose">Fermer</button></div>` : `
+    <div class="chips" style="margin:8px 0 12px">${[['login', 'Se connecter'], ['create', 'Créer un compte']].map(([k, n]) => `<button class="chip ${accTab === k ? 'on' : ''}" data-act="acctab" data-id="${k}">${n}</button>`).join('')}</div>
+    <div class="setgrid">
+      <span>Serveur</span><input class="name" id="accSrv" value="${esc(srv || '')}" placeholder="http://192.168.1.20:8787 ou http://[2001:db8::42]:8787" autocomplete="url">
+      <span>Identifiant</span><input class="name" id="accName" maxlength="20" value="${esc(ACC.mode === 'server' ? ACC.name : '')}" autocomplete="username" placeholder="3 caractères au moins">
+      <span>Mot de passe</span><input class="name" id="accPass" type="password" maxlength="100" autocomplete="${accTab === 'create' ? 'new-password' : 'current-password'}" placeholder="6 caractères au moins">
+      ${accTab === 'create' ? '<span>Confirmer</span><input class="name" id="accPass2" type="password" maxlength="100" autocomplete="new-password">' : ''}
+      ${gp ? `<span></span><label class="desc"><input type="checkbox" id="accImport" ${accTab === 'create' ? 'checked' : ''}> Reprendre ma partie invitée de cet appareil dans ce compte</label>` : ''}
+    </div>
+    <p class="lost" id="accErr">${esc(errTxt || '')}</p>
+    <div class="btns"><button class="btn hot" data-act="accgo">${accTab === 'create' ? 'Créer le compte' : 'Se connecter'}</button><button class="btn" data-act="accclose">Jouer en invité</button></div>
+    <p class="desc" style="margin-top:12px">Le serveur se lance depuis le dossier du jeu : <b>node server/server.js</b> (ou serveur.bat). Le mot de passe est chiffré sur le serveur et n'est jamais stocké sur cet appareil.</p>`}`;
+}
+function openAccount() { renderAccount(); showOverlay('account', true); const f = $('#accName'); if (f && !f.value) f.focus(); }
+function refreshAccountUI() {
+  const b = $('#accBtn'); if (b) b.textContent = ACC.mode === 'server' && ACC.token ? 'Compte : ' + ACC.name : 'Compte';
+  const n = $('#accLine'); if (n) n.textContent = accountLabel();
+  if ($('#account') && $('#account').classList.contains('on')) { const c = $('#cloudState'); if (c) c.textContent = CLOUD.state || ''; }
+}
+function refreshTitle() {
+  refreshAccountUI();
+  const t = $('#titleNote'); if (!t) return;
+  if (TOUCH.on) t.textContent = 'Écran tactile : joystick gauche pour bouger, joystick droit pour viser et tirer. Touchez un robot pour le sélectionner, puis le sol pour l\'envoyer. Deux doigts pour zoomer. Jouez en paysage.';
+  else if (save.stats.raids) t.textContent = `Sauvegarde : ${save.stats.raids} raids, ${save.stats.extract} extractions, ${save.robots.length} robot${save.robots.length > 1 ? 's' : ''} au hangar.`;
+  else t.textContent = 'Clavier et souris, ou écran tactile en mode paysage. ZQSD ou WASD : les touches suivent la position physique du clavier.';
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && CLOUD.dirty && cloudOn()) cloudPush(); });
+
 function renderOnline() {
   const seen = +(localStorage.getItem('colosse_seen_atk') || 0);
   if (NET.inbox.length) localStorage.setItem('colosse_seen_atk', String(NET.inbox[0].t || Date.now()));
   const cd = JSON.parse(localStorage.getItem('colosse_atk_cd') || '{}');
-  if (!NET.ok) return `<h2 class="h2">En ligne</h2><p class="lead" id="netStatus">${esc(NET.status)}</p>
+  const accBar = `<div class="launch" style="margin:0 0 14px"><span class="sub" style="font-size:14px">${esc(accountLabel())}</span><button class="btn sm" data-act="account">${ACC.mode === 'server' && ACC.token ? 'Gérer le compte' : 'Se connecter / créer un compte'}</button></div>`;
+  if (!NET.ok) return `<h2 class="h2">En ligne</h2>${accBar}<p class="lead" id="netStatus">${esc(NET.status)}</p>
     <div class="brief"><p><b>Jouer en ligne sans dépendre de personne.</b> Le dossier du jeu contient un petit serveur (server/server.js) qui fonctionne avec Node.js seul, sans aucun paquet à installer. Lancez-le sur un PC, un serveur ou un Raspberry Pi : <b>node server/server.js</b>. Il écoute en IPv6 et en IPv4 sur le port 8787.</p>
-    <p>Ensuite, chaque joueur ouvre <b>Réglages → En ligne</b>, choisit un pseudo et entre l'adresse du serveur, par exemple <b>http://[2001:db8::42]:8787</b> ou <b>http://192.168.1.20:8787</b>. Vous pouvez aussi jouer directement dans le navigateur à cette adresse : le jeu se connecte alors tout seul.</p>
-    <p>Classement, bases publiées, assauts asynchrones et journal des attaques passent tous par votre serveur.</p></div>
-    <div class="launch"><button class="btn hot" data-act="settings">Ouvrir les réglages en ligne</button><button class="btn" data-act="netretry">Réessayer la connexion</button></div>`;
-  const others = NET.bases.filter(b => b.id !== NET.me);
-  return `<h2 class="h2">En ligne</h2>
-  <p class="lead"><span id="netStatus">${esc(NET.status)}</span> · vous jouez sous le nom <b>${esc(pseudo())}</b> · score ${netScore()}. Votre base est publiée automatiquement : les autres joueurs peuvent l'attaquer, sans vous voler de ressources.</p>
+    <p>Ensuite, chaque joueur clique sur <b>Compte</b>, entre l'adresse du serveur (par exemple <b>http://192.168.1.20:8787</b>) et crée son compte avec un identifiant et un mot de passe. La partie est alors enregistrée sur le serveur : on la retrouve sur n'importe quel PC ou téléphone.</p>
+    <p>Le serveur gère le classement, les bases publiées, les pillages entre joueurs et les raids partagés en direct, en coopération ou en PvP.</p></div>
+    <div class="launch"><button class="btn hot" data-act="account">Compte</button><button class="btn" data-act="netretry">Réessayer la connexion</button></div>`;
+  const others = NET.bases.filter(b => b.id !== NET.me), now = Date.now();
+  const myShield = NET.kind === 'claude' ? claudeShield(NET.inbox) : NET.shield;
+  const lootTxt = (l, sg = '') => { const t = Object.keys(l || {}).filter(k => l[k] > 0).map(k => sg + fmt(l[k]) + ' ' + RES[k].n.toLowerCase()).join(', '); return t || 'rien'; };
+  const live = typeof LIVE !== 'undefined' ? LIVE.renderTab() : '';
+  return `<h2 class="h2">En ligne</h2>${accBar}
+  <p class="lead"><span id="netStatus">${esc(NET.status)}</span> · vous jouez sous le nom <b>${esc(pseudo())}</b> · score ${netScore()}. Votre base est publiée automatiquement : les autres joueurs peuvent la piller. L'entrepôt protège ${protectPct()} % de vos stocks${myShield > now ? ` · <b>bouclier actif encore ${hm((myShield - now) / 1000)}</b>` : ''}.</p>
+  ${live}
+  <div class="rs-cat">Bases à piller</div>
+  <p class="lead">Votre armée déployée part à l'assaut pendant 3 minutes. Étoiles : 50 % de destruction, le QG détruit, 100 %. Le butin est pris dans les vrais stocks du défenseur (hors part protégée), puis sa base passe sous bouclier (1, 2 ou 4 h selon les étoiles). Attaquer retire votre propre bouclier. Vos robots tombés reviennent endommagés.</p>
+  <div class="grid-cards">${others.length ? others.map(b => {
+    const wait = (cd[b.id] || 0) - now, sh = NET.kind === 'claude' ? 0 : (b.shield || 0) - now;
+    const dis = wait > 0 || sh > 0;
+    return `<div class="card"><div class="nm">${esc(netName(b.id))}</div><div class="sub">QG niveau ${b.hq || 1} · ${(b.b || []).length} bâtiments · ${b.def || 0} défenses</div><div class="sub">Butin possible (3 étoiles) : ${lootTxt(b.avail)}</div><div class="acts"><button class="btn sm ${dis ? '' : 'hot'}" data-act="assault" data-id="${esc(b.id)}" ${dis ? 'disabled' : ''}>${sh > 0 ? 'Bouclier encore ' + hm(sh / 1000) : wait > 0 ? 'Disponible dans ' + Math.ceil(wait / 60000) + ' min' : 'Attaquer'}</button></div></div>`;
+  }).join('') : '<div class="card"><div class="sub">Aucune autre base publiée. Partagez le jeu avec vos amis pour en voir apparaître.</div></div>'}</div>
   <div class="rs-cat">Classement</div>
   <div class="res-list" style="max-width:760px">${NET.board.length ? NET.board.map((r, i) => `<div style="${r.id === NET.me ? 'font-weight:700' : ''}"><span>${i + 1}. ${esc(netName(r.id))} · QG ${r.hq || 1} · ${r.extract || 0} extractions · ${r.boss || 0} boss · ${r.defenses || 0} défenses</span><b>${fmt(r.score || 0)}</b></div>`).join('') : '<div><span>Aucun score pour l\'instant.</span><b>—</b></div>'}</div>
-  <div class="rs-cat">Bases à attaquer</div>
-  <p class="lead">Votre armée déployée part à l'assaut. Trois étoiles possibles : 50 % de destruction, le QG détruit, 100 %. Les robots tombés reviennent très endommagés, rien n'est perdu.</p>
-  <div class="grid-cards">${others.length ? others.map(b => { const wait = (cd[b.id] || 0) - Date.now(); return `<div class="card"><div class="nm">${esc(netName(b.id))}</div><div class="sub">QG niveau ${b.hq || 1} · ${(b.b || []).length} bâtiments · ${b.def || 0} défenses</div><div class="sub">Butin estimé : ${rewardHtml(assaultLoot(b.hq || 1, 100, 3))}</div><div class="acts"><button class="btn sm ${wait > 0 ? '' : 'hot'}" data-act="assault" data-id="${esc(b.id)}" ${wait > 0 ? 'disabled' : ''}>${wait > 0 ? 'Disponible dans ' + Math.ceil(wait / 60000) + ' min' : 'Attaquer'}</button></div></div>`; }).join('') : '<div class="card"><div class="sub">Aucune autre base publiée. Partagez le jeu avec vos amis pour en voir apparaître.</div></div>'}</div>
-  <div class="rs-cat">Journal des attaques subies</div>
-  <div class="res-list" style="max-width:760px">${NET.inbox.length ? NET.inbox.slice(0, 15).map(a => `<div><span>${a.t > seen ? '● ' : ''}${esc(netName(a.attacker))} · ${new Date(a.t).toLocaleString('fr-FR')}</span><b>${'★'.repeat(a.stars || 0)}${'☆'.repeat(3 - (a.stars || 0))} · ${a.pct || 0} %</b></div>`).join('') : '<div><span>Personne ne vous a encore attaqué.</span><b>—</b></div>'}</div>`;
+  <div class="rs-cat">Pillages subis</div>
+  <div class="res-list" style="max-width:860px">${NET.inbox.length ? NET.inbox.slice(0, 15).map(a => `<div><span>${a.t > seen ? '● ' : ''}${esc(netName(a.attacker))} · ${new Date(a.t).toLocaleString('fr-FR')} · ${'★'.repeat(a.stars || 0)}${'☆'.repeat(3 - (a.stars || 0))} ${a.pct || 0} %</span><b class="lost">${a.loot ? lootTxt(a.loot, '−') : '—'}</b></div>`).join('') : '<div><span>Personne ne vous a encore attaqué.</span><b>—</b></div>'}</div>
+  <div class="rs-cat">Vos pillages</div>
+  <div class="res-list" style="max-width:860px">${NET.sent.length ? NET.sent.slice(0, 10).map(a => `<div><span>${esc(netName(a.target))} · ${new Date(a.t).toLocaleString('fr-FR')} · ${'★'.repeat(a.stars || 0)}${'☆'.repeat(3 - (a.stars || 0))} ${a.pct || 0} %</span><b class="good">${a.loot ? lootTxt(a.loot, '+') : '—'}</b></div>`).join('') : '<div><span>Aucun pillage pour l\'instant.</span><b>—</b></div>'}</div>`;
 }
+
+// ================= RAIDS PARTAGÉS EN DIRECT : coopération ou PvP (serveur Colosse, WebSocket) =================
+// L'hôte fait vivre le monde (ennemis, équipes rivales, butin au sol, caisses). Chaque joueur fait vivre son pilote,
+// sa flotte et sa balise. Les unités des autres sont des « reflets » mis à jour dix fois par seconde ; chacun calcule
+// les dégâts de ses propres tirs et les envoie au propriétaire de la cible. Si l'hôte part, le joueur suivant reprend le monde.
+let NETVIS = false; // vrai pendant la reproduction des tirs d'un autre joueur : effets visuels et sonores seulement
+const NPAL_ACC = ['#6fe3c8', '#7fb4ff', '#c6e86a', '#ff9ad5'];
+const rgbaOf = h => 'rgba(' + parseInt(h.slice(1, 3), 16) + ',' + parseInt(h.slice(3, 5), 16) + ',' + parseInt(h.slice(5, 7), 16) + ',';
+const NPALS = NPAL_ACC.map(a => ({ body: '#34474a', body2: '#243234', plate: '#4f6669', acc: a, glow: rgbaOf(a), dark: '#141c1d' }));
+const NPPALS = NPAL_ACC.map(a => ({ body: '#4a3d2c', body2: '#2f271c', plate: '#6b5739', acc: a, glow: rgbaOf(a), dark: '#17120c' }));
+const CRATE_T = ['caisse', 'militaire', 'donnees'];
+const LIVE = {
+  ws: null, on: false, pid: null, rooms: [], room: null, chat: [], wantMode: 'coop', wantMax: 4, retryT: null, backoff: 2000, game: null, err: '', quiet: false,
+  // ---------- connexion ----------
+  connect() {
+    if (this.ws || NET.kind !== 'http' || !NET.ok || !ACC.token || typeof WebSocket === 'undefined') return;
+    let ws; try { ws = new WebSocket(NET.srv.replace(/^http/i, 'ws') + '/ws'); } catch (e) { this.err = 'connexion en direct impossible'; return; }
+    this.ws = ws; this.err = '';
+    ws.onopen = () => { this.backoff = 2000; ws.send(JSON.stringify({ t: 'auth', token: ACC.token })); };
+    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (er) { return; } try { this.onMsg(m); } catch (er) { console.error(er); } };
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
+      this.ws = null; this.on = false; this.room = null; this.rooms = [];
+      if (this.game) this.lost();
+      this.refresh();
+      if (NET.kind === 'http' && NET.ok && ACC.token) { clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), this.backoff); this.backoff = Math.min(30000, this.backoff * 2); }
+    };
+    ws.onerror = () => { this.err = 'serveur en direct injoignable'; };
+  },
+  disconnect() { clearTimeout(this.retryT); const ws = this.ws; this.ws = null; this.on = false; this.room = null; this.rooms = []; if (this.game) this.lost(); if (ws) try { ws.close(); } catch (e) { } },
+  send(m) { if (this.ws && this.ws.readyState === 1 && !(this.game && this.game.offline)) this.ws.send(JSON.stringify(m)); },
+  refresh() {
+    if (!(drawerOpen && hubTab === 'online')) return;
+    const ci = $('#liveChat'), v = ci ? ci.value : '', foc = ci && document.activeElement === ci;
+    renderHub(); const c2 = $('#liveChat'); if (c2) { c2.value = v; if (foc) c2.focus(); }
+  },
+  power: () => Math.round(Math.min(cmdUsed(), cmdCap()) * 10) / 10,
+  onMsg(m) {
+    switch (m.t) {
+      case 'hi': this.on = true; this.pid = m.pid; this.send({ t: 'sub', on: true }); this.refresh(); return;
+      case 'err': this.err = m.e; toast(m.e); this.refresh(); return;
+      case 'rooms': this.rooms = m.list || []; this.refresh(); return;
+      case 'joined': this.room = m.room; this.chat = m.chat || []; this.refresh(); return;
+      case 'room': if (this.room && m.room.id === this.room.id) { this.room = m.room; if (this.game) this.syncPeers(m.room); } this.refresh(); return;
+      case 'chat': this.chat.push(m.line); if (this.chat.length > 30) this.chat.shift(); if (this.game && state === 'raid') msg(m.line.from + ' : ' + m.line.text, '#e8dcc4', 7); this.refresh(); return;
+      case 'start': this.onStart(m); return;
+      case 'host': if (this.room) this.room.host = m.pid; if (this.game) this.onHost(m.pid); this.refresh(); return;
+      case 'peer': if (this.game) this.onPeer(m.pid, m.why); return;
+      case 'late': return;
+    }
+    const g = this.game; if (!g) return;
+    if (!g.ready) { g.queue.push(m); return; }
+    this.handle(m);
+  },
+  // ---------- salon ----------
+  create() { if (!this.on) return; this.send({ t: 'create', mode: this.wantMode, max: this.wantMax, region: save.region || 0, diff: save.diff, label: '', power: this.power() }); },
+  join(id) { if (!this.on) return; this.send({ t: 'join', id, power: this.power() }); },
+  leave() { this.send({ t: 'leave' }); this.room = null; this.chat = []; this.refresh(); },
+  start() { if (this.room && this.room.host === this.pid) this.send({ t: 'start' }); },
+  say(text) { text = String(text || '').trim(); if (text && this.room) this.send({ t: 'chat', text }); },
+  renderTab() {
+    if (NET.kind !== 'http') return '';
+    const R = REGIONS[save.region || 0], D = DIFFS[save.diff];
+    let h = '<div class="rs-cat">Raids partagés <span style="font-family:var(--f-ui);font-size:14px;color:var(--mute)">en direct, jusqu\'à 4 pilotes</span></div>';
+    if (!this.on) return h + `<p class="lead">${this.ws ? 'Connexion au serveur en direct…' : 'Connexion en direct indisponible' + (this.err ? ' : ' + esc(this.err) : '') + '.'}</p>`;
+    if (this.game) return h + '<p class="lead">Raid partagé en cours.</p>';
+    const mName = m => m === 'pvp' ? 'PvP' : 'Coopération';
+    if (this.room) {
+      const r = this.room, host = r.host === this.pid, hm = r.members.find(x => x.pid === r.host);
+      return h + `<div class="card" style="max-width:820px">
+        <div class="nm">Salon de ${esc(hm ? hm.name : '?')} · ${mName(r.mode)} · ${esc(REGIONS[r.region].n)} · ${esc(DIFFS[r.diff].n)}${r.started ? ' · en cours' : ''}</div>
+        <div class="sub">${r.mode === 'pvp' ? 'Chacun pour soi : abattez les autres pilotes pour récupérer leur butin. Les monstres et les équipes rivales attaquent tout le monde.' : 'Vous êtes alliés : chacun pose sa balise et s\'extrait quand il veut. L\'hôte fait vivre le monde.'}</div>
+        <div class="res-list">${r.members.map(m => `<div><span><b style="color:${NPAL_ACC[m.slot % 4]}">●</b> ${esc(m.name)}${m.pid === r.host ? ' · hôte' : ''}${m.pid === this.pid ? ' · vous' : ''}</span><b>${fmtCmd(m.power || 0)} cmd</b></div>`).join('')}<div><span>${r.members.length} / ${r.max} pilotes</span><b></b></div></div>
+        <div class="res-list" style="max-height:150px;overflow:auto">${this.chat.slice(-8).map(l => `<div><span><b>${esc(l.from)}</b> : ${esc(l.text)}</span><b></b></div>`).join('') || '<div><span class="sub">Aucun message.</span><b></b></div>'}</div>
+        <div class="acts"><input class="name" id="liveChat" maxlength="140" placeholder="Message pour le salon" style="flex:1;min-width:180px"><button class="btn sm" data-act="lchat">Envoyer</button></div>
+        <div class="acts">${host ? `<button class="btn hot" data-act="lstart">${r.started ? 'Raid en cours' : 'Lancer le raid'}</button>` : `<span class="sub">${r.started ? 'Raid en cours.' : 'En attente du lancement par l\'hôte…'}</span>`}<button class="btn" data-act="lleave">Quitter le salon</button></div>
+        <div class="sub">Votre flotte : les robots déployés au hangar, dans la limite de votre commandement. Gardez la fenêtre du jeu ouverte pendant le raid.</div></div>`;
+    }
+    const list = this.rooms.filter(r => r.members.length);
+    return h + `<p class="lead">Partez à plusieurs dans la même zone, chacun avec sa flotte. <b>Coopération</b> : vous êtes alliés, chacun pose sa balise et s'extrait quand il veut. <b>PvP</b> : chacun pour soi, et le butin d'un pilote abattu reste au sol pour qui le ramasse. La région et la difficulté sont celles choisies dans « Partir en raid ».</p>
+      <div class="chips" style="margin-bottom:10px">${['coop', 'pvp'].map(m => `<button class="chip ${this.wantMode === m ? 'on' : ''}" data-act="lmode" data-id="${m}">${mName(m)}</button>`).join('')}<span class="desc" style="align-self:center;margin:0 6px">Places</span>${[2, 3, 4].map(n => `<button class="chip ${this.wantMax === n ? 'on' : ''}" data-act="lmax" data-id="${n}">${n}</button>`).join('')}
+        <button class="btn hot sm" data-act="lcreate" style="margin-left:8px">Créer un salon · ${esc(R.n)} · ${esc(D.n)}</button></div>
+      <div class="grid-cards">${list.length ? list.map(r => { const full = r.members.length >= r.max, hm = r.members.find(x => x.pid === r.host); return `<div class="card"><div class="nm">${mName(r.mode)} · ${esc(REGIONS[r.region].n)}</div><div class="sub">Hôte : ${esc(hm ? hm.name : '?')} · ${esc(DIFFS[r.diff].n)} · ${r.members.length} / ${r.max} pilotes${r.started ? ' · en cours' : ''}</div><div class="sub">${r.members.map(m => esc(m.name)).join(', ')}</div><div class="acts"><button class="btn sm ${full ? '' : 'hot'}" data-act="ljoin" data-id="${esc(r.id)}" ${full ? 'disabled' : ''}>${full ? 'Complet' : r.started ? 'Rejoindre la partie en cours' : 'Rejoindre'}</button></div></div>`; }).join('') : '<div class="card"><div class="sub">Aucun salon ouvert. Créez-en un et donnez rendez-vous à vos amis.</div></div>'}</div>`;
+  },
+  // ---------- début et fin de partie ----------
+  onStart(m) {
+    const R = m.room; this.room = R;
+    const me = R.members.find(x => x.pid === this.pid); if (!me || this.game) return;
+    if (state !== 'base' || attack || placing) { toast(state === 'base' ? 'Raid partagé lancé : repoussez d\'abord l\'attaque en cours.' : 'Raid partagé lancé : revenez à la base pour le rejoindre.'); this.leave(); return; }
+    const g = this.game = { mode: R.mode, host: R.host, isHost: R.host === this.pid, slot: me.slot, region: R.region, diff: R.diff, seed: m.seed, late: !!m.late, ready: false, offline: false, queue: [],
+      peers: new Map(), byNid: new Map(), local: new Map(), specs: new Map(), sentU: new Map(), annU: new Set(), annW: new Map(), hitsOut: new Map(), drops: [], tiles: [], gone: new Set(), itemSeq: 1, crateSeq: 1, tU: 0, tH: 0, kf: 0, spawns: [] };
+    this.syncPeers(R);
+    closeDrawer(true); showOverlay('result', false); leaveBase();
+    startRaid({ net: g });
+  },
+  syncPeers(R) {
+    const g = this.game; if (!g) return;
+    for (const m of R.members) { if (m.pid === this.pid) continue; const p = g.peers.get(m.pid) || { focus: null, beacon: null, ready: false, sentW: null, last: 0 }; Object.assign(p, { name: m.name, slot: m.slot, done: m.done || p.done }); g.peers.set(m.pid, p); }
+  },
+  guest() { return !!(this.game && !this.game.isHost); },
+  prepWorld() { const g = this.game; g.spawns = []; for (let s = 0; s < 4; s++) { const p = this.computeSpawn(s); g.spawns.push(p); clearTiles((p.x / TILE) | 0, (p.y / TILE) | 0, 9); } },
+  computeSpawn(s) {
+    const g = this.game;
+    if (g.mode === 'coop') { if (s === 0) return { x: W.spawn.x, y: W.spawn.y }; const a = s * TAU / 4 + .6; return { x: clamp(W.spawn.x + Math.cos(a) * 240, 600, WPX - 600), y: clamp(W.spawn.y + Math.sin(a) * 240, 600, WPX - 600) }; }
+    const R = mulberry32(g.seed ^ 0x51ed), a0 = R() * TAU, c = WT / 2;
+    for (let k = 0; k < 80; k++) {
+      const a = a0 + s * TAU / 4 + (k ? (R() - .5) * .9 : 0), r = 108 + (k ? R() * 24 : 0), tx = Math.round(c + Math.cos(a) * r), ty = Math.round(c + Math.sin(a) * r);
+      if (tx < 14 || ty < 14 || tx > WT - 14 || ty > WT - 14) continue;
+      const i = ty * WT + tx; if (W.ground[i] === 7 || W.ground[i] === 3 || W.biome[i] === 6) continue;
+      return { x: tx * TILE + 20, y: ty * TILE + 20 };
+    }
+    return { x: W.spawn.x, y: W.spawn.y };
+  },
+  spawnPoint(slot) { return this.game.spawns[slot % 4]; },
+  nearSpawn(x, y, r) { return this.game.spawns.some(p => d2(x, y, p.x, p.y) < r * r); },
+  ready() {
+    const g = this.game; g.ready = true;
+    this.send({ t: 'need' });
+    const q = g.queue; g.queue = []; for (const m of q) this.handle(m);
+    const others = [...g.peers.values()].filter(p => !p.done).map(p => p.name);
+    msg('Raid partagé (' + (g.mode === 'pvp' ? 'PvP : chacun pour soi' : 'coopération') + ')' + (others.length ? ' avec ' + others.join(', ') : '') + '. ' + (g.isHost ? 'Vous faites vivre le monde.' : ''), g.mode === 'pvp' ? COL.rival : COL.ally, 9);
+  },
+  dropAll() { // pilote tombé : tout ce qu'il transportait, lui et sa flotte, reste au sol
+    const add = u => { for (const k in u.cargo) if (u.cargo[k] > 0) spawnItem(k, u.cargo[k], u.x + rnd(-20, 20), u.y + rnd(-20, 20)); };
+    if (player) add(player); for (const r of fleet) if (!r.dead) { add(r); boom(r.x, r.y, Math.max(30, r.r * 1.6)); }
+  },
+  finish(success) {
+    const g = this.game; if (!g) return;
+    if (!g.offline) {
+      if (g.isHost) { this.syncItems(); this.syncBits(); }
+      this.flushHits(); this.flushMisc();
+      const all = [...g.sentU.keys()];
+      this.send({ t: 'u', f: [0, 0], b: 0, l: [], sp: {}, d: success ? [] : all, x: success ? all : [] });
+      this.send({ t: 'note', x: pseudo() + (success ? ' s\'est extrait.' : ' est tombé.'), c: success ? '#f2c14e' : '#ec6b74' });
+      this.send({ t: 'done' });
+    }
+    if (success && g.mode === 'coop') save.stats.coop = (save.stats.coop || 0) + 1;
+    for (const u of g.byNid.values()) u.dead = true;
+    this.game = null; this.room = null; this.chat = [];
+  },
+  lost() {
+    const g = this.game; if (!g || g.offline) return;
+    if (!g.ready) { this.game = null; return; }
+    if (!g.isHost) this.promote(g.host);
+    g.offline = true;
+    for (const u of g.byNid.values()) if (u.net) u.dead = true;
+    g.byNid.clear();
+    msg('Connexion au serveur perdue : vous continuez seul dans cette zone.', '#ec6b74', 9);
+  },
+  onPeer(pid, why) {
+    const g = this.game, p = g.peers.get(pid); if (!p) return;
+    p.done = true;
+    if (why !== 'done') { msg(p.name + ' a quitté le raid.', '#a59c88', 5); for (const u of g.byNid.values()) if (u.owner === pid && !this.isWorld(u)) { u.dead = true; parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .3, max: .3, size: u.r * 3, col: '#fff', a: 0 }); } }
+  },
+  onHost(pid) {
+    const g = this.game, old = g.host; if (pid === old) return;
+    g.host = pid;
+    if (pid === this.pid && !g.isHost) { this.promote(old); msg('L\'hôte a quitté la zone : votre partie fait maintenant vivre le monde.', COL.ally, 7); }
+    else for (const u of g.byNid.values()) if (u.owner === old && !this.isWorld(u)) u.dead = true;
+  },
+  isWorld(u) { return u.kind === 'enemy' || u.kind === 'rival' || u.kind === 'beacon2' || (u.kind === 'minion' && u.worldMinion); },
+  // le joueur suivant reprend le monde : les ennemis deviennent réels, le butin et les caisses connus restent
+  promote(old) {
+    const g = this.game; g.isHost = true;
+    for (const u of [...g.byNid.values()]) {
+      if (u.dead) continue;
+      if (u.kind === 'enemy' && ENEMIES[u.etype]) {
+        const E = ENEMIES[u.etype], mh = E.hp * diff.hp;
+        Object.assign(u, { net: false, owner: null, static: !!E.static, home: { x: u.nx, y: u.ny }, x: u.nx, y: u.ny, target: null, tt: 0, forced: null, maxhp: mh, hp: Math.max(1, u.hp / 1000 * mh), active: true });
+        g.local.set(u.nid, u); g.byNid.delete(u.nid); continue;
+      }
+      if (this.isWorld(u) || u.owner === old) { u.dead = true; g.byNid.delete(u.nid); }
+    }
+    g.itemSeq = items.reduce((m, it) => Math.max(m, it.iid || 0), 0) + 1;
+    for (const it of items) it.netAmt = it.amt;
+    g.crateSeq = crates.reduce((m, c) => Math.max(m, c.cid || 0), 0) + 1;
+    for (const c of crates) c.netOpen = c.open;
+    for (const p of W.pylons) p.netAct = p.active;
+    g.annW = new Map(); for (const p of g.peers.values()) { p.sentW = null; }
+    raidTime = Math.max(raidTime, alertLv * 210 / diff.alert + 1); spawnT = 25;
+  },
+  // ---------- boucle : interpolation des reflets, envois ----------
+  tick(dt) {
+    const g = this.game; if (!g || !g.ready || state !== 'raid') return;
+    const now = performance.now();
+    for (const u of g.byNid.values()) {
+      if (u.dead) continue;
+      const dx = u.nx - u.x, dy = u.ny - u.y, d = Math.hypot(dx, dy);
+      if (d > 600) { u.x = u.nx; u.y = u.ny; } else { const k = Math.min(1, dt * 11); u.x += dx * k; u.y += dy * k; }
+      u.mv += ((u.nmv || 0) - u.mv) * Math.min(1, dt * 6); u.t += dt * (.25 + u.mv * .95);
+      u.ang = turnTo(u.ang, u.na, dt * 9);
+      if (u.hitFlash > 0) u.hitFlash -= dt;
+      if (now - u.seen > (this.isWorld(u) ? 2600 : 5000)) u.dead = true;
+    }
+    for (const [nid, u] of g.byNid) if (u.dead) g.byNid.delete(nid);
+    if (g.offline) return;
+    g.tH += dt; if (g.tH >= .05) { g.tH = 0; this.flushHits(); }
+    g.tU += dt;
+    if (g.tU >= .1) {
+      g.tU = 0; g.kf = (g.kf + 1) % 10; const full = g.kf === 0;
+      this.sendUnits(full);
+      if (g.isHost) { this.syncItems(); this.syncBits(); this.sendWorld(full); }
+      this.flushMisc();
+    }
+  },
+  nidOf(u) { const g = this.game; if (u.nid === undefined) { u.nid = g.slot * 100000 + u.id; } if (!u.net) g.local.set(u.nid, u); return u.nid; },
+  spec(u) {
+    const crew = () => u.crew ? Math.max(0, CREW_PALS.indexOf(u.crew.pal)) : 0;
+    switch (u.kind) {
+      case 'player': return { k: 'p', n: pseudo(), g: (u.pw && u.pw.gun) || 'pistol', pw: Object.keys(PWEAPONS).find(k => PWEAPONS[k] === u.pw) || 'pistol' };
+      case 'robot': return { k: 'r', c: u.chassis, w: u.mounts.map(m => m.wid), n: u.name, xp: Math.round(u.xp || 0) };
+      case 'minion': return { k: 'm', wm: u.owner && u.owner.kind === 'rival' ? 1 : 0 };
+      case 'beacon': return { k: 'b' };
+      case 'enemy': return { k: 'e', e: u.etype };
+      case 'rival': return u.role === 'leader' ? { k: 'rl', n: u.crew ? u.crew.name : '', p: crew() } : { k: 'rb', c: u.chassis, w: u.mounts.map(m => m.wid), n: u.name, xp: Math.round(u.xp || 0), p: crew() };
+      case 'beacon2': return { k: 'b2', p: crew() };
+    }
+    return null;
+  },
+  state(u) {
+    let f = 0; if (u.hidden) f |= 1; if (u.piloted) f |= 2; if (u.shield > 1) f |= 4; if (u.cloak && time - (u.lastFire || -9) > 1.5) f |= 8;
+    let ms = 0;
+    if (u.kind === 'player') ms = [Math.round(u.ang * 100), u.fc || 0, 0];
+    else if (u.mounts.length) { ms = []; for (const m of u.mounts) ms.push(Math.round(m.aim * 100), m.fc || 0, Math.round((m.td || 0) / 10)); }
+    const e = [u.nid, Math.round(u.x), Math.round(u.y), Math.round(u.ang * 100), Math.round(clamp(u.hp / u.maxhp, 0, 1) * 1000), f, ms, Math.round((u.jz || 0) * 100)];
+    if (u.kind === 'beacon') { e.push(Math.round((B.charge || 0) * 1000)); if (B.state === 'window' || B.state === 'lift') e[5] |= 16; }
+    else if (u.kind === 'beacon2') e.push(Math.round(((u.crew && u.crew.charge) || 0) * 1000));
+    return e;
+  },
+  myUnits() {
+    const out = [];
+    if (player && !player.dead) out.push(player);
+    for (const r of fleet) if (!r.dead) out.push(r);
+    for (const u of units) if (u.kind === 'minion' && !u.dead && !u.net && u.owner && u.owner.kind === 'robot' && !u.owner.net) out.push(u);
+    if (B && B.unit && !B.unit.dead) out.push(B.unit);
+    return out;
+  },
+  sendUnits(full) {
+    const g = this.game, l = [], sp = {}, d = [], cur = new Set();
+    for (const u of this.myUnits()) {
+      const nid = this.nidOf(u); cur.add(nid);
+      if (!g.annU.has(nid)) { const s = this.spec(u); if (!s) continue; sp[nid] = s; g.annU.add(nid); }
+      const e = this.state(u), key = e.join(',') + (e[6] ? ':' + e[6].join(',') : '');
+      if (full || g.sentU.get(nid) !== key) l.push(e);
+      g.sentU.set(nid, key);
+    }
+    for (const nid of [...g.sentU.keys()]) if (!cur.has(nid)) { d.push(nid); g.sentU.delete(nid); g.annU.delete(nid); }
+    const F = focus();
+    if (l.length || d.length || full || Object.keys(sp).length) this.send({ t: 'u', f: [Math.round(F.x), Math.round(F.y)], b: B && B.unit && !B.unit.dead ? [Math.round(B.unit.x), Math.round(B.unit.y)] : 0, l, sp, d });
+  },
+  sendWorld(full) {
+    const g = this.game, R2 = 2700 * 2700;
+    const ents = units.filter(u => !u.dead && !u.net && u.etype !== 'cible' && (u.kind === 'enemy' || u.kind === 'rival' || u.kind === 'beacon2' || (u.kind === 'minion' && u.owner && u.owner.kind === 'rival')));
+    for (const [pid, p] of g.peers) {
+      if (!p.ready || p.done || !p.focus) continue;
+      let ann = g.annW.get(pid); if (!ann) g.annW.set(pid, ann = new Set());
+      const sent = p.sentW || (p.sentW = new Map()), l = [], sp = {}, d = [], cur = new Set();
+      for (const u of ents) {
+        if (!(u.boss || u.kind === 'beacon2' || d2(u.x, u.y, p.focus[0], p.focus[1]) < R2 || (p.beacon && d2(u.x, u.y, p.beacon[0], p.beacon[1]) < R2))) continue;
+        const nid = this.nidOf(u); cur.add(nid);
+        if (!ann.has(nid)) { const s = this.spec(u); if (!s) continue; sp[nid] = s; ann.add(nid); }
+        const e = this.state(u), key = e.join(',') + (e[6] ? ':' + e[6].join(',') : ''), prev = sent.get(nid);
+        if (full || !prev || prev.k !== key) l.push(e);
+        sent.set(nid, { k: key, u });
+      }
+      for (const [nid, s] of sent) if (!cur.has(nid)) { if (s.u.dead) d.push(nid); sent.delete(nid); }
+      this.send({ t: 'w', to: pid, al: alertLv, l, sp, d });
+    }
+  },
+  syncItems() {
+    const g = this.game, a = [], u = [], r = [];
+    for (const it of items) {
+      if (it.iid === undefined) { it.iid = g.itemSeq++; it.netAmt = it.amt; if (!it.dead) a.push([it.iid, RES_KEYS.indexOf(it.res), it.amt, Math.round(it.x), Math.round(it.y), Math.round(it.vx || 0), Math.round(it.vy || 0)]); else it.netGone = true; continue; }
+      if (it.dead) { if (!it.netGone) { it.netGone = true; r.push(it.iid); } continue; }
+      if (it.amt !== it.netAmt) { it.netAmt = it.amt; u.push([it.iid, it.amt]); }
+    }
+    if (items.some(i => i.dead)) items = items.filter(i => !i.dead);
+    if (a.length || u.length || r.length) this.send({ t: 'it', a, u, r });
+  },
+  syncBits() { // caisses ouvertes et pylônes activés
+    const g = this.game, co = [], py = [];
+    for (const c of crates) { if (c.cid === undefined) c.cid = g.crateSeq++; if (c.open && !c.netOpen) { c.netOpen = true; co.push(c.cid); } }
+    W.pylons.forEach((p, i) => { if (p.active && !p.netAct) { p.netAct = true; py.push(i); } });
+    if (co.length) this.send({ t: 'crate', open: co });
+    if (py.length) this.send({ t: 'pyl', l: py });
+  },
+  sendWorldInit(pid) {
+    const g = this.game; this.syncItems(); this.syncBits();
+    this.send({ t: 'wi', to: pid, cr: crates.map(c => [c.cid, Math.round(c.x), Math.round(c.y), Math.max(0, CRATE_T.indexOf(c.type)), c.open ? 1 : 0]), it: items.filter(i => !i.dead).map(i => [i.iid, RES_KEYS.indexOf(i.res), i.amt, Math.round(i.x), Math.round(i.y)]), py: W.pylons.map((p, i) => p.active ? i : -1).filter(i => i >= 0), tl: [...g.gone], al: alertLv });
+    const p = g.peers.get(pid); if (p) { p.ready = true; p.sentW = null; }
+    g.annW.set(pid, new Set());
+  },
+  flushHits() {
+    const g = this.game;
+    for (const [owner, m] of g.hitsOut) { if (!m.size) continue; const h = []; for (const [nid, v] of m) h.push([nid, Math.round(v[0] * 10) / 10, v[1]]); m.clear(); this.send({ t: 'hits', to: owner, h }); }
+  },
+  flushMisc() {
+    const g = this.game;
+    if (g.tiles.length) { this.send({ t: 'tile', l: g.tiles }); g.tiles = []; }
+    if (g.drops.length && !g.isHost) { this.send({ t: 'drop', to: g.host, l: g.drops }); g.drops = []; }
+    if (g.pulses && g.pulses.length) { for (const m of g.pulses) { m.to = g.host; this.send(m); } g.pulses = []; }
+  },
+  // ---------- appels depuis le jeu ----------
+  hit(u, amt, src) {
+    const g = this.game; if (!g || g.offline || !u.owner || !(amt > 0)) return;
+    let m = g.hitsOut.get(u.owner); if (!m) g.hitsOut.set(u.owner, m = new Map());
+    const sn = src && src.x !== undefined ? (src.net ? src.nid : this.nidOf(src)) : 0, cur = m.get(u.nid);
+    if (cur) { cur[0] += amt; if (sn) cur[1] = sn; } else m.set(u.nid, [amt, sn]);
+  },
+  killNote(u, src) {
+    const k = u.kind === 'enemy' ? 'e' : u.kind === 'rival' ? (u.role === 'leader' ? 'rl' : 'rb') : u.kind === 'beacon2' ? 'b2' : u.kind === 'player' ? 'pilot' : u.kind === 'robot' ? 'robot' : null;
+    if (!k || !src.owner) return;
+    this.send({ t: 'kill', to: src.owner, k, e: u.etype || '', b: u.boss ? 1 : 0, el: u.elite ? 1 : 0, s: src.nid, n: u.kind === 'player' ? pseudo() : (u.name || (u.crew && u.crew.name) || ''), cr: u.crew ? u.crew.name : '' });
+  },
+  drop(res, amt, x, y) { if (amt > 0) this.game.drops.push([RES_KEYS.indexOf(res), Math.round(amt), Math.round(x), Math.round(y)]); },
+  tileGone(tx, ty) { const g = this.game; const i = ty * WT + tx; g.gone.add(i); if (!this.quiet) g.tiles.push(i); },
+  pick(it, u) {
+    const g = this.game; if (it.req > time - .6) return; it.req = time;
+    this.send({ t: 'pick', to: g.host, i: it.iid, n: this.nidOf(u), f: Math.max(0, u.cargoMax - u.cargoW) });
+  },
+  openCrate(c) { const g = this.game; if (c.req > time - 1.5) return; c.req = time; this.send({ t: 'crate', to: g.host, o: c.cid }); },
+  pylon(p) { const g = this.game, i = W.pylons.indexOf(p); p.netAct = true; this.send({ t: 'pyl', l: [i], to: g.host }); },
+  pulse(u, charge) { const g = this.game; (g.pulses || (g.pulses = [])).push({ t: 'pulse', to: g.host, x: Math.round(u.x), y: Math.round(u.y), c: charge, b: this.nidOf(u) }); }, // envoyé après la position de la balise
+  note(text, col, extra) { this.send(Object.assign({ t: 'note', x: text, c: col || '#e8dcc4' }, extra || {})); },
+  livingFoci() {
+    const g = this.game, out = [];
+    if (player && !player.dead) { const F = focus(); out.push({ x: F.x, y: F.y }); }
+    for (const p of g.peers.values()) if (!p.done && p.focus && p.focus[0]) out.push({ x: p.focus[0], y: p.focus[1] });
+    return out;
+  },
+  spawnFocus() { const l = this.livingFoci(); return l.length ? pick(l) : focus(); },
+  nearestFocus(x, y) { let best = focus(), bd = Infinity; for (const f of this.livingFoci()) { const q = d2(x, y, f.x, f.y); if (q < bd) { bd = q; best = f; } } return best; },
+  nearPeers(x, y, r2) { for (const p of this.game.peers.values()) { if (p.done) continue; if (p.focus && d2(x, y, p.focus[0], p.focus[1]) < r2) return true; if (p.beacon && d2(x, y, p.beacon[0], p.beacon[1]) < r2) return true; } return false; },
+  peerBeacon(nid) { const u = this.game.byNid.get(nid); return u && !u.dead ? u : null; },
+  // ---------- messages reçus pendant la partie ----------
+  handle(m) {
+    const g = this.game, from = m.from;
+    switch (m.t) {
+      case 'u': return this.onUnits(from, m);
+      case 'w': if (from === g.host) { alertLv = m.al | 0; this.onEntities(from, m, true); } return;
+      case 'wi': return this.onWorldInit(m);
+      case 'need': g.annU.clear(); if (g.isHost) this.sendWorldInit(from); return;
+      case 'hits': return this.onHits(m);
+      case 'kill': return this.onKill(m);
+      case 'note': if (m.boss && g.mode === 'coop' && raidStats && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.boss; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; } if (m.x) msg(m.x, m.c || '#e8dcc4', 6); return;
+      case 'tile': this.quiet = true; try { for (const i of m.l) { g.gone.add(i); const o = W.obs[i]; if (o && o < 7) { const tx = i % WT, ty = (i / WT) | 0; W.obs[i] = 0; W.ohp[i] = 0; miniSetTile(tx, ty); for (let k = 0; k < 4; k++) parts.push({ type: 'debris', x: tx * TILE + 20 + rnd(-14, 14), y: ty * TILE + 20 + rnd(-14, 14), vx: rnd(-80, 80), vy: rnd(-80, 80), life: rnd(.4, .8), max: .8, size: rnd(2, 5), col: OBS[o].mm, rot: 0 }); } } } finally { this.quiet = false; } return;
+      case 'it': if (g.isHost) return;
+        for (const a of m.a || []) if (!items.some(i => i.iid === a[0])) items.push({ iid: a[0], res: RES_KEYS[a[1]], amt: a[2], x: a[3], y: a[4], vx: a[5] || 0, vy: a[6] || 0, t: 0, dead: false });
+        if ((m.u && m.u.length) || (m.r && m.r.length)) { const map = new Map(items.map(i => [i.iid, i])); for (const [id, n] of m.u || []) { const it = map.get(id); if (it) it.amt = n; } for (const id of m.r || []) { const it = map.get(id); if (it) it.dead = true; } items = items.filter(i => !i.dead); }
+        return;
+      case 'drop': if (g.isHost) for (const [ri, n, x, y] of m.l || []) if (RES_KEYS[ri]) spawnItem(RES_KEYS[ri], n, x, y); return;
+      case 'pick': {
+        if (!g.isHost) return;
+        const it = items.find(i => i.iid === m.i && !i.dead); if (!it) return;
+        const n = Math.min(it.amt, Math.floor((m.f || 0) / RES[it.res].w + 1e-6)); if (n <= 0) return;
+        it.amt -= n; if (it.amt <= 0) it.dead = true;
+        this.send({ t: 'got', to: from, n: m.n, res: it.res, a: n, x: Math.round(it.x), y: Math.round(it.y) }); return;
+      }
+      case 'got': {
+        if (m.crate !== undefined) { if (m.ty === 'donnees' && raidStats) { raidStats.archives++; floatText(m.x, m.y - 20, 'Archive de données', '#7fa9ff'); } SFX.play('open', 1, m.x, m.y); return; }
+        const u = g.local.get(m.n);
+        const got = u && !u.dead ? addCargo(u, m.res, m.a) : 0;
+        if (got > 0) { floatText(m.x, m.y - 10, '+' + got + ' ' + RES[m.res].n, u === focus() ? RES[m.res].c : '#6fe3c8'); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[m.res] || 880, chord: m.res === 'heart' || m.res === 'cores' }); if (m.res === 'heart') msg('Cœur de Colosse récupéré. Ramenez-le vivant.', '#ff8a5c', 8); }
+        if (m.a - got > 0) spawnItem(m.res, m.a - got, m.x, m.y);
+        return;
+      }
+      case 'crate':
+        if (m.open) { const set = new Set(m.open); for (const c of crates) if (set.has(c.cid) && !c.open) { c.open = true; c.netOpen = true; } return; }
+        if (g.isHost && m.o !== undefined) { const c = crates.find(x => x.cid === m.o); if (!c || c.open) return; c.open = true; if (c.claimed) c.claimed = null; dropTable(CRATE_LOOT[c.type], c.x, c.y); this.send({ t: 'got', to: from, crate: c.cid, ty: c.type, x: Math.round(c.x), y: Math.round(c.y) }); }
+        return;
+      case 'pyl': for (const i of m.l || []) { const p = W.pylons[i]; if (p && !p.active) { p.active = true; reveal(p.x, p.y, 1900); if (!g.isHost) p.netAct = true; } } return;
+      case 'pulse': {
+        if (!g.isHost) return;
+        const bu = this.peerBeacon(m.b) || { x: m.x, y: m.y, dead: false }, rad = 800 + (m.c || 0) * 1000;
+        for (const e of units) { if (e.kind !== 'enemy' || e.dead || e.static || e.boss || e.net) continue; if (d2(e.x, e.y, m.x, m.y) < rad * rad) { e.forced = bu.nid !== undefined ? bu : null; e.active = true; } }
+        spawnGroup(m.x, m.y, 1000, 1350, Math.round((1 + alertLv * .8 + (m.c || 0) * 3.5) * diff.spawn * armyScale(.6)), bu.nid !== undefined ? { forced: bu } : { alerted: true });
+        rivalsHear(m.x, m.y); return;
+      }
+    }
+  },
+  onWorldInit(m) {
+    const g = this.game; if (g.isHost) return;
+    crates = (m.cr || []).map(([cid, x, y, t, o]) => ({ cid, x, y, type: CRATE_T[t] || 'caisse', open: !!o, netOpen: !!o }));
+    items = (m.it || []).map(([iid, ri, amt, x, y]) => ({ iid, res: RES_KEYS[ri], amt, x, y, vx: 0, vy: 0, t: 1, dead: false })).filter(i => i.res);
+    for (const i of m.py || []) { const p = W.pylons[i]; if (p) { p.active = true; p.netAct = true; } }
+    this.quiet = true;
+    try { for (const i of m.tl || []) { g.gone.add(i); const o = W.obs[i]; if (o && o < 7) { W.obs[i] = 0; W.ohp[i] = 0; miniSetTile(i % WT, (i / WT) | 0); } } } finally { this.quiet = false; }
+    alertLv = m.al | 0; g.gotWorld = true;
+  },
+  onUnits(from, m) {
+    const g = this.game; let p = g.peers.get(from);
+    if (!p) { p = { name: '?', slot: 1, done: false, focus: null, beacon: null, ready: false }; g.peers.set(from, p); }
+    if (m.f && (m.f[0] || m.f[1])) p.focus = m.f; p.beacon = m.b || null; p.last = performance.now();
+    this.onEntities(from, m, false);
+    for (const nid of m.x || []) { const u = g.byNid.get(nid); if (u) { u.dead = true; parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .35, max: .35, size: u.r * 3.5, col: '#fff8dc', a: 0 }); } }
+  },
+  onEntities(from, m, world) {
+    const g = this.game, now = performance.now();
+    for (const nid in m.sp || {}) { const s = m.sp[nid]; s.o = from; s.world = world; g.specs.set(+nid, s); }
+    for (const e of m.l || []) this.apply(e, from, now);
+    for (const nid of m.d || []) this.die(nid);
+  },
+  apply(e, owner, now) {
+    const g = this.game, nid = e[0];
+    if (g.local.has(nid)) return; // c'est une de nos unités (après une reprise de l'hôte)
+    let u = g.byNid.get(nid);
+    if (u && u.dead) { g.byNid.delete(nid); u = null; }
+    if (!u) { const s = g.specs.get(nid); if (!s) return; u = this.makeProxy(nid, s, owner, e); if (!u) return; }
+    const dt = Math.max(.05, (now - (u.seen || now)) / 1000), mvd = Math.hypot(e[1] - u.nx, e[2] - u.ny);
+    u.nmv = clamp(mvd / dt / ((u.spd || 100) * .6 + 1), 0, 1);
+    u.owner = owner; u.seen = now; u.nx = e[1]; u.ny = e[2]; u.na = e[3] / 100; u.hp = e[4]; u.maxhp = 1000;
+    const f = e[5]; u.hidden = !!(f & 1); u.piloted = !!(f & 2); u.shield = f & 4 ? 60 : 0; u.shieldMax = 100; u.cloak = !!(f & 8); if (u.cloak) u.lastFire = -9; u.netWin = !!(f & 16);
+    u.jz = (e[7] || 0) / 100; u.netCharge = (e[8] || 0) / 1000; if (u.crew) u.crew.charge = u.netCharge;
+    const ms = e[6], fresh = now - u.born > 350;
+    if (!ms) return;
+    if (u.kind === 'pilot') { const fc = ms[1]; if (u.gfc === undefined) u.gfc = fc; else if (fc !== u.gfc) { const n = Math.min(3, (fc - u.gfc + 256) & 255); u.gfc = fc; if (fresh) for (let k = 0; k < n; k++) this.visPilot(u, ms[0] / 100); } return; }
+    for (let i = 0; i < u.mounts.length && i * 3 < ms.length; i++) {
+      const mt = u.mounts[i]; mt.aim = ms[i * 3] / 100; mt.td = ms[i * 3 + 2] * 10; const fc = ms[i * 3 + 1];
+      if (mt.nfc === undefined) mt.nfc = fc;
+      else if (fc !== mt.nfc) { const n = Math.min(3, (fc - mt.nfc + 256) & 255); mt.nfc = fc; if (fresh) for (let k = 0; k < n; k++) this.visFire(u, mt); }
+    }
+  },
+  makeProxy(nid, s, owner, e) {
+    const g = this.game, x = e[1], y = e[2], world = !!s.world || s.k === 'e' || s.k === 'rb' || s.k === 'rl' || s.k === 'b2' || !!s.wm;
+    const peer = g.peers.get(s.o || owner), slot = peer ? peer.slot : 1;
+    let u;
+    try {
+      switch (s.k) {
+        case 'e': if (!ENEMIES[s.e]) return null; u = makeEnemy(s.e, x, y, { active: true }); units.pop(); break;
+        case 'r': case 'rb': if (!CHASSIS[s.c]) return null; u = makeRobot({ chassis: s.c, weapons: (s.w || []).filter(w => WEAPONS[w]), modules: [], brain: 'escort', hp: 1, xp: s.xp || 0, traits: [], name: s.n || '', id: -1 }, x, y); u.kind = s.k === 'rb' ? 'rival' : 'robot'; if (s.k === 'rb') u.role = 'bot'; break;
+        case 'p': case 'rl': {
+          const pw = PWEAPONS[s.pw] || PWEAPONS.pistol;
+          u = baseUnit({ kind: s.k === 'rl' ? 'rival' : 'pilot', role: s.k === 'rl' ? 'leader' : undefined, x, y, r: 12, human: true, pw: s.k === 'rl' ? { gun: 'ar' } : pw, cargoW: 0, cargoMax: 1, name: s.n || '', spd: 210 });
+          if (s.k === 'rl') u.mounts = [makeMount('e_rifle', Object.assign({}, WEAPONS.e_rifle), 7, 4)];
+          break;
+        }
+        case 'm': u = baseUnit({ kind: 'minion', r: 8, fly: true, mscale: .7, x, y, spd: 270 }); u.mounts = [makeMount('mg_mini', WEAPONS.mg_mini, 3, 0)]; u.worldMinion = !!s.wm; break;
+        case 'b': case 'b2': u = baseUnit({ kind: s.k === 'b' ? 'beacon' : 'beacon2', r: 18, x, y, name: 'Balise' }); break;
+        default: return null;
+      }
+    } catch (er) { return null; }
+    const team = world ? (s.k === 'e' ? 1 : 2) : (g.mode === 'coop' ? 0 : 3 + slot);
+    Object.assign(u, { net: true, nid, owner, team, active: true, static: true, born: performance.now(), seen: performance.now(), nx: x, ny: y, na: e[3] / 100, ang: e[3] / 100, x, y, vx: 0, vy: 0, mv: 0, sel: false, order: null });
+    if (s.k === 'rb' || s.k === 'rl' || s.k === 'b2') u.crew = { pal: CREW_PALS[s.p || 0] || CREW_PALS[0], name: s.n || '', charge: 0 };
+    if (!world) { u.npal = (s.k === 'p' ? NPPALS : NPALS)[slot % 4]; u.pname = peer ? peer.name : (s.n || ''); u.pslot = slot; }
+    units.push(u); g.byNid.set(nid, u);
+    return u;
+  },
+  die(nid) {
+    const u = this.game.byNid.get(nid); if (!u || u.dead) return;
+    u.dead = true; this.game.byNid.delete(nid);
+    if (u.kind !== 'pilot') boom(u.x, u.y, Math.max(30, u.r * 2.2)); else { SFX.play('death', .6, u.x, u.y); boom(u.x, u.y, 40); }
+  },
+  onHits(m) {
+    const g = this.game;
+    for (const [nid, amt, sn] of m.h || []) {
+      const u = g.local.get(nid); if (!u || u.dead || u.net) continue;
+      const src = sn ? (g.byNid.get(sn) || null) : null;
+      damage(u, amt, src);
+    }
+  },
+  onKill(m) {
+    const g = this.game, src = g.local.get(m.s);
+    if (!raidStats) return;
+    if (m.k === 'e') {
+      raidStats.kills++; raidStats.byType[m.e] = (raidStats.byType[m.e] || 0) + 1;
+      const E = ENEMIES[m.e], xp = Math.max(1, (E ? E.hp : 100) / 10);
+      if (src && src.kind === 'robot' && !src.dead) { src.kills = (src.kills || 0) + 1; giveXP(src, xp); }
+      if (src) for (const v of fleet) if (v !== src && !v.dead && d2(v.x, v.y, src.x, src.y) < 600 * 600) giveXP(v, xp * .25);
+      if (m.el) msg('Mastodonte abattu.', '#f2c14e');
+      if (m.b && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.e; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; msg((E ? E.n : 'Le boss') + ' est tombé sous vos coups !', '#ff8a5c', 8); }
+    } else if (m.k === 'rl') { raidStats.rivalKills++; msg('Vous avez abattu le chef de ' + (m.cr || 'l\'équipe rivale') + '.', COL.rival, 6); }
+    else if (m.k === 'b2') { raidStats.sabotage++; msg('Balise de ' + (m.cr || 'l\'équipe rivale') + ' détruite par vos tirs.', COL.rival, 5); }
+    else if (m.k === 'pilot') { save.stats.pvpKills = (save.stats.pvpKills || 0) + 1; msg('Vous avez abattu ' + m.n + ' ! Son butin est tombé au sol.', '#ff8a5c', 7); }
+    else if (m.k === 'robot') msg('Robot adverse détruit : ' + m.n + '.', '#f2c14e', 4);
+    if (src && isMine(src)) { killMarkT = .4; SFX.play('kill', .7); }
+  },
+  // ---------- reproduction des tirs des autres ----------
+  visFire(u, m) {
+    const w = m.w; if (!w || w.kind === 'repair' || w.kind === 'shield' || w.kind === 'bay') return;
+    u.lastFire = time;
+    const [mx, my] = mountWorldPos(u, m), a = m.aim, range = m.td > 20 ? m.td : (w.range || 400), sc = u.mscale || 1;
+    NETVIS = true;
+    try {
+      if (w.kind === 'beam') {
+        const ca = Math.cos(a), sa = Math.sin(a), sx = mx + ca * 14 * sc, sy = my + sa * 14 * sc; let len = w.range;
+        for (let s = 0; s < w.range; s += 20) { const tx = ((sx + ca * s) / TILE) | 0, ty = ((sy + sa * s) / TILE) | 0; if (tx < 0 || ty < 0 || tx >= WT || ty >= WT || W.obs[ty * WT + tx]) { len = s; break; } }
+        beams.push({ x1: sx, y1: sy, x2: sx + ca * len, y2: sy + sa * len, life: .16, max: .16, col: w.col, w: 4 * sc * .7, hot: true }); m.recoil = .3;
+        SFX.hold('b' + u.id + '_' + u.mounts.indexOf(m), 'beam', .4, sx, sy);
+      } else if (w.kind === 'fusion') fusionShot(u, m, mx, my, w);
+      else if (w.kind === 'chain') { const sx = mx + Math.cos(a) * 13 * sc, sy = my + Math.sin(a) * 13 * sc, L = Math.min(range, w.range); beams.push({ pts: zig(sx, sy, sx + Math.cos(a) * L, sy + Math.sin(a) * L, 7, 10), life: .18, max: .18, col: w.col, w: w.chain > 4 ? 3 : 2 }); m.recoil = 1; SFX.play(w.snd, .5, sx, sy, { size: w.size || 1 }); }
+      else if (w.kind === 'melee') { m.recoil = 1; sparks(mx + Math.cos(a) * 18 * sc, my + Math.sin(a) * 18 * sc, 5, '#e8f0ff'); SFX.play(w.snd || 'melee', .5, u.x, u.y); }
+      else fireMountCore(u, m, mx + Math.cos(a) * range, my + Math.sin(a) * range, null, w);
+    } catch (er) { } finally { NETVIS = false; }
+  },
+  visPilot(u, aim) {
+    const w = u.pw; if (!w || !w.kind) return;
+    u.lastFire = time; u.ang = aim;
+    const sx = u.x + Math.cos(aim) * 18, sy = u.y + Math.sin(aim) * 18;
+    NETVIS = true;
+    try {
+      if (w.kind === 'chain') beams.push({ pts: zig(sx, sy, sx + Math.cos(aim) * 170, sy + Math.sin(aim) * 170, 6, 8), life: .12, max: .12, col: w.col, w: 2 });
+      else for (let i = 0; i < (w.pellets || 1); i++) { const b = shoot(sx, sy, aim + (Math.random() - .5) * 2 * w.spread, w.kind === 'rocket' ? w.spd * .4 : w.spd, w.dmg, u.team, w.range, w.kind, w.col, w.pierce || 0, u, w.splash || 0, 1); b.maxSpd = w.spd; }
+      muzzle(sx, sy, aim, '#ffe6a8', 1.2); SFX.play(w.snd, .55, sx, sy);
+    } catch (er) { } finally { NETVIS = false; }
+  },
+  // ---------- affichage ----------
+  drawZones(c) {
+    if (!this.game || this.game.mode !== 'coop') return;
+    for (const u of this.game.byNid.values()) {
+      if (u.dead || u.kind !== 'beacon') continue;
+      c.save(); c.translate(u.x, u.y); c.strokeStyle = u.netWin ? '#f2c14e' : 'rgba(242,193,78,.3)'; c.lineWidth = u.netWin ? 3 : 1.5; c.setLineDash([14, 12]); c.lineDashOffset = -time * 30; circ(c, 0, 0, ZONE_R); c.stroke(); c.setLineDash([]); c.restore();
+    }
+  },
+  drawTags(c) {
+    const z = cam.zoom, g = this.game; if (!g) return;
+    c.textAlign = 'center'; c.font = `700 ${12 / z}px ${FONT}`;
+    for (const u of g.byNid.values()) {
+      if (u.dead || u.hidden || !u.pname || !(u.kind === 'pilot' || (u.kind === 'robot' && (u.piloted || tactical)))) continue;
+      const y = u.y - u.r - (u.kind === 'pilot' ? 18 : 22) / z;
+      c.fillStyle = 'rgba(14,17,18,.75)'; const tw = c.measureText(u.pname).width; c.fillRect(u.x - tw / 2 - 5 / z, y - 12 / z, tw + 10 / z, 16 / z);
+      c.fillStyle = g.mode === 'pvp' ? COL.enemy2 : NPAL_ACC[(u.pslot || 0) % 4]; c.fillText(u.pname, u.x, y);
+    }
+  },
+  drawParty(c, x, y, w) {
+    const g = this.game; if (!g) return;
+    const ps = [...g.peers.values()].sort((a, b) => a.slot - b.slot), F = focus(), h = 22 + ps.length * 17;
+    panel(c, x, y, w, h); c.textAlign = 'left'; c.font = `700 12px ${FONT}`; c.fillStyle = g.mode === 'pvp' ? COL.rival : COL.ally;
+    c.fillText((g.mode === 'pvp' ? 'PvP' : 'Coopération') + (g.isHost ? ' · hôte' : '') + (g.offline ? ' · hors ligne' : ''), x + 8, y + 15);
+    c.font = `500 11.5px ${FONT}`;
+    ps.forEach((p, i) => {
+      const yy = y + 32 + i * 17; c.fillStyle = NPAL_ACC[p.slot % 4]; c.fillRect(x + 8, yy - 8, 7, 7);
+      c.fillStyle = '#e8dcc4'; c.fillText(fitText(c, p.name, w - 90), x + 20, yy);
+      c.textAlign = 'right'; c.fillStyle = '#a59c88';
+      c.fillText(p.done ? 'parti' : p.focus ? Math.round(Math.hypot(p.focus[0] - F.x, p.focus[1] - F.y) / 10) + ' m' : '…', x + w - 8, yy); c.textAlign = 'left';
+    });
+  },
+  drawMini(c, M) {
+    const g = this.game; if (!g) return;
+    for (const u of g.byNid.values()) {
+      if (u.dead || u.hidden || u.pslot === undefined) continue;
+      const [mx, my] = M(u.x, u.y), s = u.kind === 'pilot' ? 5 : 3;
+      c.fillStyle = g.mode === 'pvp' ? COL.enemy : NPAL_ACC[u.pslot % 4]; c.fillRect(mx - s / 2, my - s / 2, s, s);
+      if (u.kind === 'pilot') { c.strokeStyle = '#fff'; c.lineWidth = 1; c.strokeRect(mx - s / 2 - .5, my - s / 2 - .5, s + 1, s + 1); }
+    }
+  },
+};
 
 // ================= MODE ASSAUT =================
 let AS = null;
 function assaultLoot(hq, pct, stars) { const k = hq * (pct / 100) * (1 + stars * .25); return { scrap: Math.round(90 * k), alloy: Math.round(28 * k), circuits: Math.round(22 * k), data: Math.round(7 * k) }; }
 function curBuildings() { return state === 'assault' && AS ? AS.b : save.base.b; }
-function startAssault(id) {
-  const tb = NET.bases.find(b => b.id === id); if (!tb) { toast('Base introuvable.'); return; }
+async function startAssault(id) {
+  let tb = NET.bases.find(b => b.id === id); if (!tb) { toast('Base introuvable.'); return; }
   if (attack) { toast('Repoussez d\'abord l\'attaque sur votre base.'); return; }
   if (!save.robots.some(r => r.deploy)) { toast('Déployez au moins un robot au hangar.'); return; }
-  const cd = JSON.parse(localStorage.getItem('colosse_atk_cd') || '{}'); cd[id] = Date.now() + 30 * 60000; localStorage.setItem('colosse_atk_cd', JSON.stringify(cd));
+  // le serveur vérifie le bouclier et réserve la base le temps de l'assaut
+  try {
+    if (NET.kind === 'http') { const r = await api('/api/assault/start', { token: NET.token, target: id }); tb = Object.assign({}, tb, { b: r.b || tb.b, hq: r.hq || tb.hq }); NET.shield = 0; }
+    else if (NET.kind === 'claude') { const prev = (await NET.db.collection('attacks').where('target', '==', id).limit(60).get()).docs.map(d => d.data()), sh = claudeShield(prev); if (sh) throw new Error('cette base est sous bouclier encore ' + hm((sh - Date.now()) / 1000)); }
+  } catch (e) { toast('Assaut impossible : ' + e.message + '.'); netPoll(); return; }
+  if (state !== 'base') return;
+  const cd = JSON.parse(localStorage.getItem('colosse_atk_cd') || '{}'); cd[id] = Date.now() + 20 * 60000; localStorage.setItem('colosse_atk_cd', JSON.stringify(cd));
   leaveBase(); showOverlay('loading', true); $('#loadTxt').textContent = 'Approche de la base adverse…';
   setTimeout(() => {
     const list = (tb.b || []).map((a, i) => ({ id: 9000 + i, type: BUILD_KEYS[a[0]], tx: a[1], ty: a[2], lvl: a[3], busy: 0, armed: true })).filter(b => BUILD[b.type] && b.tx > BX0 && b.ty > BY0 && b.tx < BX1 && b.ty < BY1);
@@ -4442,20 +5259,26 @@ function assaultTick(dt) {
 function assaultBuildingDown(b) { if (!AS) return; if (b.type !== 'wall' && b.type !== 'mine') AS.destroyed++; if (b.type === 'hq') { AS.hqDown = true; msg('QG adverse détruit !', '#f2c14e', 4); } }
 function endAssault() {
   if (!AS || AS.over) return; AS.over = true;
-  const pct = Math.round(AS.destroyed / AS.total * 100), stars = assaultStars(), loot = assaultLoot(AS.hq, pct, stars);
-  for (const k in loot) save.res[k] += loot[k];
+  const pct = Math.round(AS.destroyed / AS.total * 100), stars = assaultStars(), base = assaultLoot(AS.hq, pct, stars), salvage = {};
+  for (const k in base) { salvage[k] = Math.round(base[k] * .35); save.res[k] += salvage[k]; } // récupération sur les carcasses
   if (stars >= 1) save.stats.assaults = (save.stats.assaults || 0) + 1;
   const ko = [];
   for (const r of fleet) { const sr = save.robots.find(s => s.id === r.sid); if (!sr) continue; if (r.dead) { syncRobotSave(r, false); sr.hp = .15; ko.push(sr.name); } else syncRobotSave(r, true); }
   writeSave();
-  netAttack(AS.target, stars, pct);
+  const tgt = AS.target, rows = (o, sign) => RES_KEYS.filter(k => o[k]).map(k => `<div><span>${RES[k].n}</span><b class="good">${sign}${fmt(o[k])}</b></div>`).join('');
   state = 'result'; tactical = false; mapOpen = false; SFX.play(stars >= 1 ? 'success' : 'fail', 1);
   $('#resultBox').innerHTML = `<h3>${stars ? 'Assaut réussi' : 'Assaut repoussé'}</h3>
-    <p>Base de ${esc(netName(AS.target))} · ${pct} % de destruction · ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
-    <div class="slot-h">Butin</div><div class="res-list">${RES_KEYS.filter(k => loot[k]).map(k => `<div><span>${RES[k].n}</span><b class="good">+${fmt(loot[k])}</b></div>`).join('') || '<div><span>Rien</span><b>—</b></div>'}</div>
+    <p>Base de ${esc(netName(tgt))} · ${pct} % de destruction · ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
+    <div class="slot-h">Pillé dans ses stocks</div><div class="res-list" id="stolenRows"><div><span>${stars ? 'Calcul du butin…' : 'Aucune étoile : rien n\'est volé.'}</span><b>—</b></div></div>
+    <div class="slot-h">Récupéré sur les carcasses</div><div class="res-list">${rows(salvage, '+') || '<div><span>Rien</span><b>—</b></div>'}</div>
     ${ko.length ? `<p class="lost">Robots hors service, réparés en urgence : ${ko.map(esc).join(', ')}</p>` : ''}
     <div class="btns"><button class="btn hot" data-act="tohub">Retour à la base</button></div>`;
   showOverlay('result', true);
+  netAttack(tgt, stars, pct).then(loot => {
+    for (const k in loot) if (STEAL_KEYS.includes(k)) save.res[k] = (save.res[k] || 0) + (loot[k] | 0);
+    if (Object.keys(loot).length) writeSave();
+    const el = $('#stolenRows'); if (el) el.innerHTML = rows(loot, '+') || `<div><span>${stars ? 'Ses stocks étaient protégés par son entrepôt ou son bouclier.' : 'Aucune étoile : rien n\'est volé.'}</span><b>—</b></div>`;
+  });
 }
 function drawAssaultPanel(c) {
   panel(c, 14, 14, 300, 62); c.textAlign = 'left';
@@ -4490,7 +5313,7 @@ function render() {
   const vx0 = cam.x - hw - 80, vx1 = cam.x + hw + 80, vy0 = cam.y - hh - 80, vy1 = cam.y + hh + 80;
   drawGround(c, vx0, vy0, vx1, vy1);
   const ds = decalSprite(); for (const d of decals) { if (d.x < vx0 - d.r || d.x > vx1 + d.r || d.y < vy0 - d.r || d.y > vy1 + d.r) continue; c.drawImage(ds, d.x - d.r, d.y - d.r, d.r * 2, d.r * 2); }
-  drawZone(c);
+  drawZone(c); if (LIVE.game) LIVE.drawZones(c);
   for (const p of W.pylons) if (p.x > vx0 - 100 && p.x < vx1 + 100 && p.y > vy0 - 100 && p.y < vy1 + 100) drawPylon(c, p);
   for (const cr of crates) if (cr.x > vx0 && cr.x < vx1 && cr.y > vy0 && cr.y < vy1) drawCrate(c, cr);
   for (const it of items) if (!it.dead && it.x > vx0 && it.x < vx1 && it.y > vy0 && it.y < vy1) drawItem(c, it);
@@ -4515,7 +5338,7 @@ function render() {
   c.globalAlpha = 1;
   drawBeaconLight(c);
   if (state === 'base') drawBaseWorldOverlay(c);
-  drawOverlays(c, vis);
+  drawOverlays(c, vis); if (LIVE.game) LIVE.drawTags(c);
   c.restore();
   if (!vignette) { vignette = c.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * .35, VW / 2, VH / 2, Math.max(VW, VH) * .75); vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,.55)'); }
   c.fillStyle = vignette; c.fillRect(0, 0, VW, VH);
@@ -4576,7 +5399,7 @@ function drawObstacles(c, vx0, vy0, vx1, vy1) {
     if (o !== 7 && H[i] < OBS[o].hp * .55) { c.fillStyle = 'rgba(10,8,6,.35)'; c.fillRect(tx * TILE + 6, ty * TILE + 6, 28, 28); }
   }
 }
-function palOf(u) { if (u.team === 2) return u.crew ? u.crew.pal : CREW_PALS[0]; return u.team === 1 ? (u.etype === 'archonte' ? PAL.archon : u.boss ? PAL.boss : u.human ? PAL.human : PAL.enemy) : u.kind === 'player' ? PAL.player : PAL.ally; }
+function palOf(u) { if (u.npal) return u.npal; if (u.team === 2) return u.crew ? u.crew.pal : CREW_PALS[0]; return u.team === 1 ? (u.etype === 'archonte' ? PAL.archon : u.boss ? PAL.boss : u.human ? PAL.human : PAL.enemy) : u.kind === 'player' ? PAL.player : PAL.ally; }
 function drawUnit(c, u) {
   const P = palOf(u);
   if (u.kind === 'building') {
@@ -4615,7 +5438,8 @@ function drawBeaconBody(c, u) {
   const p = .5 + .5 * Math.sin(time * 6);
   if (u.kind === 'beacon2') { const cr = u.crew; c.fillStyle = cr ? cr.pal.acc : COL.rival; c.globalAlpha = .5 + p * .5; circ(c, 0, 0, 6); c.fill(); c.globalAlpha = 1; if (cr) { c.strokeStyle = cr.pal.acc; c.lineWidth = 4; c.beginPath(); c.arc(0, 0, 28, -Math.PI / 2, -Math.PI / 2 + TAU * cr.charge); c.stroke(); } return; }
   c.fillStyle = `rgba(242,193,78,${.5 + p * .5})`; circ(c, 0, 0, 5); c.fill();
-  if (B.state === 'charging' || B.state === 'window') { c.strokeStyle = '#f2c14e'; c.lineWidth = 4; c.beginPath(); c.arc(0, 0, 28, -Math.PI / 2, -Math.PI / 2 + TAU * B.charge); c.stroke(); }
+  const chg = u.net ? u.netCharge : B.charge;
+  if (u.net ? chg > 0 : (B.state === 'charging' || B.state === 'window')) { c.strokeStyle = u.npal ? u.npal.acc : '#f2c14e'; c.lineWidth = 4; c.beginPath(); c.arc(0, 0, 28, -Math.PI / 2, -Math.PI / 2 + TAU * chg); c.stroke(); }
 }
 function drawZone(c) {
   if (!B || !B.unit) return; const u = B.unit;
@@ -4845,6 +5669,7 @@ function drawHUD(c) {
   // --- minicarte
   const S = Math.round(TOUCH.on ? clamp(VW * .15, 100, 160) : clamp(VW * .17, 130, 210));
   drawMinimap(c, VW - S - 14, 14, S, 150);
+  if (LIVE.game) LIVE.drawParty(c, VW - S - 14, 14 + S + 8, S);
   // --- bas gauche : pilote (en haut à gauche, compact, sur écran tactile)
   const px = 14, py = VH - 96, F = focus();
   if (TOUCH.on) {
@@ -4912,6 +5737,7 @@ function drawMinimap(c, x, y, S, tw) {
   for (const e of units) { if (e.kind !== 'enemy' || e.dead || !e.active) continue; if (d2(e.x, e.y, F.x, F.y) > 1100 * 1100) continue; const [mx, my] = M(e.x, e.y); c.fillStyle = e.boss ? '#ff2a3a' : COL.enemy2; const s = e.boss ? 6 : e.elite ? 4 : 2; c.fillRect(mx - s / 2, my - s / 2, s, s); }
   for (const e of units) { if (e.dead) continue; if (e.kind === 'rival' && (d2(e.x, e.y, F.x, F.y) < 1100 * 1100 || (radarLv >= 3 && e.role === 'leader'))) { const [mx, my] = M(e.x, e.y); c.fillStyle = COL.rival; const s = e.role === 'leader' ? 5 : 3; c.fillRect(mx - s / 2, my - s / 2, s, s); } if (e.kind === 'beacon2') { const [mx, my] = M(e.x, e.y); c.strokeStyle = COL.rival; c.lineWidth = 2; circ(c, mx, my, 6); c.stroke(); } }
   for (const r of fleet) { if (r.dead) continue; const [mx, my] = M(r.x, r.y); c.fillStyle = '#6fe3c8'; const s = Math.max(3, r.r * k / TILE * 2); c.fillRect(mx - s / 2, my - s / 2, s, s); }
+  if (LIVE.game) LIVE.drawMini(c, M);
   if (B.unit) { const [mx, my] = M(B.unit.x, B.unit.y); c.strokeStyle = '#f2c14e'; c.lineWidth = 1.5; circ(c, mx, my, ZONE_R / TILE * k); c.stroke(); c.fillStyle = '#f2c14e'; circ(c, mx, my, 3); c.fill(); }
   if (!W.isBase) { const [cx, cy] = M(WPX / 2, WPX / 2); c.strokeStyle = 'rgba(255,42,58,.6)'; c.lineWidth = 1; circ(c, cx, cy, 27 * k); c.stroke(); }
   const [px, py] = M(F.x, F.y); c.save(); c.translate(px, py); c.rotate(player.inside ? player.inside.ang : player.ang); c.fillStyle = '#ff8a3d'; c.beginPath(); c.moveTo(6, 0); c.lineTo(-4, -4); c.lineTo(-4, 4); c.closePath(); c.fill(); c.restore();
@@ -4932,6 +5758,7 @@ function drawBigMap(c) {
   const [cx, cy] = M(WPX / 2, WPX / 2); c.strokeStyle = 'rgba(255,42,58,.75)'; c.lineWidth = 2; circ(c, cx, cy, 27 * TILE * k); c.stroke();
   c.fillStyle = '#ff6b74'; c.font = `600 12px ${FONT}`; c.textAlign = 'center'; c.fillText('Cratère du Souverain', cx, cy - 27 * TILE * k - 6);
   for (const r of fleet) { if (r.dead) continue; const [mx, my] = M(r.x, r.y); c.fillStyle = '#6fe3c8'; c.fillRect(mx - 2.5, my - 2.5, 5, 5); }
+  if (LIVE.game) LIVE.drawMini(c, M);
   if (B.unit) { const [mx, my] = M(B.unit.x, B.unit.y); c.fillStyle = '#f2c14e'; circ(c, mx, my, 5); c.fill(); }
   for (const cr of crews) { if (cr.beacon && !cr.beacon.dead && !cr.out) { const [mx, my] = M(cr.beacon.x, cr.beacon.y); c.strokeStyle = COL.rival; c.lineWidth = 2; circ(c, mx, my, 7); c.stroke(); c.fillStyle = COL.rival; c.font = `600 11px ${FONT}`; c.textAlign = 'center'; c.fillText(cr.name, mx, my - 10); } if (radarLv >= 3 && !cr.dead && !cr.out) { const [mx, my] = M(cr.leader.x, cr.leader.y); c.fillStyle = COL.rival; c.fillRect(mx - 3, my - 3, 6, 6); } }
   const F = focus(); const [px, py] = M(F.x, F.y); c.fillStyle = '#ff8a3d'; circ(c, px, py, 5); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke();
@@ -5218,6 +6045,7 @@ document.addEventListener('pointerup', e => { if (e.pointerId === actPointer) { 
 document.addEventListener('pointercancel', e => { if (e.pointerId === actPointer) { keys.INTERACT = false; actPointer = null; } });
 // retour Android / Échap
 window.colosseBack = function () {
+  if ($('#account').classList.contains('on')) { showOverlay('account', false); return; }
   if ($('#settings').classList.contains('on')) { closeSettings(); return; }
   if ($('#help').classList.contains('on')) { showOverlay('help', false); return; }
   if (drawerOpen) { closeDrawer(); return; }
@@ -5234,7 +6062,7 @@ setInterval(() => { checkOrientation(); updateTouchUI(); }, 500);
 function registerSW() {
   try { if ('serviceWorker' in navigator && document.querySelector('link[rel=manifest]') && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
 }
-window.colossePause = () => { if (inGame() && !paused && state !== 'base') pauseGame(); };
+window.colossePause = () => { if (inGame() && !paused && state !== 'base' && !LIVE.game) pauseGame(); };
 document.addEventListener('visibilitychange', () => { if (document.hidden) window.colossePause(); SFX.suspend(document.hidden); });
 window.colosseAudio = on => SFX.suspend(!on);
 
@@ -5560,7 +6388,7 @@ document.addEventListener('click', e => {
     case 'enter': save.seen = true; writeSave(); enterBase(); break;
     case 'help': renderHelp(); showOverlay('help', true); break;
     case 'closehelp': showOverlay('help', false); break;
-    case 'reset': if (confirm('Effacer toute la progression et recommencer ?')) { save = newSave(); writeSave(); toast('Sauvegarde effacée.'); } break;
+    case 'reset': if (confirm(ACC.mode === 'server' ? 'Effacer toute la progression du compte ' + ACC.name + ' (sur ce serveur et tous vos appareils) et recommencer ?' : 'Effacer toute la progression de cet appareil et recommencer ?')) { save = newSave(); writeSave(); refreshTitle(); toast('Sauvegarde effacée.'); } break;
     case 'opentab': openDrawer(id); break;
     case 'closedrawer': closeDrawer(); break;
     case 'pausebase': pauseGame(); break;
@@ -5597,7 +6425,7 @@ document.addEventListener('click', e => {
     case 'research': { const r = RESEARCH_BY_ID[id]; if (r && !has(r.id) && canAfford(r.cost) && (!r.req || has(r.req)) && (r.lab || 1) <= labLevel()) { pay(r.cost); save.research[r.id] = true; writeSave(); SFX.play('research', 1); toast(r.n + ' : recherche terminée.'); renderHub(); } break; }
     case 'diff': save.diff = +id; writeSave(); SFX.play('ui', 1); renderHub(); break;
     case 'pweapon': save.pweapon = id; writeSave(); SFX.play('ui', 1); renderHub(); if (player && state === 'base') { player.pw = PWEAPONS[id]; player.ammo = player.pw.mag; } break;
-    case 'launch': if (attack) { toast('Repoussez d\'abord l\'attaque.'); SFX.play('deny', 1); break; } leaveBase(); startRaid(); break;
+    case 'launch': if (attack) { toast('Repoussez d\'abord l\'attaque.'); SFX.play('deny', 1); break; } if (LIVE.room) LIVE.leave(); leaveBase(); startRaid(); break;
     case 'place': startPlacing(id); break;
     case 'bclose': baseSel = null; updateBPanel(); break;
     case 'bopen': openBuilding(baseSel); break;
@@ -5608,8 +6436,8 @@ document.addEventListener('click', e => {
     case 'resume': resumeGame(); break;
     case 'mute': muted = !muted; SFX.applyVolumes(); el.textContent = muted ? 'Rétablir le son' : 'Couper le son'; break;
     case 'abandon': showOverlay('pause', false); paused = false; if (state === 'assault') { endAssault(); break; } if (player && !player.dead) { player.hp = 0; player.dead = true; } endRaid(false); break;
-    case 'assault': closeDrawer(true); startAssault(id); break;
-    case 'totitle': showOverlay('pause', false); paused = false; writeSave(); leaveBase(); state = 'title'; showScreen('title'); break;
+    case 'assault': if (LIVE.room) LIVE.leave(); closeDrawer(true); startAssault(id); break;
+    case 'totitle': showOverlay('pause', false); paused = false; writeSave(); leaveBase(); state = 'title'; showScreen('title'); refreshTitle(); break;
     case 'tohub': showOverlay('result', false); enterBase(); break;
   }
 });
@@ -5629,13 +6457,14 @@ function pauseGame() {
   const base = state === 'base';
   $('#abandonBtn').textContent = state === 'assault' ? 'Se retirer (garder les étoiles)' : 'Abandonner le raid';
   $('#pauseTxt').textContent = state === 'assault' ? 'Assaut en pause. Vous pouvez vous retirer en gardant les étoiles déjà acquises.' : base ? 'La base est en pause, mais vos bâtiments continuent de produire et de se construire en temps réel.' : 'Le raid est figé. Abandonner compte comme une mort : butin transporté et robots déployés sont perdus.';
+  if (LIVE.game && state === 'raid') $('#pauseTxt').textContent = 'Raid partagé : le monde continue de tourner pendant ce menu, vos robots se défendent seuls. Abandonner compte comme une mort : votre butin reste au sol.';
   $('#abandonBtn').style.display = base ? 'none' : ''; $('#titleBtn').style.display = base ? '' : 'none';
   showOverlay('pause', true);
 }
 function resumeGame() { paused = false; showOverlay('pause', false); showOverlay('help', false); }
 function relPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 function pauseGameSoft() { paused = true; const off = () => { if (!$('#help').classList.contains('on')) { paused = false; } else requestAnimationFrame(off); }; requestAnimationFrame(off); }
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.l = false; mouse.drag = null; if (state === 'raid' && !paused) pauseGame(); });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.l = false; mouse.drag = null; if (state === 'raid' && !paused && !LIVE.game) pauseGame(); });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('mousedown', e => {
   SFX.init(); const p = relPos(e); mouse.x = p.x; mouse.y = p.y;
@@ -5697,7 +6526,9 @@ let lastT = performance.now(), frameN = 0;
 function frame(now) {
   const rdt = Math.min(.05, Math.max(0, (now - lastT) / 1000)); lastT = now;
   try {
-    if (inGame()) { touchFrame(); if (!paused) { update(rdt * (tactical ? .3 : 1)); camUpdate(rdt); } if (!drawerOpen || (frameN++ % 4 === 0)) render(); if (drawerOpen) animateHub(now / 1000); }
+    NETVIS = false;
+    const live = !!(LIVE.game && state === 'raid');
+    if (inGame()) { touchFrame(); if (!paused || live) { update(rdt * (tactical && !live ? .3 : 1)); camUpdate(rdt); } if (live) LIVE.tick(rdt); if (!drawerOpen || (frameN++ % 4 === 0)) render(); if (drawerOpen) animateHub(now / 1000); }
     else if (state === 'result') render();
     else if (state === 'title') drawTitle(now / 1000);
     hitMarkT = Math.max(0, hitMarkT - rdt); killMarkT = Math.max(0, killMarkT - rdt);
@@ -5743,7 +6574,7 @@ function renderRaidTab() {
       <p><b>Fenêtre.</b> Charge terminée, 16 s pour entrer dans le cercle. Le lift emporte le pilote et chaque robot à l'intérieur.</p>
     </div>
   </div>
-  <div class="launch"><button class="btn hot big" data-act="launch" ${used > cap || !pad ? 'disabled' : ''}>Lancer le raid · ${R.n}</button>${used > cap ? '<span class="lost">Commandement dépassé.</span>' : ''}${!pad ? '<span class="lost">Construisez une plateforme de largage.</span>' : ''}</div>`;
+  <div class="launch"><button class="btn hot big" data-act="launch" ${used > cap || !pad ? 'disabled' : ''}>Lancer le raid · ${R.n}</button>${NET.kind === 'http' ? '<button class="btn" data-tab="online">Raid partagé à plusieurs…</button>' : ''}${used > cap ? '<span class="lost">Commandement dépassé.</span>' : ''}${!pad ? '<span class="lost">Construisez une plateforme de largage.</span>' : ''}</div>`;
 }
 
 // ================= ARBRE DE RECHERCHE =================
@@ -5809,11 +6640,11 @@ function renderSettings() {
     <span>Vibrations (téléphone)</span><div class="chips">${ch('haptics', true, 'Activées')}${ch('haptics', false, 'Désactivées')}</div>
     <span>Commandes tactiles</span><div class="chips">${ch('touch', 'auto', 'Automatique')}${ch('touch', 'on', 'Toujours')}${ch('touch', 'off', 'Jamais')}</div>
   </div>
-  <div class="slot-h" style="margin-top:16px">En ligne</div>
+  <div class="slot-h" style="margin-top:16px">Compte et en ligne</div>
   <div class="setgrid">
-    <span>Pseudo</span><input class="name" id="setPseudo" maxlength="20" value="${esc(settings.pseudo || '')}" placeholder="Votre nom de pilote">
-    <span>Serveur</span><input class="name" id="setServer" value="${esc(settings.server || '')}" placeholder="http://[2001:db8::42]:8787 ou http://192.168.1.20:8787">
-    <span></span><div class="chips"><button class="btn sm hot" data-act="netconnect">Se connecter</button><span class="desc" id="netStatus" style="align-self:center">${esc(NET.status)}</span></div>
+    <span>Compte</span><div class="chips"><span class="desc" style="align-self:center">${esc(accountLabel())}</span><button class="btn sm hot" data-act="account">Gérer le compte</button></div>
+    <span>État</span><span class="desc" id="netStatus">${esc(NET.status)}</span>
+    ${ACC.mode === 'server' ? '' : `<span>Pseudo (invité)</span><input class="name" id="setPseudo" maxlength="20" value="${esc(settings.pseudo || '')}" placeholder="Votre nom de pilote">`}
   </div>
   <div class="slot-h" style="margin-top:16px">Raccourcis clavier</div>
   <p>Le déplacement reste sur ZQSD / WASD et les flèches. Cliquez sur une touche puis appuyez sur la nouvelle.</p>
@@ -5821,7 +6652,7 @@ function renderSettings() {
   <div class="btns"><button class="btn hot" data-act="closesettings">Fermer</button><button class="btn" data-act="resetkeys">Raccourcis par défaut</button></div>`;
 }
 function openSettings() { renderSettings(); showOverlay('settings', true); }
-function closeSettings() { rebinding = null; showOverlay('settings', false); refreshKeyHints(); }
+function closeSettings() { const ps = $('#setPseudo'); if (ps) { settings.pseudo = ps.value.trim().slice(0, 20); saveSettings(); } rebinding = null; showOverlay('settings', false); refreshKeyHints(); }
 function refreshKeyHints() { const k = $('#kbBuild'); if (k) k.textContent = keyLabel('defend'); }
 function renderHelp() {
   const rows = [['ZQSD / WASD / flèches', 'Se déplacer, ou piloter le robot embarqué'], ['Clic gauche', 'Tirer · en mode tactique : sélectionner, cliquer-glisser pour un cadre'], ['Clic droit', 'Ordonner à la sélection, ou à toute la flotte : aller ici, ou attaquer la cible'], ['Maj + clic droit', 'Ajouter un point de passage à la file d\'ordres'], ['1 à 5 · Maj+1 à 5', 'Sélectionner · assigner un groupe'], ['Molette', 'Zoom'], ['Échap', 'Annuler, fermer, pause']];
@@ -5841,9 +6672,10 @@ window.addEventListener('keydown', e => {
     settings.keys[rebinding] = k; rebinding = null; saveSettings(); renderSettings(); return;
   }
   if ($('#settings').classList.contains('on')) { if (e.code === 'Escape') closeSettings(); return; }
+  if ($('#account').classList.contains('on')) { if (e.code === 'Escape') showOverlay('account', false); else if (e.code === 'Enter' && e.target && e.target.tagName === 'INPUT') { const g = document.querySelector('[data-act=accgo]'); if (g) g.click(); } return; }
   if ($('#help').classList.contains('on') && (e.code === 'Escape' || actionFor(normKey(e)) === 'help')) { showOverlay('help', false); e.preventDefault(); return; }
   if (!inGame()) return;
-  if (drawerOpen) { if (e.code === 'Escape') { closeDrawer(); e.preventDefault(); } return; }
+  if (drawerOpen) { if (e.code === 'Escape') { closeDrawer(); e.preventDefault(); } else if (e.code === 'Enter' && e.target && e.target.id === 'liveChat') { LIVE.say(e.target.value); e.target.value = ''; } return; }
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
   const code = e.code, k = normKey(e), base = state === 'base', act = k ? actionFor(k) : null;
   if (code === 'Tab' || code === 'Space' || code.startsWith('Arrow') || act === 'tactical' || act === 'dash') e.preventDefault();
@@ -5912,7 +6744,28 @@ document.addEventListener('click', e => {
     case 'set': { const k = el.dataset.k, raw = el.dataset.v; settings[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw; saveSettings(); applyColors(); applyTouch(); applyUiScale(); SFX.init(); SFX.applyVolumes(); renderSettings(); if (drawerOpen) renderHub();
       if (k === 'vSfx' || k === 'vol') setTimeout(() => SFX.play('pistol', .8), 60); else if (k === 'haptics' && settings.haptics) { const t = TOUCH.on; TOUCH.on = true; buzz(40); TOUCH.on = t; } break; }
     case 'sndtest': SFX.init(); SFX.play('explo', 1, undefined, undefined, { size: 2 }); setTimeout(() => SFX.play('cannon', .9, undefined, undefined, { size: 2 }), 700); break;
-    case 'netconnect': { const ps = $('#setPseudo'), sv = $('#setServer'); if (ps) settings.pseudo = ps.value.trim().slice(0, 20); if (sv) settings.server = sv.value.trim(); saveSettings(); netInit(); toast('Connexion…'); break; }
+    case 'account': openAccount(); break;
+    case 'lmode': LIVE.wantMode = id === 'pvp' ? 'pvp' : 'coop'; LIVE.refresh(); break;
+    case 'lmax': LIVE.wantMax = +id || 4; LIVE.refresh(); break;
+    case 'lcreate': LIVE.create(); break;
+    case 'ljoin': LIVE.join(id); break;
+    case 'lleave': LIVE.leave(); break;
+    case 'lstart': LIVE.start(); break;
+    case 'lchat': { const ci = $('#liveChat'); if (ci) { LIVE.say(ci.value); ci.value = ''; ci.focus(); } break; }
+    case 'accclose': showOverlay('account', false); break;
+    case 'acctab': accTab = id; renderAccount(); break;
+    case 'acclogout': showOverlay('account', false); accSignOut(); break;
+    case 'accsync': cloudPush(true).then(() => renderAccount()); break;
+    case 'accgo': {
+      const srv = ($('#accSrv') || {}).value || '', name = (($('#accName') || {}).value || '').trim(), pass = ($('#accPass') || {}).value || '', p2 = $('#accPass2'), imp = $('#accImport');
+      if (name.length < 3) { renderAccount('Identifiant trop court (3 caractères au moins).'); break; }
+      if (pass.length < 6) { renderAccount('Mot de passe trop court (6 caractères au moins).'); break; }
+      if (p2 && p2.value !== pass) { renderAccount('Les deux mots de passe ne correspondent pas.'); break; }
+      el.disabled = true; el.textContent = 'Connexion…';
+      accSignIn(srv, name, pass, accTab === 'create', !!(imp && imp.checked)).then(r => { showOverlay('account', false); toast('Bienvenue, ' + r.name + ' : votre partie est enregistrée sur le serveur.'); })
+        .catch(e => { renderAccount(e.message.charAt(0).toUpperCase() + e.message.slice(1) + '.'); const f = $('#accSrv'); if (f) f.value = srv; const n = $('#accName'); if (n) n.value = name; });
+      break;
+    }
     case 'netretry': netInit(); break;
     case 'portraitok': TOUCH.portraitOk = true; showOverlay('rotate', false); break;
     case 'rebind': rebinding = id; renderSettings(); break;
@@ -5924,8 +6777,7 @@ function init() {
   window.addEventListener('keydown', e => { if (e.key === 'GoBack' || e.key === 'BrowserBack') { e.preventDefault(); window.colosseBack(); } });
   window.addEventListener('resize', resize);
   showScreen('title'); state = 'title';
-  if (save.stats.raids) $('#titleNote').textContent = `Sauvegarde : ${save.stats.raids} raids, ${save.stats.extract} extractions, ${save.robots.length} robot${save.robots.length > 1 ? 's' : ''} au hangar.`;
-  if (TOUCH.on) $('#titleNote').textContent = 'Écran tactile : joystick gauche pour bouger, joystick droit pour viser et tirer. Touchez un robot pour le sélectionner, puis le sol pour l\'envoyer. Deux doigts pour zoomer. Jouez en paysage.';
+  refreshTitle();
   requestAnimationFrame(frame);
   netInit();
 }
