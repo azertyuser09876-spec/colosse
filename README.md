@@ -47,6 +47,56 @@ Le tutoriel se joue dans une **partie à part** :
 - **garder** cette partie d'entraînement : elle remplace votre partie, après confirmation si vous aviez déjà progressé ;
 - ou la **supprimer** : vous retrouvez votre partie là où vous l'aviez laissée.
 
+### Armes en pilotage et tir fractionné
+
+- **Robot piloté** : chaque arme est soit **manuelle**, soit **automatique**.
+  - Une arme manuelle tire au clic gauche, là où vous visez.
+  - Une arme automatique choisit sa propre cible et tire seule, indépendamment des autres.
+  - En pilotage, un clic sur une arme dans le panneau des armes la bascule (sur téléphone, toucher sa pastille). La touche **Y** bascule toutes les armes d'un coup.
+  - Le clic droit garde les ordres à la flotte.
+- **Robots non pilotés** : au hangar, chaque robot a un réglage de tir.
+  - En tir **concentré**, toutes les armes visent la même cible. Une arme qui ne peut pas l'atteindre tire sur ce qui passe à sa portée.
+  - En tir **fractionné**, chaque arme choisit la cible qui lui convient : l'antiaérien vise les volants, le canon les blindés, la mitrailleuse l'infanterie, le mortier les cibles lentes.
+- **Missiles guidés** : ils visent le point d'interception plutôt que la position de la cible et tournent plus serré quand ils sont lents ou proches. Une fusée de proximité les fait exploser au plus près au lieu de tourner autour. Si leur cible meurt, ils en cherchent une autre devant eux. Les missiles ennemis restent plus faciles à esquiver.
+
+### Indicateurs de cible
+
+- Des crochets entourent les ennemis visés par votre flotte, avec le nombre de robots qui les visent (×2, ×3…) et le numéro des affûts automatiques.
+- Un losange tournant marque une cible verrouillée par vos missiles.
+- Le nom et les PV de l'ennemi sous le curseur s'affichent.
+- Une flèche rouge surmonte chaque ennemi qui vise votre pilote, votre robot ou votre balise.
+- Si un missile ennemi est guidé sur vous, l'alerte « MISSILE VERROUILLÉ » s'affiche avec sa direction et un bip.
+- En mode tactique, des traits relient chaque robot à sa cible.
+- Réglages → Indicateurs de cible : Complets, Essentiels ou Masqués.
+
+### Ambiance
+
+- **Jour et nuit** :
+  - Chaque raid commence à une heure différente, et le temps avance d'une heure toutes les 75 secondes. L'heure s'affiche en haut à gauche.
+  - La nuit, robots et pilote allument phares et lampe, les machines ennemies ont des yeux rouges, et les ennemis voient un peu moins loin.
+  - La base suit l'heure réelle de votre appareil.
+  - En raid partagé, tous les joueurs ont la même heure et la même météo.
+- **Météo selon la région** :
+  - Les Cendres : cendres et tempêtes de cendres.
+  - Marais d'acide : brume, pluie acide et orages.
+  - Mégapole morte : smog, pluie et orages.
+  - Glacier noir : neige et blizzard.
+  - Partout : ombres de nuages, bancs de brume, vent qui pousse la fumée, éclairs suivis du tonnerre. Il y a aussi un bruit de pluie.
+- **Lumières** : tirs, explosions, incendies, plasma, missiles, balise, pylônes et épaves en feu éclairent le terrain autour d'eux.
+- **Combat** :
+  - Douilles éjectées, poussière d'impact à la couleur du sol, éclaboussures dans le marais.
+  - Traces de chenilles, de roues et de pas qui restent au sol.
+  - Épaves qui brûlent puis restent calcinées, machines abîmées qui fument et prennent feu.
+  - Souffle des explosions qui repousse les unités légères, recul de la caméra sur les tirs lourds.
+- **Mouvements plus fluides** :
+  - Les grosses machines ont de l'inertie.
+  - Les robots ralentissent en douceur à l'arrivée et ne tremblent plus sur place.
+  - Les virages sont amortis.
+  - La caméra anticipe le déplacement, et les secousses sont lissées.
+- **Réglages** :
+  - Effets visuels : Automatique (baisse tout seul si l'appareil peine), Élevés, Moyens ou Réduits.
+  - Cycle jour/nuit : Activé ou Toujours le jour.
+
 ### Sauvegarde et compte
 
 - **Invité** (par défaut, sans serveur) : la partie est enregistrée dans le navigateur ou l'application, sur cet appareil seulement.
