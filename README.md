@@ -48,11 +48,34 @@ Le tutoriel se joue dans une **partie à part** :
 - **garder** cette partie d'entraînement : elle remplace votre partie, après confirmation si vous aviez déjà progressé ;
 - ou la **supprimer** : vous retrouvez votre partie là où vous l'aviez laissée.
 
+### Interface et découverte
+
+L'interface est une **console de commandement** sombre, dans le même style que le HUD en jeu.
+
+- **On découvre en progressant** :
+  - on voit ce qu'on possède, et le prochain pas en **silhouette** avec sa condition (« Après Châssis Tisseuse », « Laboratoire niveau 3 », « Débloqué au QG niveau 2 ») ;
+  - le reste est caché, avec un compteur (« 12 châssis à découvrir », « +3 inconnues ») ;
+  - concernés : recherche, châssis et armes de la forge, modules, bâtiments, régions, difficultés, ressources rares (Noyaux IA, Cœur de Colosse) ;
+  - l'onglet Expéditions apparaît avec le poste d'expédition, l'onglet En ligne après la première extraction (ou avec un compte) ;
+  - une pastille ambrée sur les onglets et un badge **Nouveau** signalent ce qui vient de se débloquer.
+- **Recherche** : quatre branches (Châssis, Armes, Modules et cerveaux, Pilote et protocoles), chacune découpée en familles qui progressent de gauche à droite : Départ, Labo 1 à 5, puis Chantier I à III.
+  - Familles de châssis : chenillés, marcheurs, volants, légers et rapides, transport. Familles d'armes : cinétique, obus et artillerie, missiles, énergie, électricité, feu, acide et lames, soutien.
+  - Chaque technologie découle de sa famille : par exemple le Titan vient de l'Échassier, le Colosse du Goliath, le Railgun de l'Aiguilleur, le Canon de siège du Canon, le Missile Aube du Missile de croisière. Les armes colossales et apocalyptiques prolongent leur famille et demandent le Chantier titanesque.
+  - Glisser pour parcourir, molette ou deux doigts pour zoomer, « Vue d'ensemble » et « Disponibles » pour s'y retrouver. Survoler une technologie surligne d'où elle vient et ce qu'elle ouvre.
+  - Le détail liste les conditions (prérequis, laboratoire, chantier) avec ✓ ou ✗, le coût, et ce que la technologie débloque ensuite.
+- **Forge** :
+  - châssis filtrés par famille (et géants), avec aperçu ;
+  - affûts numérotés directement sur l'aperçu : un clic sur un numéro choisit l'affût, glisser fait tourner le robot ;
+  - armurerie filtrée par rôle (anti-infanterie, antiblindé, antiaérien, artillerie, anti-géant, contact, soutien) ;
+  - survoler une arme ou un châssis montre l'aperçu et la comparaison des caractéristiques (barres et écarts) avant de choisir ;
+  - une silhouette de châssis ou d'arme mène à sa recherche.
+- **Hangar** : filtres (déployés, en réserve, abîmés, en expédition), tri (rang, puissance, nom, récents), interrupteur de déploiement, réglages repliés (cerveau, groupe, tir, pilotage, plans de fabrication).
+
 ### Expéditions
 
 Une expédition envoie une escouade de robots fouiller une région **sans vous**. C'est une vraie partie, avec son monde, ses ennemis, sa météo et sa balise, qui tourne en même temps que la vôtre, pendant que vous jouez à la base ou en raid.
 
-- **Poste d'expédition** : à construire à la base. Chaque niveau permet une expédition de plus en même temps, jusqu'à trois (niveau 2 : QG 2 ; niveau 3 : QG 3).
+- **Poste d'expédition** : à construire à la base, à partir du QG niveau 2. Chaque niveau permet une expédition de plus en même temps, jusqu'à trois (niveau 3 : QG 3). L'onglet Expéditions apparaît une fois le poste construit.
 - **Départ** (onglet Expéditions, à la base) : région, difficulté, durée de fouille (5, 9 ou 14 minutes), consigne et robots. L'escouade utilise son propre commandement, sans toucher à celui de votre armée de raid.
 - **Consignes** :
   - Prudente : évite les zones gardées et rentre tôt.
@@ -76,8 +99,8 @@ Une expédition envoie une escouade de robots fouiller une région **sans vous**
 Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à six fois sa taille, s'ajoutent à la recherche et à la forge.
 
 - **Construire un géant** :
-  - recherche au laboratoire de niveau 5 (Géant Rempart, Arachné, Porte-nef, puis Cyclope, Forge-mère, Aéropole, puis Ville-machine et Astre) ;
-  - **Chantier titanesque** à la base (QG niveau 5) : niveau 1 pour le rang 7, niveau 2 pour le rang 8, niveau 3 pour le rang 9 ;
+  - **Chantier titanesque** à la base (QG niveau 5) : son niveau 1, 2 ou 3 permet de rechercher puis d'assembler les géants du rang 7, 8 ou 9 ;
+  - recherche au laboratoire de niveau 5, dans la suite de chaque famille : Colosse → Rempart → Forge-mère → Ville-machine (chenillés), Béhémoth → Arachné → Cyclope (marcheurs), Arche → Porte-nef → Aéropole → Astre (volants) ;
   - forge de niveau 5 et des Cœurs de Colosse.
 - **Les géants** :
   - Rang 7 : Rempart (forteresse chenillée), Arachné (araignée rapide), Porte-nef (volant, fabrique des robots).

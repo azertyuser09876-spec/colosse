@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#14181a">
+<meta name="theme-color" content="#0f1416">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
@@ -12,276 +12,429 @@
 <script>window.COLOSSE_STANDALONE = true;</script>
 <title>COLOSSE — extraction en monde ouvert</title>
 <style>
+/* ================= THÈME « CONSOLE DE COMMANDEMENT » ================= */
 :root{
-  --bg:#e7dfcd; --bg2:#ddd3be; --panel:#f1ebde; --panel2:#e6dccb; --line:#c2b59c; --line2:#a8987b;
-  --ink:#1f2326; --mute:#5d5a52; --dim:#8a836f;
-  --molten:#c8461a; --molten2:#e2622b; --patina:#2f7d6d; --signal:#a87a10; --blood:#a92f3c; --data:#2f5aa8;
-  --ok:#2e7d3f; --bad:#b2343f;
-  --grid:rgba(31,35,38,.07);
-  --f-title:'Big Shoulders Stencil Display', Impact, 'Arial Narrow Bold', sans-serif;
-  --f-ui:'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --bg0:#0a0e0f; --bg:#0f1416; --bg2:#0c1112; --panel:#141b1e; --panel2:#1a2327; --panel3:#212c31; --line:#28343a; --line2:#3a4950;
+  --ink:#ece2cc; --mute:#a59c88; --dim:#6c7773;
+  --amber:#f2c14e; --amber2:#ffd56b; --molten:#e2622b; --molten2:#ff8a3d; --teal:#6fe3c8; --patina:#4fb59e; --signal:#f2c14e;
+  --blood:#d4495a; --data:#86a8ea; --violet:#b9a0ff; --ok:#8ccf7e; --bad:#ec6b74;
+  --grid:rgba(111,227,200,.045); --grid2:rgba(111,227,200,.085);
+  --f-title:'Bahnschrift SemiCondensed','Bahnschrift','DIN Condensed','Roboto Condensed','Arial Narrow',sans-serif;
+  --f-ui:'Bahnschrift','Segoe UI',Roboto,system-ui,sans-serif;
+  --f-mono:'Cascadia Mono',Consolas,'Roboto Mono',ui-monospace,monospace;
+  --cut:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  --cut2:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+  color-scheme:dark;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#1b2023; --bg2:#151a1c; --panel:#232a2d; --panel2:#2b3337; --line:#3a4448; --line2:#4d5a5e;
-    --ink:#e8dcc4; --mute:#a59c88; --dim:#6f7a76;
-    --molten:#e2622b; --molten2:#ff8a3d; --patina:#6fb5a4; --signal:#f2c14e; --blood:#d4495a; --data:#86a8ea;
-    --ok:#8ccf7e; --bad:#ec6b74;
-    --grid:rgba(232,220,196,.045);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#1b2023; --bg2:#151a1c; --panel:#232a2d; --panel2:#2b3337; --line:#3a4448; --line2:#4d5a5e;
-  --ink:#e8dcc4; --mute:#a59c88; --dim:#6f7a76;
-  --molten:#e2622b; --molten2:#ff8a3d; --patina:#6fb5a4; --signal:#f2c14e; --blood:#d4495a; --data:#86a8ea;
-  --ok:#8ccf7e; --bad:#ec6b74;
-  --grid:rgba(232,220,196,.045);
-}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ui);overflow:hidden;-webkit-font-smoothing:antialiased}
+body{height:100%;margin:0;background:var(--bg0);color:var(--ink);font-family:var(--f-ui);overflow:hidden;-webkit-font-smoothing:antialiased}
 #app{position:relative;width:100%;height:100%;overflow:hidden;background:#101416}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none}
-.screen{position:absolute;inset:0;display:none;overflow:auto;background:var(--bg);
-  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-  background-size:28px 28px}
+.screen{position:absolute;inset:0;display:none;overflow:auto;background:var(--bg)}
 .screen.on{display:block}
-.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,13,.72);z-index:20;padding:16px}
+.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,8,9,.76);z-index:20;padding:16px}
 .overlay.on{display:flex}
+::selection{background:rgba(242,193,78,.35)}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line2);border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
 button{font-family:var(--f-ui);cursor:pointer}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--molten2);outline-offset:2px}
-.btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);padding:9px 16px;font-size:15px;font-weight:600;letter-spacing:.02em;
-  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
-.btn:hover{border-color:var(--molten);color:var(--molten)}
-.btn.hot{background:var(--molten);border-color:var(--molten);color:#fff8ee}
-.btn.hot:hover{background:var(--molten2);color:#fff}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.sm{padding:5px 10px;font-size:13px}
-.btn.big{padding:14px 28px;font-size:19px}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
-/* ---------- Title ---------- */
-#title{display:none;overflow:hidden}
+/* ---------- boutons ---------- */
+.btn{position:relative;background:var(--panel3);color:var(--ink);border:1px solid var(--line2);padding:9px 16px;font-size:14.5px;font-weight:600;letter-spacing:.03em;
+  clip-path:var(--cut);transition:border-color .15s,background .15s,color .15s,transform .08s}
+.btn:hover{border-color:var(--amber);color:var(--amber2);background:#26333a}
+.btn:active{transform:translateY(1px)}
+.btn.hot{background:linear-gradient(180deg,#ea6c33,#c9501f);border-color:#f07a40;color:#fff8ee;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn.hot:hover{background:linear-gradient(180deg,#ff8a3d,#e2622b);color:#fff}
+.btn:disabled{opacity:.38;cursor:not-allowed;transform:none}
+.btn:disabled:hover{border-color:var(--line2);color:var(--ink);background:var(--panel3)}
+.btn.hot:disabled:hover{background:linear-gradient(180deg,#ea6c33,#c9501f);color:#fff8ee}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.big{padding:13px 28px;font-size:18px;letter-spacing:.05em}
+.btn.ghost{background:transparent}
+kbd{font-family:var(--f-mono)}
+
+/* ---------- écran titre ---------- */
+#title{display:none;overflow:hidden;background:#0d1112}
 #title.on{display:block}
 #titleCv{position:absolute;inset:0;width:100%;height:100%}
-.title-wrap{position:relative;z-index:2;min-height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(18px,4vw,56px);gap:18px;pointer-events:none}
+#title::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(90deg,rgba(8,11,12,.82) 0%,rgba(8,11,12,.45) 48%,rgba(8,11,12,.1) 100%),repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px)}
+.title-wrap{position:relative;z-index:2;min-height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(18px,4vw,56px);gap:16px;pointer-events:none}
 .title-wrap > *{pointer-events:auto}
-.title-name{font-family:var(--f-title);font-weight:900;font-size:clamp(56px,17vw,250px);line-height:.8;margin:0;letter-spacing:.01em;color:#ece2cc;
-  text-shadow:0 4px 0 rgba(0,0,0,.35)}
-.title-sub{max-width:56ch;font-size:clamp(15px,1.6vw,19px);line-height:1.45;color:#c9bea6;margin:0}
-#title .small-note{color:#958c78}
-#title{background:#14181a}
-.title-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.small-note{font-size:13px;color:var(--dim)}
+.title-kicker{font-family:var(--f-mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--amber);margin:0;display:flex;align-items:center;gap:12px}
+.title-kicker::before{content:'';width:34px;height:2px;background:var(--amber)}
+.title-name{font-family:var(--f-title);font-weight:800;font-size:clamp(64px,15vw,220px);line-height:.82;margin:0;letter-spacing:.04em;color:#efe5cf;
+  text-shadow:0 4px 0 rgba(0,0,0,.4),0 0 40px rgba(242,193,78,.12)}
+.title-sub{max-width:58ch;font-size:clamp(15px,1.55vw,18.5px);line-height:1.5;color:#c9bea6;margin:0}
+#title .small-note{color:#8e8775}
+.title-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.small-note{font-size:12.5px;color:var(--dim)}
 
-/* ---------- Hub ---------- */
+/* ---------- console (hub) ---------- */
 #hub{display:none}
 #hub.on{display:grid}
-#hub{grid-template-columns:200px 1fr;grid-template-rows:auto 1fr;inset:auto;left:var(--hi);top:var(--hi);width:calc((100% - 2 * var(--hi)) / var(--ui));height:calc((100% - 2 * var(--hi)) / var(--ui));min-height:0;z-index:15;border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.55);transform:scale(var(--ui));transform-origin:0 0}
+#hub{grid-template-columns:212px 1fr;grid-template-rows:auto 1fr;inset:auto;left:var(--hi);top:var(--hi);width:calc((100% - 2 * var(--hi)) / var(--ui));height:calc((100% - 2 * var(--hi)) / var(--ui));min-height:0;z-index:15;
+  border:1px solid var(--line2);box-shadow:0 24px 70px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.6);transform:scale(var(--ui));transform-origin:0 0;
+  background:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
 :root{--ui:1;--hi:clamp(0px,2.2vw,28px)}
 .overlay .dlg{transform:scale(var(--ui));max-height:calc(100% / var(--ui))}
 .hub-close{margin-left:auto}
-.hub-top{grid-column:1/3;display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:12px 20px;border-bottom:2px solid var(--line);background:var(--panel)}
-.hub-logo{font-family:var(--f-title);font-weight:900;font-size:34px;line-height:1;letter-spacing:.02em}
-.res-bar{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
-.res{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
-.res i{display:inline-block;width:10px;height:10px;transform:rotate(45deg)}
-.res b{font-weight:700}
+.hub-top{grid-column:1/3;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 18px;border-bottom:1px solid var(--line2);background:linear-gradient(180deg,#182024,#121a1d)}
+.hub-logo{font-family:var(--f-title);font-weight:800;font-size:23px;line-height:1;letter-spacing:.08em;color:var(--ink);display:flex;align-items:center;gap:10px}
+.hub-logo::before{content:'';width:12px;height:12px;background:var(--amber);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);box-shadow:0 0 12px var(--amber)}
+.res-bar{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}
+.res{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;background:var(--panel);border:1px solid var(--line);padding:3px 8px 3px 7px;font-size:12.5px;transition:border-color .3s,background .3s}
+.res i{display:inline-block;width:9px;height:9px;transform:rotate(45deg);flex:none}
+.res b{font-weight:700;font-family:var(--f-mono);font-size:12.5px}
 .res span{color:var(--mute)}
-.hub-nav{display:flex;flex-direction:column;border-right:2px solid var(--line);background:var(--panel);padding:14px 0;gap:2px}
-.hub-nav button{background:none;border:0;border-left:4px solid transparent;text-align:left;color:var(--mute);padding:12px 18px;font-size:17px;font-weight:600}
-.hub-nav button:hover{color:var(--ink)}
-.hub-nav button.on{color:var(--ink);border-left-color:var(--molten);background:var(--panel2)}
-.hub-nav .nav-foot{margin-top:auto;padding:12px 18px;font-size:12px;color:var(--dim);line-height:1.5}
-.hub-main{overflow:auto;padding:22px clamp(14px,2.5vw,32px) 40px}
-.h2{font-family:var(--f-title);font-weight:700;font-size:38px;margin:0 0 4px;line-height:1}
-.lead{color:var(--mute);margin:0 0 20px;max-width:70ch;line-height:1.5}
-.cols{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:22px;align-items:start}
+.res.zero{opacity:.5}
+@media (max-width:1500px){.res-bar.many .res span{display:none}}
+.res.pulse{border-color:var(--amber);background:#2a2614}
+.hub-nav{display:flex;flex-direction:column;border-right:1px solid var(--line2);background:linear-gradient(180deg,#131a1d,#0f1517);padding:12px 0;gap:1px}
+.hub-nav button{position:relative;display:flex;align-items:center;gap:10px;background:none;border:0;border-left:3px solid transparent;text-align:left;color:var(--mute);padding:11px 16px;font-size:15.5px;font-weight:600;letter-spacing:.02em;transition:color .15s,background .15s}
+.hub-nav button .nv-k{font-family:var(--f-mono);font-size:11px;color:var(--dim);width:18px}
+.hub-nav button:hover{color:var(--ink);background:rgba(255,255,255,.025)}
+.hub-nav button.on{color:var(--ink);border-left-color:var(--amber);background:linear-gradient(90deg,rgba(242,193,78,.12),rgba(242,193,78,0))}
+.hub-nav button.on .nv-k{color:var(--amber)}
+.hub-nav .nav-foot{margin-top:auto;padding:12px 18px;font-size:11.5px;color:var(--dim);line-height:1.6;font-family:var(--f-mono)}
+.nbadge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:auto;background:var(--amber);color:#14191b;font:700 11px/1 var(--f-mono);border-radius:9px;box-shadow:0 0 10px rgba(242,193,78,.45)}
+.basebar .nbadge{position:absolute;top:-7px;right:-4px;margin:0}
+.nbadge[hidden]{display:none}
+.newtag{display:inline-block;padding:1px 6px;background:var(--amber);color:#14191b;font:700 10px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}
+.hub-main{overflow:auto;padding:20px clamp(14px,2.4vw,30px) 40px;position:relative}
+.h2{font-family:var(--f-title);font-weight:700;font-size:34px;margin:0 0 4px;line-height:1;letter-spacing:.05em;text-transform:uppercase}
+.lead{color:var(--mute);margin:0 0 18px;max-width:75ch;line-height:1.5;font-size:14.5px}
+.phead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;margin-bottom:14px}
+.phead .h2{margin:0}
+.psum{display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}
+.psum span{background:var(--panel);border:1px solid var(--line);padding:3px 9px;color:var(--mute)}
+.psum b{color:var(--ink);font-family:var(--f-mono);font-weight:700}
+.cols{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:20px;align-items:start}
 .list{display:flex;flex-direction:column;gap:6px}
-.ch-item{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);padding:8px 10px;text-align:left;color:var(--ink)}
-.ch-item:hover{border-color:var(--line2)}
-.ch-item.on{border-color:var(--molten);box-shadow:inset 3px 0 0 var(--molten)}
-.ch-item.locked{opacity:.45}
-.ch-item canvas{width:52px;height:52px}
-.ch-item .nm{font-weight:700;font-size:15px}
-.ch-item .tr{font-size:12px;color:var(--mute)}
-.tier{font-family:var(--f-title);font-size:22px;color:var(--dim)}
-.forge{background:var(--panel);border:1px solid var(--line);display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:0;align-items:start}
-.forge-view{position:sticky;top:0;height:min(460px,72vh);border-right:1px solid var(--line);background:#14191b;
-  background-image:linear-gradient(rgba(111,181,164,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(111,181,164,.08) 1px,transparent 1px);background-size:20px 20px}
-.forge-view canvas{position:absolute;inset:0;width:100%;height:100%}
-.forge-view .tag{position:absolute;left:12px;bottom:10px;font-family:var(--f-title);font-size:30px;color:#e8dcc4;opacity:.9}
-.forge-cfg{padding:16px;display:flex;flex-direction:column;gap:14px}
-.slot-h{font-weight:700;font-size:14px;margin-bottom:6px;color:var(--mute)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:5px 9px;font-size:13px;font-weight:600}
-.chip:hover{border-color:var(--line2)}
-.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.rs-cat{display:flex;align-items:center;gap:12px;margin:22px 0 10px;font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--amber)}
+.rs-cat::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+.rs-cat span{letter-spacing:.04em;text-transform:none;font-family:var(--f-ui);color:var(--mute);font-weight:500}
+.slot-h{font-family:var(--f-mono);font-weight:700;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:5px 10px;font-size:12.5px;font-weight:600;transition:border-color .12s,background .12s}
+.chip:hover{border-color:var(--line2);background:var(--panel3)}
+.chip.on{background:var(--amber);color:#15191a;border-color:var(--amber)}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.chip .cn{font-family:var(--f-mono);opacity:.7;margin-left:4px}
+.desc{font-size:13.5px;color:var(--mute);line-height:1.45;margin:0}
+input.name{background:var(--bg2);border:1px solid var(--line2);color:var(--ink);font-family:var(--f-ui);font-size:14.5px;padding:8px 10px;width:100%}
+input.name:focus{border-color:var(--amber);outline:none}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);font-family:var(--f-ui);font-size:12.5px;padding:4px 6px}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.card{position:relative;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+.card:hover{border-color:var(--line2)}
+.card.dep{border-color:rgba(111,227,200,.55);box-shadow:inset 0 2px 0 var(--teal)}
+.card .row{display:flex;gap:10px;align-items:center}
+.card canvas{width:72px;height:72px;background:#0e1314;flex:none;border:1px solid var(--line)}
+.card .nm{font-weight:700;font-size:15.5px}
+.card .sub{font-size:12.5px;color:var(--mute);line-height:1.45}
+.card .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.card.shadow{background:repeating-linear-gradient(135deg,#11171a 0 8px,#0f1416 8px 16px);border-style:dashed;color:var(--dim)}
+.card.shadow .nm{color:var(--mute)}
+.hpbar{height:5px;background:#0a0e0f;border:1px solid var(--line)}
+.hpbar i{display:block;height:100%;background:var(--teal);transition:width .3s}
+.meter{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-weight:600;font-size:13.5px}
+.meter .bar{flex:1;max-width:340px;height:8px;background:#0a0e0f;border:1px solid var(--line)}
+.meter .bar i{display:block;height:100%;background:var(--teal);transition:width .3s}
+.meter .bar.over i{background:var(--bad)}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px 14px;font-size:13px}
-.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
 .stats div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
 .stats b{font-variant-numeric:tabular-nums}
-.cost{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:14px;font-variant-numeric:tabular-nums}
+.cost{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13.5px;font-variant-numeric:tabular-nums}
 .cost .no{color:var(--bad);font-weight:700}
 .cost .yes{color:var(--ink)}
-.desc{font-size:14px;color:var(--mute);line-height:1.45;margin:0}
-input.name{background:var(--bg);border:1px solid var(--line2);color:var(--ink);font-family:var(--f-ui);font-size:15px;padding:7px 10px;width:100%}
-select{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);font-family:var(--f-ui);font-size:13px;padding:4px 6px}
-.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.card{background:var(--panel);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px}
-.card.dep{border-color:var(--patina);box-shadow:inset 0 3px 0 var(--patina)}
-.card .row{display:flex;gap:10px;align-items:center}
-.card canvas{width:70px;height:70px;background:#14191b;flex:none}
-.card .nm{font-weight:700;font-size:16px}
-.card .sub{font-size:12.5px;color:var(--mute);line-height:1.4}
-.hpbar{height:6px;background:var(--panel2);border:1px solid var(--line)}
-.hpbar i{display:block;height:100%;background:var(--patina)}
-.card .acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.meter{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-weight:600}
-.meter .bar{flex:1;max-width:340px;height:10px;background:var(--panel2);border:1px solid var(--line)}
-.meter .bar i{display:block;height:100%;background:var(--patina)}
-.meter .bar.over i{background:var(--bad)}
-.rs-cat{margin:22px 0 10px;font-family:var(--f-title);font-size:26px;font-weight:700}
-.rs{background:var(--panel);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:6px}
-.rs.done{border-color:var(--patina);opacity:.75}
-.rs.locked{opacity:.5}
-.rs .nm{font-weight:700}
-.rs .st{font-size:12px;color:var(--mute)}
-.diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:22px}
-.diff{background:var(--panel);border:1px solid var(--line);padding:12px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px}
-.diff.on{border-color:var(--molten);box-shadow:inset 0 -4px 0 var(--molten)}
-.diff .nm{font-family:var(--f-title);font-size:28px;font-weight:700;line-height:1}
-.diff .d{font-size:13px;color:var(--mute);line-height:1.4}
-.diff .m{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
-.brief{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--signal);padding:14px 16px;line-height:1.5;font-size:14.5px;max-width:78ch}
+.good,.dlg p.good{color:var(--ok)} .lost,.dlg p.lost{color:var(--bad)}
+.launch{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:20px}
+.brief{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);padding:14px 16px;line-height:1.5;font-size:14px;max-width:78ch;color:var(--mute)}
+.brief b{color:var(--ink)}
 .brief p{margin:0 0 8px}
 .brief p:last-child{margin:0}
-.launch{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:22px}
+.hidden-n{display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line2);color:var(--dim);font-size:12.5px;padding:10px;min-height:44px;font-family:var(--f-mono);letter-spacing:.04em}
+.hidden-n::before{content:'?';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border:1px solid var(--line2);color:var(--mute);font-weight:700}
 
-/* ---------- Dialogs ---------- */
-.dlg{background:var(--panel);color:var(--ink);border:1px solid var(--line2);max-width:640px;width:100%;max-height:100%;overflow:auto;padding:22px 24px}
-.dlg h3{font-family:var(--f-title);font-size:46px;margin:0 0 6px;line-height:1}
+/* ---------- dialogues ---------- */
+.dlg{background:linear-gradient(180deg,#182125,#121a1d);color:var(--ink);border:1px solid var(--line2);max-width:660px;width:100%;max-height:100%;overflow:auto;padding:22px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
+.dlg::before{content:'';position:absolute;left:0;top:0;width:100%;height:2px;background:linear-gradient(90deg,var(--amber),transparent 70%)}
+.dlg h3{font-family:var(--f-title);font-size:40px;margin:0 0 8px;line-height:1;letter-spacing:.05em;text-transform:uppercase}
 .dlg p{line-height:1.5;color:var(--mute);margin:0 0 12px}
-.dlg .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
-.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;align-items:baseline}
-.keys kbd{font-family:var(--f-ui);font-weight:700;background:var(--panel2);border:1px solid var(--line2);border-bottom-width:3px;padding:1px 7px;font-size:13px;white-space:nowrap}
+.dlg .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px;align-items:baseline}
+.keys kbd,.keylist kbd{font-weight:700;background:var(--panel3);border:1px solid var(--line2);border-bottom-width:3px;padding:1px 7px;font-size:12px;white-space:nowrap;color:var(--ink)}
 .res-list{display:flex;flex-direction:column;gap:4px;margin:10px 0;font-variant-numeric:tabular-nums}
 .res-list div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
-.good,.dlg p.good{color:var(--ok)} .lost,.dlg p.lost{color:var(--bad)}
 #loading .dlg{text-align:center}
-.toast{position:absolute;left:50%;top:84px;transform:translateX(-50%) scale(var(--ui));transform-origin:50% 0;background:var(--ink);color:var(--panel);padding:10px 18px;font-weight:600;z-index:40;display:none;max-width:90%}
-.toast.on{display:block}
+.toast{position:absolute;left:50%;top:84px;transform:translateX(-50%) scale(var(--ui));transform-origin:50% 0;background:#1d272b;color:var(--ink);border:1px solid var(--amber);border-left-width:4px;padding:10px 18px;font-weight:600;z-index:40;display:none;max-width:90%;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.on{display:block;animation:toastin .22s ease-out}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(-8px) scale(var(--ui))}}
+.setgrid{display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:10px 16px;align-items:center;font-size:13.5px}
+.setgrid input.name{max-width:340px}
+.keylist{display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px 12px;align-items:center;font-size:13px;margin-top:8px}
+.keylist kbd{min-width:32px;text-align:center;display:inline-block}
 
-/* ---------- Base ---------- */
+/* ---------- base ---------- */
 .basebar{position:absolute;right:14px;bottom:14px;display:none;flex-wrap:wrap;gap:6px;justify-content:flex-end;z-index:10;max-width:calc((100% - 28px) / var(--ui));transform:scale(var(--ui));transform-origin:100% 100%}
 .basebar.on{display:flex}
-.basebar kbd{font-family:var(--f-ui);font-size:11px;opacity:.7;margin-left:4px}
-.bpanel{position:absolute;right:14px;top:172px;width:320px;max-width:calc(100% - 28px);transform:scale(var(--ui));transform-origin:100% 0;display:none;z-index:9;background:rgba(20,24,26,.92);color:#e8dcc4;border:1px solid rgba(232,220,196,.18);padding:12px 14px}
+.basebar .btn{background:rgba(22,30,33,.92);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.basebar .btn.hot{background:linear-gradient(180deg,#ea6c33,#c9501f)}
+.basebar kbd{font-size:11px;opacity:.7;margin-left:4px}
+.basebar .btn{overflow:visible;clip-path:none}
+.bpanel{position:absolute;right:14px;top:172px;width:320px;max-width:calc(100% - 28px);transform:scale(var(--ui));transform-origin:100% 0;display:none;z-index:9;background:rgba(18,25,28,.95);color:var(--ink);border:1px solid var(--line2);border-top:2px solid var(--amber);padding:12px 14px;box-shadow:0 12px 34px rgba(0,0,0,.45)}
 .bpanel.on{display:block}
-.bpanel h4{margin:0 0 2px;font-family:var(--f-title);font-size:26px;font-weight:700;line-height:1}
+.bpanel h4{margin:0 0 2px;font-family:var(--f-title);font-size:24px;font-weight:700;line-height:1;letter-spacing:.04em;text-transform:uppercase}
 .bpanel p{margin:6px 0;font-size:13px;line-height:1.45;color:#b8ad96}
 .bpanel .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.bpanel .btn{background:#2b3337;color:#e8dcc4;border-color:#4d5a5e}
-.bpanel .btn.hot{background:var(--molten);border-color:var(--molten);color:#fff8ee}
 .bpanel .cost{font-size:12.5px}
-.bpanel .cost .no{color:#ec6b74}
-.bpanel .cost .yes{color:#e8dcc4}
-.bpanel .x{position:absolute;right:8px;top:6px;background:none;border:0;color:#a59c88;font-size:20px}
-.cat-h{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;font-family:var(--f-title);font-size:24px;font-weight:700}
-.cat-h span{font-family:var(--f-ui);font-size:13px;color:var(--mute);font-weight:500}
-.armory{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:5px}
-.wcard{background:var(--panel2);border:1px solid var(--line);padding:7px 8px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:2px}
-.wcard:hover{border-color:var(--line2)}
-.wcard.on{border-color:var(--molten);box-shadow:inset 3px 0 0 var(--molten)}
+.bpanel .x{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--mute);font-size:20px}
+
+/* ---------- forge ---------- */
+.fg-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.ch-item{position:relative;flex:none;width:156px;display:flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);padding:8px;text-align:left;color:var(--ink);scroll-snap-align:start;transition:border-color .15s,transform .15s,background .15s}
+.ch-item:hover{border-color:var(--line2);background:var(--panel2);transform:translateY(-2px)}
+.ch-item.on{border-color:var(--amber);background:linear-gradient(180deg,rgba(242,193,78,.12),var(--panel));box-shadow:inset 0 -3px 0 var(--amber)}
+.ch-item.locked{opacity:.55}
+.ch-item.shadow{background:repeating-linear-gradient(135deg,#11171a 0 8px,#0f1416 8px 16px);border-style:dashed;color:var(--dim)}
+.ch-item.shadow:hover{transform:none}
+.ch-item canvas{width:100%;height:84px;background:#0b1011;border:1px solid var(--line)}
+.ch-item .nm{font-weight:700;font-size:14px;line-height:1.1}
+.ch-item .tr{font-size:11.5px;color:var(--mute);line-height:1.3}
+.ch-item .tier{position:absolute;right:12px;top:12px;font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--amber);background:rgba(10,14,15,.8);padding:1px 5px;border:1px solid rgba(242,193,78,.35)}
+.ch-item .newtag{position:absolute;left:12px;top:12px}
+.tier{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.forge{display:grid;grid-template-columns:minmax(280px,.95fr) minmax(300px,1.05fr);gap:12px;align-items:start;margin-top:12px}
+.fg-left{position:sticky;top:-20px;display:flex;flex-direction:column;gap:10px}
+.forge-view{position:relative;height:min(310px,44vh);border:1px solid var(--line2);background:#0b1011;overflow:hidden;cursor:grab;touch-action:none}
+.forge-view:active{cursor:grabbing}
+.forge-view canvas{position:absolute;inset:0;width:100%;height:100%}
+.forge-view .tag{position:absolute;left:12px;bottom:10px;font-family:var(--f-title);font-size:28px;letter-spacing:.06em;color:#ece2cc;text-shadow:0 2px 8px rgba(0,0,0,.8);pointer-events:none}
+.forge-view .fv-hint{position:absolute;right:10px;bottom:12px;max-width:42%;text-align:right;font:10.5px/1.35 var(--f-mono);color:rgba(236,226,204,.5);letter-spacing:.04em;pointer-events:none}
+.forge-view .fv-tier{position:absolute;left:12px;top:10px;font:700 11px var(--f-mono);letter-spacing:.14em;color:var(--amber);pointer-events:none}
+.fg-panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.forge-cfg{display:flex;flex-direction:column;gap:12px}
+.fg-stats{display:grid;grid-template-columns:104px 1fr 78px;gap:5px 10px;align-items:center;font-size:12.5px}
+.fg-stats .lb{color:var(--mute)}
+.fg-stats .bv{position:relative;height:7px;background:#0a0e0f;border:1px solid var(--line)}
+.fg-stats .bv i{position:absolute;left:0;top:0;height:100%;background:var(--teal);transition:width .25s}
+.fg-stats .bv i.gh{background:rgba(242,193,78,.55);transition:width .15s}
+.fg-stats .vl{text-align:right;font-family:var(--f-mono);font-size:12px;white-space:nowrap}
+.fg-stats .vl em{font-style:normal;font-size:11px;margin-left:3px}
+.fg-stats .vl em.up{color:var(--ok)} .fg-stats .vl em.dn{color:var(--bad)}
+.fg-perk{font-size:12.5px;color:var(--mute);line-height:1.4;border-top:1px dashed var(--line);padding-top:8px}
+.fg-perk b{color:var(--ink)}
+.slots{display:flex;flex-wrap:wrap;gap:5px}
+.slot{position:relative;background:var(--panel2);border:1px solid var(--line);padding:6px 10px 6px 30px;color:var(--ink);text-align:left;min-width:120px;font-size:13px;transition:border-color .12s}
+.slot:hover{border-color:var(--line2)}
+.slot.on{border-color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber);background:rgba(242,193,78,.08)}
+.slot .sn{position:absolute;left:7px;top:50%;transform:translateY(-50%);width:17px;height:17px;display:flex;align-items:center;justify-content:center;font:700 10.5px var(--f-mono);border:1px solid var(--line2);color:var(--mute)}
+.slot.on .sn{background:var(--amber);border-color:var(--amber);color:#15191a}
+.slot small{display:block;font-size:10.5px;color:var(--mute);font-family:var(--f-mono);letter-spacing:.05em}
+.slots.many .slot{min-width:0;padding:5px 8px 5px 28px;font-size:12px;flex:1 1 140px}
+.cat-h{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px;font-family:var(--f-mono);font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.cat-h span{font-family:var(--f-ui);font-size:12px;color:var(--dim);font-weight:500;letter-spacing:0;text-transform:none}
+.armory{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:5px}
+.wcard{position:relative;display:grid;grid-template-columns:38px 1fr;gap:2px 9px;align-items:center;background:var(--panel2);border:1px solid var(--line);padding:6px 8px 7px 6px;text-align:left;color:var(--ink);transition:border-color .12s,background .12s}
+.wcard:hover{border-color:var(--line2);background:var(--panel3)}
+.wcard.on{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber)}
 .wcard:disabled{opacity:.42;cursor:not-allowed}
-.wcard .nm{font-weight:700;font-size:13.5px}
-.wcard .st{font-size:11.5px;color:var(--mute)}
-.slots{display:flex;flex-wrap:wrap;gap:6px}
-.slot{background:var(--panel2);border:1px solid var(--line);padding:6px 10px;color:var(--ink);text-align:left;min-width:120px}
-.slot.on{border-color:var(--molten);box-shadow:inset 0 -3px 0 var(--molten)}
-.slot small{display:block;font-size:11px;color:var(--mute)}
-.bcard canvas{width:100%;height:120px;background:#2a2f2c;display:block}
-/* ---------- Commandes tactiles ---------- */
+.wcard.shadow{background:repeating-linear-gradient(135deg,#11171a 0 8px,#0f1416 8px 16px);border-style:dashed;opacity:1;color:var(--dim)}
+.wcard canvas{grid-row:1/4;width:38px;height:38px;background:#0b1011;border:1px solid var(--line)}
+.wcard .nm{font-weight:700;font-size:13px;line-height:1.15}
+.wcard .st{font-size:11px;color:var(--mute);line-height:1.25}
+.wcard .wl{display:flex;align-items:center;gap:6px}
+.wcard .wl em{font:700 9px var(--f-mono);letter-spacing:.06em;color:var(--dim);text-transform:uppercase;font-style:normal;white-space:nowrap}
+.wcard .wb{display:flex;gap:3px;height:4px;flex:1;max-width:70px}
+.wcard .wb i{flex:1;background:#0a0e0f;border:1px solid var(--line)}
+.wcard .wb i.f{background:var(--molten2);border-color:var(--molten2)}
+.wcard .wb i.r{background:var(--data);border-color:var(--data)}
+.wcard .newtag{position:absolute;right:6px;top:6px}
+.fg-cost{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.fg-cost .launch{margin-top:0}
+.bcard canvas{width:100%;height:118px;background:#1b201e;display:block;border:1px solid var(--line)}
+
+/* ---------- hangar ---------- */
+.hg-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:0 0 12px}
+.hg-bar .chips{gap:4px}
+.hg-card .rk{display:inline-block;font:700 10.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(242,193,78,.4);padding:0 5px;margin-left:6px;vertical-align:middle}
+.hg-card .bars{display:grid;grid-template-columns:28px 1fr;gap:3px 8px;align-items:center;font:10.5px var(--f-mono);color:var(--dim)}
+.hg-card details{border-top:1px dashed var(--line);padding-top:6px}
+.hg-card summary{cursor:pointer;font:700 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);list-style:none;display:flex;align-items:center;gap:6px}
+.hg-card summary::-webkit-details-marker{display:none}
+.hg-card summary::before{content:'▸';color:var(--amber);transition:transform .15s}
+.hg-card details[open] summary::before{transform:rotate(90deg)}
+.hg-card details > div{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.dep-tg{display:inline-flex;align-items:center;gap:8px}
+.dep-tg .sw{width:34px;height:18px;border:1px solid var(--line2);background:#0a0e0f;position:relative;transition:background .15s}
+.dep-tg .sw::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;background:var(--dim);transition:left .15s,background .15s}
+.btn.on .sw{background:rgba(111,227,200,.25);border-color:var(--teal)}
+.btn.on .sw::after{left:18px;background:var(--teal)}
+
+/* ---------- raids, régions, contrats ---------- */
+.regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.region,.contract{position:relative;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:12px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px;transition:border-color .15s,transform .15s}
+.region:hover,.contract:hover{border-color:var(--line2);transform:translateY(-1px)}
+.region .tier{font-family:var(--f-mono);font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--amber)}
+.region .nm{font-family:var(--f-title);font-size:25px;font-weight:700;line-height:1;letter-spacing:.03em}
+.region .d,.contract .d{font-size:12.5px;color:var(--mute);line-height:1.4}
+.region .m{font-size:11.5px;color:var(--dim);line-height:1.45}
+.region.on,.contract.on{border-color:var(--amber);box-shadow:inset 0 -3px 0 var(--amber);background:linear-gradient(180deg,rgba(242,193,78,.1),var(--panel))}
+.region.locked{opacity:.6}
+.region.shadow{background:repeating-linear-gradient(135deg,#11171a 0 8px,#0f1416 8px 16px);border-style:dashed}
+.region.shadow .nm{color:var(--mute)}
+.contract .nm{font-weight:700;font-size:14.5px}
+.contract .st{font:700 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--molten2)}
+.contract.on .st{color:var(--amber)}
+.diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:20px}
+.diff{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:11px 12px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:5px;transition:border-color .15s}
+.diff:hover{border-color:var(--line2)}
+.diff.on{border-color:var(--amber);box-shadow:inset 0 -3px 0 var(--amber)}
+.diff.shadow{background:repeating-linear-gradient(135deg,#11171a 0 8px,#0f1416 8px 16px);border-style:dashed;color:var(--dim);cursor:default}
+.diff .nm{font-family:var(--f-title);font-size:24px;font-weight:700;line-height:1;letter-spacing:.03em}
+.diff .d{font-size:12.5px;color:var(--mute);line-height:1.4}
+.diff .m{font:11px var(--f-mono);color:var(--dim)}
+.raid-go{position:sticky;bottom:-40px;margin:22px calc(-1 * clamp(14px,2.4vw,30px)) -40px;padding:12px clamp(14px,2.4vw,30px) 14px;background:rgba(14,19,21,.97);border-top:1px solid var(--line2);box-shadow:0 -12px 24px rgba(0,0,0,.35);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;z-index:2}
+.raid-go .sumr{font-size:13px;color:var(--mute)}
+.raid-go .sumr b{color:var(--ink)}
+
+/* ---------- recherche ---------- */
+.rt-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.rt-tab{display:flex;flex-direction:column;gap:3px;min-width:150px;background:var(--panel);border:1px solid var(--line);padding:8px 12px;color:var(--ink);text-align:left;transition:border-color .15s}
+.rt-tab:hover{border-color:var(--line2)}
+.rt-tab.on{border-color:var(--amber);box-shadow:inset 0 -3px 0 var(--amber);background:linear-gradient(180deg,rgba(242,193,78,.1),var(--panel))}
+.rt-tab b{font-size:14.5px}
+.rt-tab small{font:11px var(--f-mono);color:var(--mute)}
+.rt-tab small .rd{color:var(--amber)}
+.rt-tab .pg{height:3px;background:#0a0e0f}
+.rt-tab .pg i{display:block;height:100%;background:var(--teal)}
+.rlayout{display:grid;grid-template-columns:1fr 310px;gap:12px;align-items:start}
+.rtree-wrap{position:relative;overflow:hidden;height:calc(100vh / var(--ui) - 2 * var(--hi) / var(--ui) - 230px);min-height:340px;border:1px solid var(--line2);background:#0b1011;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.rtree-wrap.drag{cursor:grabbing}
+.rtree{position:absolute;left:0;top:0;transform-origin:0 0}
+.rlinks{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.rlinks path{fill:none;stroke:#34444b;stroke-width:2;transition:stroke .15s,opacity .15s}
+.rlinks path.done{stroke:rgba(111,227,200,.6)}
+.rlinks path.x{stroke-dasharray:5 5}
+.rlinks path.sh{stroke:#273237;stroke-dasharray:3 5}
+.rtree.focus .rlinks path{opacity:.18}
+.rtree.focus .rlinks path.hl{opacity:1;stroke:var(--amber);stroke-width:2.5}
+.rband{position:absolute;top:0;border-left:1px dashed rgba(111,227,200,.12)}
+.rband.off{background:rgba(0,0,0,.18)}
+.rband span{position:absolute;left:8px;top:8px;font:700 11px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.rband.on span{color:var(--teal)}
+.rband.off span{color:var(--dim)}
+.rlane{position:absolute;left:0;border-top:1px solid rgba(111,227,200,.08)}
+.rlane span{position:absolute;left:10px;top:8px;font:700 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(165,156,136,.75);white-space:nowrap}
+.rlane span em{font-style:normal;color:var(--dim);margin-left:6px;letter-spacing:.02em}
+.rnode{position:absolute;width:176px;height:56px;padding:6px 9px 6px 12px;text-align:left;background:linear-gradient(180deg,#1a2327,#151c1f);border:1px solid var(--line2);color:var(--ink);font-size:12.5px;font-weight:700;line-height:1.2;overflow:hidden;transition:border-color .15s,opacity .15s,box-shadow .15s}
+.rnode::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line2)}
+.rnode .ri{display:block;font:600 9.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.rnode small{display:block;font-size:11px;font-weight:500;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.rnode:hover{border-color:var(--ink)}
+.rnode.done{background:linear-gradient(180deg,#173029,#13231f);border-color:rgba(111,227,200,.55)}
+.rnode.done::before{background:var(--teal)}
+.rnode.done small{color:var(--teal)}
+.rnode.ready{border-color:var(--amber);box-shadow:0 0 0 1px rgba(242,193,78,.35),0 0 18px rgba(242,193,78,.18)}
+.rnode.ready::before{background:var(--amber)}
+.rnode.ready small{color:var(--amber2)}
+.rnode.avail::before{background:var(--molten)}
+.rnode.locked{color:var(--mute);border-style:dashed;background:#121819}
+.rnode.locked small{color:var(--dim)}
+.rnode.shadow{color:var(--dim);border-style:dashed;border-color:#2c393f;background:repeating-linear-gradient(135deg,#10161a 0 7px,#0d1214 7px 14px)}
+.rnode.shadow::before{background:#2c393f}
+.rnode.base{background:#121a1c;border-color:#2c393f;color:var(--mute)}
+.rnode.base::before{background:var(--patina)}
+.rnode.sel{outline:2px solid #fff;outline-offset:2px}
+.rtree.focus .rnode{opacity:.32}
+.rtree.focus .rnode.hl{opacity:1}
+.rnode .newtag{position:absolute;right:5px;top:5px;font-size:9px}
+.rt-tools{position:absolute;right:8px;bottom:8px;display:flex;gap:4px;z-index:3}
+.rt-tools .btn{padding:4px 10px;font-size:13px;background:rgba(26,35,39,.94)}
+.rt-legend{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 330px);display:flex;flex-wrap:wrap;gap:4px 10px;z-index:3;font:11px var(--f-mono);color:var(--mute);background:rgba(11,16,17,.85);padding:5px 8px;border:1px solid var(--line)}
+.rt-legend i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:-1px;border:1px solid var(--line2)}
+.rdetail{position:sticky;top:0;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-top:2px solid var(--amber);padding:14px;display:flex;flex-direction:column;gap:9px;max-height:calc(100vh / var(--ui) - 2 * var(--hi) / var(--ui) - 230px);overflow:auto}
+.rdetail h4{margin:0;font-family:var(--f-title);font-size:25px;line-height:1.02;letter-spacing:.03em}
+.rdetail .rk{font:700 10.5px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.rdetail canvas{width:100%;height:150px;background:#0b1011;border:1px solid var(--line)}
+.rdetail ul.cond{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.rdetail ul.cond li{display:flex;gap:8px;align-items:baseline}
+.rdetail ul.cond li::before{content:'✓';font-weight:700;color:var(--ok);width:12px;flex:none}
+.rdetail ul.cond li.no::before{content:'✗';color:var(--bad)}
+.rdetail ul.cond li.no{color:var(--mute)}
+.rdetail .nexts{display:flex;flex-wrap:wrap;gap:4px}
+.rdetail .nexts span{font-size:11.5px;border:1px solid var(--line);padding:2px 7px;color:var(--mute);cursor:pointer}
+.rdetail .nexts span:hover{border-color:var(--amber);color:var(--ink)}
+.rdetail .kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12.5px}
+.rdetail .kv span{color:var(--mute)} .rdetail .kv b{font-family:var(--f-mono);font-weight:600}
+
+/* ---------- commandes tactiles ---------- */
 .tui{position:absolute;inset:0;pointer-events:none;display:none;z-index:8;user-select:none;-webkit-user-select:none}
 .tui.on{display:block}
-.tui .tb{pointer-events:auto;touch-action:none;background:rgba(20,24,26,.72);color:#e8dcc4;border:1px solid rgba(232,220,196,.28);border-radius:14px;font-family:var(--f-ui);font-weight:700;font-size:13px;min-width:66px;min-height:46px;padding:6px 8px;-webkit-tap-highlight-color:transparent}
-.tui .tb:active,.tui .tb.on{background:rgba(111,227,200,.35);border-color:#6fe3c8}
+.tui .tb{position:relative;pointer-events:auto;touch-action:none;background:rgba(18,25,28,.76);color:#ece2cc;border:1px solid rgba(236,226,204,.26);border-radius:12px;font-family:var(--f-ui);font-weight:700;font-size:13px;min-width:66px;min-height:46px;padding:6px 8px;-webkit-tap-highlight-color:transparent}
+.tui .tb:active,.tui .tb.on{background:rgba(111,227,200,.32);border-color:#6fe3c8}
 .tui .tb.big{min-width:74px;min-height:58px;font-size:14px}
 .tui .tb.sm{min-width:48px;min-height:40px;font-size:13px}
 .tui .tb.hot{background:var(--molten);border-color:var(--molten);color:#fff}
+.tui .tb .nbadge{position:absolute;top:-6px;right:-6px;margin:0}
 .tcol{position:absolute;display:flex;flex-direction:column;gap:8px;top:max(26%,170px)}
 .tleft{left:calc(10px + env(safe-area-inset-left,0px))}
 .tright{right:calc(10px + env(safe-area-inset-right,0px))}
 .ttop{position:absolute;bottom:calc(72px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:8px}
-.fpop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;grid-template-columns:repeat(2,auto);gap:6px;background:rgba(14,17,18,.85);padding:8px;border:1px solid rgba(232,220,196,.2);border-radius:14px;pointer-events:auto}
+.fpop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;grid-template-columns:repeat(2,auto);gap:6px;background:rgba(12,16,17,.9);padding:8px;border:1px solid rgba(236,226,204,.2);border-radius:14px;pointer-events:auto}
 .fpop.on{display:grid}
 body.touch .basebar{display:none!important}
 .touchonly{display:none} body.touch .touchonly{display:inline} body.touch .kbonly{display:none}
-@media (max-height:560px){.hub-logo{display:none}.hub-top{padding:6px 12px;gap:4px 10px}.res-bar{font-size:12.5px;gap:3px 10px}.hub-nav{padding:4px 0}.hub-nav button{padding:8px 14px;font-size:15px}.hub-main{padding-top:12px}.h2{font-size:30px}.lead{margin-bottom:12px}}
 body.touch #cv{cursor:default}
+@media (max-height:560px){.hub-logo{display:none}.hub-top{padding:6px 12px;gap:4px 10px}.res{padding:2px 7px;font-size:12px}.res b{font-size:12px}.res span{display:none}.hub-nav{padding:4px 0}.hub-nav button{padding:8px 14px;font-size:14.5px}.hub-main{padding-top:12px}.h2{font-size:26px}.lead{margin-bottom:10px;font-size:13.5px}.rtree-wrap,.rdetail{height:auto;max-height:none}.rtree-wrap{height:calc(100vh / var(--ui) - 150px);min-height:220px}.forge-view{height:min(300px,60vh)}}
 @media (max-height:480px){.tcol{top:auto;bottom:calc(196px + env(safe-area-inset-bottom,0px));flex-direction:row}.tleft{left:calc(10px + env(safe-area-inset-left,0px))}.tright{right:calc(10px + env(safe-area-inset-right,0px))}.tui .tb{min-height:40px;min-width:58px;font-size:12px}.tui .tb.big{min-height:44px;min-width:62px}}
-/* ---------- Régions, contrats, recherche, réglages ---------- */
-.regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.region,.contract{background:var(--panel);border:1px solid var(--line);padding:12px;text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:6px}
-.region .nm{font-family:var(--f-title);font-size:26px;font-weight:700;line-height:1}
-.region .d,.contract .d{font-size:13px;color:var(--mute);line-height:1.4}
-.region .m{font-size:12px;color:var(--dim);line-height:1.4}
-.region.on,.contract.on{border-color:var(--molten);box-shadow:inset 0 -4px 0 var(--molten)}
-.region.locked{opacity:.55}
-.contract .nm{font-weight:700;font-size:15px}
-.contract .st{font-size:12px;font-weight:700;color:var(--molten)}
-.rlayout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
-.rtree-wrap{overflow:auto;max-height:calc(100vh - 260px);border:1px solid var(--line);background:var(--bg2)}
-.rtree{position:relative}
-.rlinks{position:absolute;left:0;top:0;pointer-events:none}
-.rlinks path{fill:none;stroke:var(--line2);stroke-width:2}
-.rlinks path.done{stroke:var(--patina)}
-.rcol{position:absolute;top:10px;width:176px;text-align:center;font-weight:700;font-size:13px;color:var(--mute)}
-.rcol.off{opacity:.45}
-.rlane{position:absolute;left:0;width:100%;border-top:1px dashed var(--line)}
-.rlane span{position:absolute;left:10px;top:8px;width:120px;font-family:var(--f-title);font-size:18px;font-weight:700;color:var(--mute);line-height:1.1}
-.rnode{position:absolute;width:176px;height:50px;padding:5px 8px;text-align:left;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:12.5px;font-weight:700;line-height:1.2;overflow:hidden}
-.rnode small{display:block;font-size:11px;font-weight:500;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rnode.done{background:var(--patina);border-color:var(--patina);color:#fff}
-.rnode.done small{color:rgba(255,255,255,.85)}
-.rnode.ready{border:2px solid var(--molten)}
-.rnode.locked{color:var(--dim);border-style:dashed;background:var(--bg2)}
-.rnode.locked small{color:var(--dim)}
-.rnode.sel{outline:3px solid var(--signal);outline-offset:1px}
-.rdetail{position:sticky;top:0;background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px}
-.rdetail h4{margin:0;font-family:var(--f-title);font-size:26px;line-height:1}
-.setgrid{display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:10px 16px;align-items:center;font-size:14px}
-.setgrid input.name{max-width:340px}
-.keylist{display:grid;grid-template-columns:1fr auto 1fr auto;gap:6px 12px;align-items:center;font-size:13.5px;margin-top:8px}
-.keylist kbd{font-family:var(--f-ui);font-weight:700;background:var(--panel2);border:1px solid var(--line2);border-bottom-width:3px;padding:1px 8px;min-width:32px;text-align:center;display:inline-block}
+@media (max-width:980px){.rlayout{grid-template-columns:1fr}.rdetail{position:relative;max-height:none}}
 @media (max-width:820px){
-  .rlayout{grid-template-columns:1fr}
   #hub{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}
   .hub-top{grid-column:1}
-  .hub-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:2px solid var(--line);padding:0}
-  .hub-nav button{border-left:0;border-bottom:3px solid transparent;white-space:nowrap}
-  .hub-nav button.on{border-bottom-color:var(--molten)}
+  .hub-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line2);padding:0}
+  .hub-nav button{border-left:0;border-bottom:3px solid transparent;white-space:nowrap;padding:9px 12px}
+  .hub-nav button.on{border-bottom-color:var(--amber);background:rgba(242,193,78,.08)}
   .hub-nav .nav-foot{display:none}
   .cols{grid-template-columns:1fr}
   .forge{grid-template-columns:1fr}
-  .forge-view{position:relative;border-right:0;border-bottom:1px solid var(--line);height:300px}
+  .fg-left{position:relative;top:0}
+  .forge-view{height:260px}
 }
-/* ---------- Tutoriel ---------- */
-.tut{position:absolute;z-index:30;width:340px;max-width:calc(100vw - 28px);background:rgba(20,24,26,.95);color:#e8dcc4;border:1px solid rgba(242,193,78,.45);border-left:4px solid #f2c14e;padding:10px 13px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.4);font-family:var(--f-ui)}
+@media (max-height:560px){
+  .lead.hint{display:none}
+  .phead{margin-bottom:8px}.psum{font-size:11.5px}.psum span{padding:2px 7px}
+  .rt-tabs{flex-wrap:nowrap;overflow-x:auto;margin-bottom:6px}.rt-tab{min-width:0;flex:none;padding:5px 10px}.rt-tab b{font-size:13px}
+  .rt-legend{display:none}
+  .fg-strip .ch-item{width:132px}.ch-item canvas{height:58px}
+  .forge-view{height:min(240px,62vh)}
+}
+/* le hub en paysage sur téléphone : navigation à gauche plus étroite */
+@media (max-height:560px) and (min-width:821px){#hub{grid-template-columns:168px 1fr}.hub-nav button .nv-k{display:none}}
+
+/* ---------- tutoriel ---------- */
+.tut{position:absolute;z-index:30;width:340px;max-width:calc(100vw - 28px);background:rgba(18,25,28,.96);color:#ece2cc;border:1px solid rgba(242,193,78,.45);border-left:4px solid #f2c14e;padding:10px 13px;display:none;box-shadow:0 8px 28px rgba(0,0,0,.45);font-family:var(--f-ui)}
 .tut.on{display:block}
-.tut .tch{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#f2c14e}
-.tut h4{margin:4px 0 6px;font-family:var(--f-title);font-size:25px;font-weight:700;line-height:1.02;color:#fff4dc}
+.tut .tch{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:#f2c14e}
+.tut h4{margin:4px 0 6px;font-family:var(--f-title);font-size:24px;font-weight:700;line-height:1.02;color:#fff4dc;letter-spacing:.02em}
 .tut p{margin:0 0 6px;font-size:13.5px;line-height:1.45;color:#d9cdb5}
 .tut b{color:#fff4dc}
-.tut kbd{font-family:var(--f-ui);font-weight:700;font-size:12px;background:#2b3337;border:1px solid #5a676b;border-bottom-width:3px;padding:0 6px;margin:0 1px;color:#fff4dc;white-space:nowrap}
+.tut kbd{font-weight:700;font-size:12px;background:#2b3337;border:1px solid #5a676b;border-bottom-width:3px;padding:0 6px;margin:0 1px;color:#fff4dc;white-space:nowrap}
 .tut ul.tl{list-style:none;margin:4px 0 6px;padding:0;font-size:13px;line-height:1.55;color:#d9cdb5}
 .tut ul.tl li.ok{color:#6fe3c8}
 .tut .tp{font-size:13px;font-weight:700;color:#f2c14e;margin:2px 0 4px}
 .tut .tacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.tut .btn{background:#2b3337;color:#e8dcc4;border-color:#4d5a5e}
-.tut .btn.hot{background:var(--molten);border-color:var(--molten);color:#fff8ee}
 .tut .tmin{background:none;border:1px solid rgba(242,193,78,.5);color:#f2c14e;font-size:12px;line-height:1;padding:3px 8px;margin-left:6px;border-radius:4px}
 .tut.min .tb{display:none}
 .tut.touch{width:min(410px,52vw);padding:6px 10px 7px}
@@ -299,16 +452,21 @@ body.touch #cv{cursor:default}
 @keyframes tutpulse{50%{outline-color:rgba(242,193,78,.2)}}
 .btn.tut-hl{outline:none!important;box-shadow:inset 0 0 0 3px #f2c14e,inset 0 0 14px rgba(242,193,78,.55);animation:tutpulse2 1.1s ease-in-out infinite}
 @keyframes tutpulse2{50%{box-shadow:inset 0 0 0 3px rgba(242,193,78,.35),inset 0 0 4px rgba(242,193,78,.2);filter:brightness(1.12)}}
-@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important} .tut-hl,.btn.tut-hl{animation:none} }
+@keyframes newpulse{50%{box-shadow:0 0 0 3px rgba(242,193,78,.18)}}
+.ch-item.isnew,.wcard.isnew,.card.isnew,.rnode.isnew{animation:newpulse 1.6s ease-in-out 3}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important;transition:none!important} .tut-hl,.btn.tut-hl,.isnew{animation:none} .toast.on{animation:none} }
+
+/* ---------- expéditions ---------- */
 .card canvas.expmap{width:100%;height:auto;aspect-ratio:1/1;max-width:300px;align-self:center;background:#0c0f10;image-rendering:pixelated}
 .exp-grid{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
 .exl{font-size:12.5px;color:var(--mute);line-height:1.45}
 .exl b{color:var(--ink)}
 .exsq{display:grid;grid-template-columns:1fr 64px;gap:4px 8px;font-size:12px;align-items:center;color:var(--ink)}
 .exsq .hpbar{height:5px}
-.exlog{font-size:12px;color:var(--mute);line-height:1.45;border-top:1px solid var(--line);padding-top:6px}
-.card.exr{border-color:var(--signal);box-shadow:inset 0 3px 0 var(--signal)}
-.chip:disabled{opacity:.42;cursor:not-allowed}
+.exlog{font-size:12px;color:var(--mute);line-height:1.45;border-top:1px solid var(--line);padding-top:6px;font-family:var(--f-mono)}
+.card.exr{border-color:rgba(242,193,78,.55);box-shadow:inset 0 2px 0 var(--amber)}
+.cst{display:inline-flex;gap:7px;align-items:center;font-family:var(--f-mono);font-size:11.5px}
+.cst i{display:inline-block;width:7px;height:7px;transform:rotate(45deg);margin-right:3px}
 </style>
 </head>
 <body>
@@ -318,6 +476,7 @@ body.touch #cv{cursor:default}
   <section id="title" class="screen">
     <canvas id="titleCv" aria-hidden="true"></canvas>
     <div class="title-wrap">
+      <p class="title-kicker">Extraction · flottes de robots · géants</p>
       <h1 class="title-name">COLOSSE</h1>
       <p class="title-sub">Bâtissez votre base, forgez des armées de robots, de la fourmi d'acier au méca titanesque qui écrase tout sur son passage, puis lancez-les dans un monde dévasté de 12 km² et tenez la balise jusqu'à l'extraction.</p>
       <div class="title-row">
@@ -1568,6 +1727,95 @@ RESEARCH_CATS.splice(RESEARCH_CATS.indexOf('Armes titanesques') + 1, 0, 'Armes c
   { id: 'w_singul', cat: 'Armes apocalyptiques', lab: 5, n: 'Projecteur de singularité', req: 'c_astre', cost: { data: 1300, cores: 35 }, d: WEAPONS.singul.d },
   { id: 'w_meteor', cat: 'Armes apocalyptiques', lab: 5, n: 'Pluie de météores', req: 'c_astre', cost: { data: 1300, cores: 35 }, d: WEAPONS.meteor.d },
 ].forEach(r => { RESEARCH.push(r); RESEARCH_BY_ID[r.id] = r; });
+
+// ================= ARBRE DE RECHERCHE PAR FAMILLES (1.7) =================
+// Chaque technologie découle de sa famille : chenillés, marcheurs, volants… cinétique, obus, missiles, énergie…
+// req : prérequis principal (même famille) · req2 : prérequis supplémentaires · bld : bâtiment exigé [type, niveau].
+(() => {
+  const R = RESEARCH_BY_ID;
+  const S = (id, req, o = {}) => { const r = R[id]; if (!r) return; r.req = req || undefined; r.req2 = o.also || undefined; if (o.lab) r.lab = o.lab; if (o.bld) r.bld = o.bld; };
+  const C1 = { bld: ['shipyard', 1] }, C2 = { bld: ['shipyard', 2] }, C3 = { bld: ['shipyard', 3] };
+  // ---- châssis
+  S('c_ant'); S('c_scout'); S('c_grillon'); S('c_mantis', 'c_grillon'); S('c_reaper', 'c_mantis');
+  S('c_sentry'); S('c_rhino', 'c_sentry'); S('c_tortue', 'c_sentry'); S('c_herisson', 'c_sentry'); S('c_goliath', 'c_rhino'); S('c_colossus', 'c_goliath');
+  S('c_rempart', 'c_colossus', C1); S('c_forgemere', 'c_rempart', C2); S('c_villemachine', 'c_forgemere', C3);
+  S('c_strider'); S('c_spider', 'c_strider'); S('c_scolopendre', 'c_spider'); S('c_hydre', 'c_spider'); S('c_echassier', 'c_strider'); S('c_titan', 'c_echassier'); S('c_behemoth', 'c_titan');
+  S('c_arachne', 'c_behemoth', C1); S('c_cyclope', 'c_arachne', C2);
+  S('c_gunship'); S('c_scarabee', 'c_gunship'); S('c_airship', 'c_gunship'); S('c_wyverne', 'c_airship'); S('c_arche', 'c_wyverne');
+  S('c_portenef', 'c_arche', C1); S('c_aeropole', 'c_portenef', C2); S('c_astre', 'c_aeropole', C3);
+  S('c_mule'); S('c_vautour', 'c_mule', { also: ['c_gunship'] }); S('c_mammouth', 'c_mule', { also: ['c_goliath'] });
+  // ---- armes
+  S('w_scatter'); S('w_gatling', 'w_scatter'); S('w_needler'); S('w_harpoon'); S('w_disc', 'w_needler'); S('w_rail', 'w_needler'); S('w_gauss', 'w_rail'); S('w_gravity', 'w_rail'); S('w_singul', 'w_gravity', C3);
+  S('w_cannon'); S('w_dca', 'w_cannon'); S('w_siege', 'w_cannon'); S('w_battle', 'w_siege', C1);
+  S('w_grenade'); S('w_cluster', 'w_grenade'); S('w_mortar', 'w_grenade', { lab: 3 }); S('w_orbital', 'w_mortar'); S('w_meteor', 'w_orbital', C3);
+  S('w_rockets'); S('w_swarm', 'w_rockets'); S('w_thermo', 'w_swarm'); S('w_mwall', 'w_thermo', C1); S('w_cruise', 'w_rockets'); S('w_nuke', 'w_cruise'); S('w_dusk', 'w_nuke', C3);
+  S('w_laser'); S('w_plasma', 'w_laser'); S('w_fusion', 'w_plasma'); S('w_fission', 'w_fusion', C3); S('w_beam', 'w_laser'); S('w_disint', 'w_beam'); S('w_annihil', 'w_disint', C1);
+  S('w_tesla'); S('w_emp', 'w_tesla'); S('w_storm', 'w_tesla'); S('w_lance', 'w_storm'); S('w_ion', 'w_lance', C1);
+  S('w_flamer'); S('w_acidgun', 'w_flamer'); S('w_napalm', 'w_flamer'); S('w_furnace', 'w_napalm', C1);
+  S('w_repair'); S('w_shield', 'w_repair'); S('w_dome', 'w_shield', C1); S('w_nanoswarm', 'w_repair', C1); S('w_bay'); S('w_fighters', 'w_bay', C1);
+  // ---- modules et cerveaux
+  S('m_armor'); S('m_plating', 'm_armor'); S('m_emshield', 'm_plating'); S('m_regen', 'm_armor');
+  S('m_thrusters'); S('m_jump', 'm_thrusters'); S('m_cloak', 'm_thrusters'); S('m_cargo');
+  S('m_sensors'); S('m_stabil', 'm_sensors'); S('m_overcharge', 'm_stabil'); S('m_selfdestruct');
+  S('b_gatherer'); S('b_tactical');
+  // ---- pilote et protocoles
+  S('p_shotgun'); S('p_ar'); S('p_sniper'); S('p_plasma', 'p_ar'); S('p_arc'); S('p_launcher');
+  S('u_armor1'); S('u_armor2', 'u_armor1'); S('u_armor3', 'u_armor2'); S('u_bag1'); S('u_bag2', 'u_bag1'); S('u_bag3', 'u_bag2');
+  S('u_cmd1'); S('u_cmd2', 'u_cmd1'); S('u_cmd3', 'u_cmd2'); S('u_cmd4', 'u_cmd3'); S('u_beacon'); S('u_anchor', 'u_beacon'); S('u_recall', 'u_anchor');
+  // textes : les géants et les armes démesurées se conçoivent au Chantier titanesque
+  for (const id of ['w_battle', 'w_mwall', 'w_annihil', 'w_furnace', 'w_ion', 'w_dome', 'w_nanoswarm', 'w_fighters']) if (R[id]) R[id].d = WEAPONS[id.slice(2)].d + ' Arme colossale : se monte sur les géants des rangs 7 et 8.';
+  for (const id of ['w_fission', 'w_dusk', 'w_singul', 'w_meteor']) if (R[id]) R[id].d = WEAPONS[id.slice(2)].d + ' Arme apocalyptique : réservée aux géants de rang 9.';
+})();
+// le poste d'expédition se découvre au QG niveau 2
+BLIMIT.expedition = [0, 1, 1, 1, 1];
+
+// points de départ (déjà acquis) et branches de l'arbre
+const RT_BASE = {
+  x_crawler: { n: 'Rampeur', ch: 'crawler', d: 'Chenillé d\'entrée de gamme, disponible dès le départ.' },
+  x_drone: { n: 'Libellule', ch: 'drone', d: 'Petit volant d\'entrée de gamme, disponible dès le départ.' },
+  x_mg: { n: 'Mitrailleuse', w: 'mg', d: 'Arme de départ : cadence élevée, courte portée.' },
+  x_rifle: { n: 'Fusil long', w: 'rifle', d: 'Arme de départ : précise et lointaine.' },
+  x_blades: { n: 'Lames', w: 'blades', d: 'Arme de départ : corps à corps.' },
+  x_brains: { n: 'Escorte, Chasseur, Gardien', d: 'Les trois cerveaux disponibles dès le départ.' },
+  x_pistol: { n: 'Pistolet', d: 'L\'arme de départ du pilote.' },
+};
+const RT_ROOT = { c_sentry: 'x_crawler', c_gunship: 'x_drone', w_scatter: 'x_mg', w_needler: 'x_rifle', w_harpoon: 'x_rifle', w_flamer: 'x_blades', b_gatherer: 'x_brains', b_tactical: 'x_brains', p_shotgun: 'x_pistol', p_ar: 'x_pistol', p_sniper: 'x_pistol', p_arc: 'x_pistol', p_launcher: 'x_pistol' };
+const RT_BRANCHES = [
+  { id: 'ch', n: 'Châssis', fam: [
+    { id: 'chenille', n: 'Chenillés', ids: ['x_crawler', 'c_sentry', 'c_rhino', 'c_tortue', 'c_herisson', 'c_goliath', 'c_colossus', 'c_rempart', 'c_forgemere', 'c_villemachine'] },
+    { id: 'marcheur', n: 'Marcheurs', ids: ['c_strider', 'c_echassier', 'c_spider', 'c_titan', 'c_hydre', 'c_scolopendre', 'c_behemoth', 'c_arachne', 'c_cyclope'] },
+    { id: 'volant', n: 'Volants', ids: ['x_drone', 'c_gunship', 'c_airship', 'c_scarabee', 'c_wyverne', 'c_arche', 'c_portenef', 'c_aeropole', 'c_astre'] },
+    { id: 'leger', n: 'Légers et rapides', ids: ['c_ant', 'c_grillon', 'c_scout', 'c_mantis', 'c_reaper'] },
+    { id: 'transport', n: 'Transport', ids: ['c_mule', 'c_vautour', 'c_mammouth'] },
+  ] },
+  { id: 'w', n: 'Armes', fam: [
+    { id: 'cin', n: 'Cinétique', ids: ['x_mg', 'x_rifle', 'w_scatter', 'w_needler', 'w_harpoon', 'w_gatling', 'w_rail', 'w_disc', 'w_gravity', 'w_gauss', 'w_singul'] },
+    { id: 'obus', n: 'Obus et artillerie', ids: ['w_cannon', 'w_grenade', 'w_dca', 'w_cluster', 'w_mortar', 'w_siege', 'w_orbital', 'w_battle', 'w_meteor'] },
+    { id: 'mis', n: 'Missiles', ids: ['w_rockets', 'w_swarm', 'w_cruise', 'w_thermo', 'w_nuke', 'w_mwall', 'w_dusk'] },
+    { id: 'nrj', n: 'Énergie', ids: ['w_laser', 'w_plasma', 'w_beam', 'w_fusion', 'w_disint', 'w_annihil', 'w_fission'] },
+    { id: 'elec', n: 'Électricité', ids: ['w_tesla', 'w_emp', 'w_storm', 'w_lance', 'w_ion'] },
+    { id: 'feu', n: 'Feu, acide et lames', ids: ['x_blades', 'w_flamer', 'w_acidgun', 'w_napalm', 'w_furnace'] },
+    { id: 'sout', n: 'Soutien', ids: ['w_repair', 'w_shield', 'w_bay', 'w_nanoswarm', 'w_dome', 'w_fighters'] },
+  ] },
+  { id: 'eq', n: 'Modules et cerveaux', fam: [
+    { id: 'prot', n: 'Protection', ids: ['m_armor', 'm_plating', 'm_regen', 'm_emshield'] },
+    { id: 'mob', n: 'Mobilité et soute', ids: ['m_thrusters', 'm_cargo', 'm_jump', 'm_cloak'] },
+    { id: 'cbt', n: 'Combat', ids: ['m_sensors', 'm_selfdestruct', 'm_stabil', 'm_overcharge'] },
+    { id: 'brain', n: 'Cerveaux', ids: ['x_brains', 'b_gatherer', 'b_tactical'] },
+  ] },
+  { id: 'pi', n: 'Pilote et protocoles', fam: [
+    { id: 'parm', n: 'Armes du pilote', ids: ['x_pistol', 'p_shotgun', 'p_ar', 'p_sniper', 'p_plasma', 'p_arc', 'p_launcher'] },
+    { id: 'pequ', n: 'Équipement du pilote', ids: ['u_armor1', 'u_bag1', 'u_armor2', 'u_bag2', 'u_armor3', 'u_bag3'] },
+    { id: 'cmd', n: 'Commandement', ids: ['u_cmd1', 'u_cmd2', 'u_cmd3', 'u_cmd4'] },
+    { id: 'bal', n: 'Balise et extraction', ids: ['u_beacon', 'u_anchor', 'u_recall'] },
+  ] },
+];
+// toute technologie oubliée par les familles rejoint une famille « Autres » de sa branche
+(() => {
+  const seen = new Set(RT_BRANCHES.flatMap(b => b.fam.flatMap(f => f.ids)));
+  const brOf = id => id[0] === 'c' ? 'ch' : id[0] === 'w' ? 'w' : id[0] === 'm' || id[0] === 'b' ? 'eq' : 'pi';
+  for (const r of RESEARCH) if (!seen.has(r.id)) { const B = RT_BRANCHES.find(b => b.id === brOf(r.id)); let f = B.fam.find(x => x.id === 'autres'); if (!f) B.fam.push(f = { id: 'autres', n: 'Autres', ids: [] }); f.ids.push(r.id); }
+})();
 
 // ================= RÉGIONS =================
 const REGIONS = [
@@ -8264,7 +8512,7 @@ function drawAssaultPanel(c) {
 const $ = s => document.querySelector(s);
 const cv = $('#cv'), ctx = cv.getContext('2d');
 let VW = 800, VH = 600, DPR = 1, vignette = null, hudCards = [];
-const FONT = '"Chakra Petch", "Segoe UI", system-ui, sans-serif';
+const FONT = '"Bahnschrift", "Segoe UI", Roboto, system-ui, sans-serif';
 const STENCIL = '"Big Shoulders Stencil Display", Impact, sans-serif';
 function resize() {
   DPR = Math.min(TOUCH.on ? 1.25 : 1.5, window.devicePixelRatio || 1);
@@ -8874,6 +9122,7 @@ function drawBaseHUD(c) {
   panel(c, 14, 14, 380, 92);
   RES_KEYS.forEach((k, i) => {
     const col = i % 2, row = Math.floor(i / 2), x = 24 + col * 186, y = 34 + row * 19;
+    if (!resVis(k)) { c.fillStyle = '#3a4950'; c.save(); c.translate(x + 4, y - 4); c.rotate(Math.PI / 4); c.fillRect(-4, -4, 8, 8); c.restore(); c.fillStyle = '#6c7773'; c.font = `600 12px ${FONT}`; c.fillText('? ? ?', x + 14, y); return; }
     c.fillStyle = RES[k].c; c.save(); c.translate(x + 4, y - 4); c.rotate(Math.PI / 4); c.fillRect(-4, -4, 8, 8); c.restore();
     c.fillStyle = '#e8dcc4'; c.font = `700 13px ${FONT}`; c.fillText(fmt(save.res[k]), x + 14, y);
     const pm = prodPerMin(k); c.font = `500 11px ${FONT}`; c.fillStyle = '#a59c88';
@@ -9359,8 +9608,8 @@ function openDrawer(tab) {
   if (tab) hubTab = tab; drawerOpen = true; for (const k in keys) keys[k] = false; mouse.l = false; mouse.drag = null;
   showScreen('hub'); renderHub(); $('#hubMain').scrollTop = 0; updateBPanel(); SFX.play('uiopen', 1); updateTouchUI();
 }
-function closeDrawer(silent) { if (!drawerOpen) return; drawerOpen = false; $('#hub').classList.remove('on'); updateBPanel(); if (!silent) SFX.play('uiclose', 1); updateTouchUI(); }
-function showBaseBar(on) { $('#baseBar').classList.toggle('on', on); }
+function closeDrawer(silent) { if (!drawerOpen) return; drawerOpen = false; uiCommit(); uiPendTab = null; try { updateNav(); } catch (e) { } $('#hub').classList.remove('on'); updateBPanel(); if (!silent) SFX.play('uiclose', 1); updateTouchUI(); }
+function showBaseBar(on) { $('#baseBar').classList.toggle('on', on); if (on) { try { updateNav(); } catch (e) { } } }
 
 // ---------- panneau du bâtiment sélectionné ----------
 function updateBPanel() {
@@ -9453,7 +9702,7 @@ document.addEventListener('click', e => {
       const u = fleet.find(f => f.sid === R.id); if (u) { if (player.inside === u) ejectPlayer(false); u.dead = true; fleet = fleet.filter(f => f !== u); boom(u.x, u.y, u.r * 1.5); }
       writeSave(); SFX.play('crush', 1); renderHub();
     } break;
-    case 'research': { const r = RESEARCH_BY_ID[id]; if (r && !has(r.id) && canAfford(r.cost) && (!r.req || has(r.req)) && (r.lab || 1) <= labLevel()) { pay(r.cost); save.research[r.id] = true; writeSave(); SFX.play('research', 1); toast(r.n + ' : recherche terminée.'); renderHub(); } break; }
+    case 'research': { const r = RESEARCH_BY_ID[id]; if (rCan(r)) { pay(r.cost); save.research[r.id] = true; writeSave(); SFX.play('research', 1); toast(rDoneTxt(r)); renderHub(); } break; }
     case 'diff': save.diff = +id; writeSave(); SFX.play('ui', 1); renderHub(); break;
     case 'pweapon': save.pweapon = id; writeSave(); SFX.play('ui', 1); renderHub(); if (player && state === 'base') { player.pw = PWEAPONS[id]; player.ammo = player.pw.mag; } break;
     case 'launch': if (attack) { toast('Repoussez d\'abord l\'attaque.'); SFX.play('deny', 1); break; }
@@ -9823,6 +10072,697 @@ document.addEventListener('click', e => {
     case 'resetkeys': settings.keys = {}; saveSettings(); renderSettings(); break;
   }
 }, true);
+// ================= INTERFACE 1.7 : DÉCOUVERTE PROGRESSIVE =================
+// On voit ce qu'on possède, et le prochain pas en silhouette avec sa condition. Le reste est caché, avec un compteur.
+const rReqs = r => [r.req, ...(r.req2 || [])].filter(Boolean);
+const rReqsDone = r => rReqs(r).every(has);
+const rBldOk = r => !r.bld || bLevel(r.bld[0]) >= r.bld[1];
+const rGateOk = r => (r.lab || 1) <= labLevel() && rBldOk(r);
+const rCan = r => !!r && !has(r.id) && rReqsDone(r) && rGateOk(r) && canAfford(r.cost);
+const rNear = r => !!r && rReqsDone(r) && (r.lab || 1) <= labLevel() + 1 && (!r.bld || bLevel(r.bld[0]) >= r.bld[1] - 1);
+// 'done' acquis · 'full' prochain pas (nom et coût visibles) · 'shadow' un pas plus loin (silhouette) · null caché
+function rVis(r) {
+  if (!r) return null;
+  if (RT_BASE[r.id] || has(r.id)) return 'done';
+  if (rNear(r)) return 'full';
+  if (rReqs(r).every(id => has(id) || rNear(RESEARCH_BY_ID[id]))) return 'shadow';
+  return null;
+}
+function rState(r) { if (RT_BASE[r.id] || has(r.id)) return 'done'; if (!rReqsDone(r) || !rGateOk(r)) return 'locked'; return canAfford(r.cost) ? 'ready' : 'avail'; }
+const bldName = b => b[0] === 'shipyard' ? 'Chantier titanesque niveau ' + b[1] : BUILD[b[0]].n + ' niveau ' + b[1];
+function rGateTxt(r) {
+  const miss = rReqs(r).filter(id => !has(id));
+  if (miss.length) return 'Après ' + miss.map(id => RESEARCH_BY_ID[id].n).join(' et ');
+  if ((r.lab || 1) > labLevel()) return 'Laboratoire niveau ' + r.lab + ' requis';
+  if (!rBldOk(r)) return bldName(r.bld) + ' requis';
+  return '';
+}
+// châssis, armes, modules : possédés, ou visibles en silhouette quand leur recherche est le prochain pas
+function chVis(k) { if (chassisUnlocked(k)) return 'own'; return rVis(RESEARCH_BY_ID['c_' + k]) === 'full' ? 'shadow' : null; }
+function wVis(k) { if (weaponUnlocked(k)) return 'own'; return rVis(RESEARCH_BY_ID['w_' + k]) === 'full' ? 'shadow' : null; }
+function mVis(k) { if (moduleUnlocked(k)) return 'own'; return rVis(RESEARCH_BY_ID['m_' + k]) === 'full' ? 'shadow' : null; }
+function bLimitAt(type, hq) { return (BLIMIT[type] || [1])[hq - 1] || 0; }
+function bVis(k) {
+  if (bLimit(k) > 0 || countType(k) > 0) return 'own';
+  for (let h = hqLevel() + 1; h <= Math.min(5, hqLevel() + 1); h++) if (bLimitAt(k, h) > 0) return 'shadow';
+  return null;
+}
+const bNextHq = k => { for (let h = hqLevel() + 1; h <= 5; h++) if (bLimitAt(k, h) > 0) return h; return 0; };
+function regionVis(i) { if (regionUnlocked(i)) return 'own'; for (let j = 0; j < REGIONS.length; j++) if (!regionUnlocked(j)) return j === i ? 'shadow' : null; return null; }
+function diffOwn(i) {
+  if (i <= 1 || save.diff >= i) return true;
+  const boss = (save.bossKills || []).some(n => n > 0);
+  return i === 2 ? (save.stats.extract >= 2 || boss) : boss;
+}
+function diffVis(i) { if (diffOwn(i)) return 'own'; for (let j = 0; j < DIFFS.length; j++) if (!diffOwn(j)) return j === i ? 'shadow' : null; return null; }
+function tabVis(t) {
+  if (TUT.on) return t !== 'online' && t !== 'expe';
+  if (t === 'expe') return bLevel('expedition') > 0 || (save.exps || []).length > 0;
+  if (t === 'online') return save.stats.extract >= 1 || ACC.mode === 'server' || !!LIVE.room || !!LIVE.game;
+  return true;
+}
+// ressources : les plus rares n'apparaissent qu'une fois obtenues
+const RES_BASIC = ['scrap', 'alloy', 'circuits', 'data'];
+function resVis(k) {
+  if (RES_BASIC.includes(k) || (save.res[k] || 0) > 0) return true;
+  const U = save.ui || {}; return !!(U.res && U.res[k]);
+}
+function resNote() { const U = uiState(); U.res = U.res || {}; for (const k of RES_KEYS) if ((save.res[k] || 0) > 0) U.res[k] = 1; }
+
+// ---------- nouveautés : badges sur les onglets et les éléments ----------
+let uiPending = new Set(), uiPendTab = null;
+function uiState() { if (!save.ui || typeof save.ui !== 'object') save.ui = {}; if (!save.ui.seen) save.ui.seen = {}; return save.ui; }
+function uiKeys() {
+  const o = { construire: [], atelier: [], recherche: [], raid: [], expe: [], online: [], hangar: [] };
+  for (const k of BUILD_KEYS) if (bLimit(k) > 0) o.construire.push('b:' + k);
+  for (const k of CHASSIS_KEYS) if (chassisUnlocked(k)) o.atelier.push('c:' + k);
+  for (const k of CRAFT_WEAPONS) if (weaponUnlocked(k)) o.atelier.push('w:' + k);
+  for (const k of MODULE_KEYS) if (moduleUnlocked(k)) o.atelier.push('m:' + k);
+  for (const r of RESEARCH) if (!has(r.id) && rVis(r) === 'full' && rReqsDone(r) && rGateOk(r)) o.recherche.push('r:' + r.id);
+  REGIONS.forEach((R, i) => { if (regionUnlocked(i)) o.raid.push('g:' + i); });
+  DIFFS.forEach((D, i) => { if (diffOwn(i)) o.raid.push('d:' + i); });
+  for (const k of Object.keys(PWEAPONS)) if (pweaponUnlocked(k)) o.raid.push('p:' + k);
+  if (tabVis('expe')) o.expe.push('t:expe');
+  if (tabVis('online')) o.online.push('t:online');
+  return o;
+}
+function uiInit() {
+  const U = uiState();
+  if (!U.v17) { U.v17 = 1; const K = uiKeys(); for (const t in K) for (const k of K[t]) U.seen[k] = 1; resNote(); }
+}
+const isNew = k => !TUT.on && !uiState().seen[k];
+function uiMark(k) { if (isNew(k)) uiPending.add(k); return isNew(k); }
+function uiCommit() { if (!uiPending.size) return; const S = uiState().seen; for (const k of uiPending) S[k] = 1; uiPending.clear(); }
+function uiCounts() {
+  if (TUT.on) return {};
+  uiInit(); const K = uiKeys(), S = uiState().seen, out = {};
+  for (const t in K) out[t] = K[t].filter(k => !S[k] && !(uiPendTab === t && uiPending.has(k))).length;
+  return out;
+}
+const NAV_N = { construire: '01', atelier: '02', hangar: '03', recherche: '04', raid: '05', expe: '06', online: '07' };
+function updateNav() {
+  const C = uiCounts();
+  document.querySelectorAll('#hubNav [data-tab]').forEach(b => {
+    const t = b.dataset.tab, show = tabVis(t) || hubTab === t;
+    b.style.display = show ? '' : 'none';
+    if (!b.querySelector('.nv-k')) { const lbl = b.textContent; b.innerHTML = `<span class="nv-k">${NAV_N[t] || ''}</span><span class="nv-t">${lbl}</span><span class="nbadge" hidden></span>`; }
+    const bd = b.querySelector('.nbadge'), n = hubTab === t ? 0 : C[t] || 0; bd.hidden = !n; bd.textContent = n;
+  });
+  document.querySelectorAll('#baseBar [data-act=opentab]').forEach(b => {
+    const t = b.dataset.id; b.style.display = tabVis(t) ? '' : 'none';
+    let bd = b.querySelector('.nbadge'); if (!bd) { bd = document.createElement('span'); bd.className = 'nbadge'; b.appendChild(bd); }
+    const n = C[t] || 0; bd.hidden = !n; bd.textContent = n;
+  });
+  const tb = document.querySelector('[data-tk=base]'); if (tb) { let bd = tb.querySelector('.nbadge'); if (!bd) { bd = document.createElement('span'); bd.className = 'nbadge'; tb.appendChild(bd); } const n = Object.values(C).reduce((s, v) => s + v, 0); bd.hidden = !n; bd.textContent = n; }
+}
+const newTag = on => on ? '<span class="newtag">Nouveau</span>' : '';
+
+// ================= ARBRE DE RECHERCHE INTERACTIF =================
+const RT = { br: 'ch', view: {}, sel: null, hover: null, drag: null, dragged: false, pts: new Map(), pinch: null, lay: null };
+const RT_BANDS = ['Départ', 'Labo 1', 'Labo 2', 'Labo 3', 'Labo 4', 'Labo 5', 'Chantier I', 'Chantier II', 'Chantier III'];
+const RT_NW = 176, RT_NH = 56, RT_CW = 200, RT_RH = 66, RT_LH = 34, RT_TOP = 30;
+const rtNode = id => RT_BASE[id] ? Object.assign({ id, base: true }, RT_BASE[id]) : RESEARCH_BY_ID[id];
+const rtBand = n => n.base ? 0 : n.bld && n.bld[0] === 'shipyard' ? 5 + n.bld[1] : (n.lab || 1);
+const rtParents = n => n.base ? [] : rReqs(n).length ? rReqs(n) : RT_ROOT[n.id] ? [RT_ROOT[n.id]] : [];
+function rtBranchOf(id) { for (const B of RT_BRANCHES) for (const f of B.fam) if (f.ids.includes(id)) return B.id; return 'ch'; }
+function rtLayout(brId) {
+  const B = RT_BRANCHES.find(b => b.id === brId) || RT_BRANCHES[0], fam = {}, order = [];
+  B.fam.forEach((f, fi) => f.ids.forEach(id => { if (rtNode(id)) { fam[id] = fi; order.push(id); } }));
+  const sub = {};
+  const subOf = id => { if (sub[id] !== undefined) return sub[id]; sub[id] = 0; const n = rtNode(id), b = rtBand(n); let s = 0; for (const p of rtParents(n)) { const pn = rtNode(p); if (pn && fam[p] !== undefined && rtBand(pn) === b) s = Math.max(s, subOf(p) + 1); } return sub[id] = s; };
+  const bw = Array(RT_BANDS.length).fill(0);
+  for (const id of order) { const b = rtBand(rtNode(id)); bw[b] = Math.max(bw[b], subOf(id) + 1); }
+  const bx = []; let x = 24;
+  for (let b = 0; b < bw.length; b++) { bx[b] = x; x += bw[b] * RT_CW + (bw[b] ? 18 : 0); }
+  const colOf = id => { const b = rtBand(rtNode(id)); return bx[b] + sub[id] * RT_CW; };
+  // rangées : chaque nœud s'aligne sur son parent de même famille quand la place est libre
+  const pos = {}, lanes = []; let y = RT_TOP;
+  B.fam.forEach((f, fi) => {
+    const ids = order.filter(id => fam[id] === fi).sort((a, b2) => colOf(a) - colOf(b2) || order.indexOf(a) - order.indexOf(b2));
+    const occ = new Map(); let rows = 1;
+    for (const id of ids) {
+      const cx = colOf(id), ps = rtParents(rtNode(id)).filter(p => pos[p] && fam[p] === fi);
+      let want = ps.length ? pos[ps[0]].row : 0;
+      const used = occ.get(cx) || new Set(); occ.set(cx, used);
+      let row = want;
+      for (let k = 0; k < 40; k++) { const c1 = want + Math.ceil(k / 2) * (k % 2 ? 1 : -1); if (c1 >= 0 && !used.has(c1)) { row = c1; break; } }
+      used.add(row); rows = Math.max(rows, row + 1);
+      pos[id] = { x: cx, row, lane: fi };
+    }
+    for (const id of ids) pos[id].y = y + RT_LH + pos[id].row * RT_RH;
+    lanes.push({ f, y, h: RT_LH + rows * RT_RH + 6 }); y += RT_LH + rows * RT_RH + 6;
+  });
+  const bands = bw.map((w, b) => w ? { b, x: bx[b] - 9, w: w * RT_CW + 18 - 2 } : null).filter(Boolean);
+  return { B, pos, lanes, bands, W: x + 20, H: y + 10, fam, order };
+}
+function rtBandOk(b) { if (b <= 0) return true; if (b <= 5) return labLevel() >= b; return bLevel('shipyard') >= b - 5; }
+function rtBandTxt(b) { if (b === 0) return 'Départ'; if (b <= 5) return RT_BANDS[b] + (labLevel() >= b ? ' ✓' : ''); return RT_BANDS[b] + (bLevel('shipyard') >= b - 5 ? ' ✓' : ''); }
+function rtVisOf(id) { const n = rtNode(id); return n.base ? 'done' : rVis(n); }
+function rtStats(B) {
+  let tot = 0, done = 0, ready = 0;
+  for (const f of B.fam) for (const id of f.ids) { const n = rtNode(id); if (!n || n.base) continue; tot++; if (has(id)) done++; else if (rVis(n) === 'full' && rState(n) === 'ready') ready++; }
+  return { tot, done, ready };
+}
+function renderResearch() {
+  uiInit();
+  if (!RT_BRANCHES.some(b => b.id === RT.br)) RT.br = 'ch';
+  if (RT.sel && rtBranchOf(RT.sel) !== RT.br && !RT_BASE[RT.sel]) RT.sel = null;
+  const L = labLevel(), lay = RT.lay = rtLayout(RT.br), P = lay.pos;
+  const n = RESEARCH.length, nd = RESEARCH.filter(r => has(r.id)).length;
+  const vis = {}; for (const id of lay.order) vis[id] = rtVisOf(id);
+  let paths = '';
+  for (const id of lay.order) {
+    if (!vis[id]) continue;
+    const nn = rtNode(id), b = P[id];
+    rtParents(nn).forEach((p, k) => {
+      if (!P[p] || !vis[p]) return; const a = P[p];
+      const x1 = a.x + RT_NW, y1 = a.y + RT_NH / 2, x2 = b.x, y2 = b.y + RT_NH / 2, mx = (x1 + x2) / 2;
+      const d = x2 > x1 + 4 ? `M${x1} ${y1} C${mx} ${y1},${mx} ${y2},${x2} ${y2}` : `M${a.x + RT_NW / 2} ${a.y + RT_NH} V${b.y}`;
+      const cross = k > 0 || lay.fam[p] !== lay.fam[id];
+      paths += `<path data-a="${p}" data-b="${id}" class="${vis[id] === 'done' ? 'done' : vis[id] === 'shadow' ? 'sh' : ''}${cross ? ' x' : ''}" d="${d}"/>`;
+    });
+  }
+  const hiddenIn = f => f.ids.filter(id => rtNode(id) && !vis[id]).length;
+  const nodes = lay.order.filter(id => vis[id]).map(id => {
+    const nn = rtNode(id), p = P[id], v = vis[id];
+    if (nn.base) return `<button class="rnode base done ${RT.sel === id ? 'sel' : ''}" style="left:${p.x}px;top:${p.y}px" data-act="rsel" data-id="${id}"><span class="ri">De base</span>${esc(nn.n)}<small>Disponible dès le départ</small></button>`;
+    if (v === 'shadow') return `<button class="rnode shadow ${RT.sel === id ? 'sel' : ''}" style="left:${p.x}px;top:${p.y}px" data-act="rsel" data-id="${id}" aria-label="Technologie inconnue"><span class="ri">Inconnu</span>? ? ?<small>${esc(rGateTxt(nn) || 'Plus tard')}</small></button>`;
+    const st = rState(nn), nw = st !== 'done' && st !== 'locked' && uiMark('r:' + id);
+    const sm = st === 'done' ? 'Acquis' : st === 'locked' ? rGateTxt(nn) : Object.keys(nn.cost).map(k => fmt(nn.cost[k]) + ' ' + RES[k].n.split(' ')[0].toLowerCase()).join(' · ');
+    const kind = id[0] === 'c' ? (CHASSIS[id.slice(2)] ? 'Rang ' + CHASSIS[id.slice(2)].tier : 'Châssis') : id[0] === 'w' ? (WEAPONS[id.slice(2)] ? WSIZE_N[WEAPONS[id.slice(2)].size] : 'Arme') : id[0] === 'm' ? 'Module' : id[0] === 'b' ? 'Cerveau' : id[0] === 'p' ? 'Arme du pilote' : 'Protocole';
+    return `<button class="rnode ${st} ${RT.sel === id ? 'sel' : ''} ${nw ? 'isnew' : ''}" style="left:${p.x}px;top:${p.y}px" data-act="rsel" data-id="${id}" aria-label="${esc(nn.n)} : ${R_STATE_TXT[st]}"><span class="ri">${kind}</span>${esc(nn.n.replace(/^Châssis /, ''))}<small>${esc(sm)}</small>${newTag(nw)}</button>`;
+  }).join('');
+  const tabs = RT_BRANCHES.map(B => { const s = rtStats(B); return `<button class="rt-tab ${RT.br === B.id ? 'on' : ''}" data-act="rtbr" data-id="${B.id}"><b>${B.n}</b><small>${s.done} / ${s.tot} acquises${s.ready ? ` · <span class="rd">${s.ready} disponible${s.ready > 1 ? 's' : ''}</span>` : ''}</small><span class="pg"><i style="width:${s.tot ? Math.round(s.done / s.tot * 100) : 0}%"></i></span></button>`; }).join('');
+  return `<div class="phead"><h2 class="h2">Recherche</h2><div class="psum"><span>Laboratoire <b>${L || 0}</b></span>${bLevel('shipyard') ? `<span>Chantier titanesque <b>${bLevel('shipyard')}</b></span>` : ''}<span>Acquises <b>${nd} / ${n}</b></span><span>Données <b>${fmt(save.res.data)}</b></span></div></div>
+  <p class="lead hint">Chaque famille progresse de gauche à droite. ${TOUCH.on ? 'Glissez pour parcourir, deux doigts pour zoomer' : 'Glissez pour parcourir, molette pour zoomer, survolez une technologie pour voir ses liens'}. Les silhouettes annoncent la suite.</p>
+  <div class="rt-tabs">${tabs}</div>
+  <div class="rlayout"><div class="rtree-wrap" id="rtreeWrap">
+    <div class="rtree" id="rtCanvas" style="width:${lay.W}px;height:${lay.H}px">
+      ${lay.bands.map(b => `<div class="rband ${rtBandOk(b.b) ? 'on' : 'off'}" style="left:${b.x}px;width:${b.w}px;height:${lay.H}px"><span>${rtBandTxt(b.b)}</span></div>`).join('')}
+      ${lay.lanes.map(l => { const h = hiddenIn(l.f); return `<div class="rlane" style="top:${l.y}px;width:${lay.W}px;height:${l.h}px"><span>${esc(l.f.n)}${h ? `<em>+${h} inconnue${h > 1 ? 's' : ''}</em>` : ''}</span></div>`; }).join('')}
+      <svg class="rlinks" width="${lay.W}" height="${lay.H}" aria-hidden="true">${paths}</svg>
+      ${nodes}
+    </div>
+    <div class="rt-legend"><span><i style="background:#173029;border-color:#6fe3c8"></i>Acquis</span><span><i style="border-color:#f2c14e"></i>Disponible</span><span><i style="border-color:#e2622b"></i>Ressources manquantes</span><span><i style="border-style:dashed"></i>Verrouillé</span><span><i style="background:#10161a;border-style:dashed"></i>Inconnu</span></div>
+    <div class="rt-tools"><button class="btn sm" data-act="rtzoom" data-id="out" aria-label="Dézoomer">−</button><button class="btn sm" data-act="rtzoom" data-id="in" aria-label="Zoomer">+</button><button class="btn sm" data-act="rtfit">Vue d'ensemble</button><button class="btn sm" data-act="rtnext">Disponibles</button></div>
+  </div>
+  <aside class="rdetail" id="rdetail">${researchDetail(RT.sel)}</aside></div>`;
+}
+function rtLineage(id) {
+  const lay = RT.lay; if (!lay || !lay.pos[id]) return new Set([id]);
+  const out = new Set([id]), up = [id];
+  while (up.length) { const x = up.pop(); for (const p of rtParents(rtNode(x))) if (lay.pos[p] && !out.has(p)) { out.add(p); up.push(p); } }
+  const down = [id];
+  while (down.length) { const x = down.pop(); for (const c of lay.order) if (!out.has(c) && rtParents(rtNode(c)).includes(x)) { out.add(c); down.push(c); } }
+  return out;
+}
+function rtHighlight(id) {
+  const tree = $('#rtCanvas'); if (!tree) return;
+  const set = id ? rtLineage(id) : null;
+  tree.classList.toggle('focus', !!set);
+  tree.querySelectorAll('.rnode').forEach(n => n.classList.toggle('hl', !!set && set.has(n.dataset.id)));
+  tree.querySelectorAll('.rlinks path').forEach(p => p.classList.toggle('hl', !!set && set.has(p.dataset.a) && set.has(p.dataset.b)));
+}
+function rtView() {
+  const w = $('#rtreeWrap'), lay = RT.lay; if (!w || !lay) return null;
+  let V = RT.view[RT.br];
+  if (!V) {
+    const vw = w.clientWidth || 800, vh = w.clientHeight || 500, z = clamp(Math.min(vw / lay.W, vh / lay.H, 1), .82, 1); V = RT.view[RT.br] = { x: 0, y: 0, z };
+    // première visite de la branche : on ouvre sur la frontière (ce qui reste à rechercher le plus à gauche)
+    let fx = Infinity; for (const id of lay.order) { const nn = rtNode(id); if (!nn.base && !has(id) && rVis(nn) === 'full') fx = Math.min(fx, lay.pos[id].x); }
+    if (fx < Infinity) V.x = Math.min(0, vw * .28 - fx * z);
+  }
+  return V;
+}
+function rtApply() {
+  const w = $('#rtreeWrap'), c = $('#rtCanvas'), V = rtView(); if (!w || !c || !V) return;
+  const lay = RT.lay, vw = w.clientWidth, vh = w.clientHeight;
+  V.x = clamp(V.x, Math.min(0, vw - lay.W * V.z - 60), 60); V.y = clamp(V.y, Math.min(0, vh - lay.H * V.z - 60), 60);
+  c.style.transform = `translate(${V.x}px,${V.y}px) scale(${V.z})`;
+}
+function rtZoomAt(f, mx, my) { const V = rtView(); if (!V) return; const z2 = clamp(V.z * f, .3, 1.6); V.x = mx - (mx - V.x) * z2 / V.z; V.y = my - (my - V.y) * z2 / V.z; V.z = z2; rtApply(); }
+function rtFocus(id, smooth) {
+  const w = $('#rtreeWrap'), V = rtView(), p = RT.lay && RT.lay.pos[id]; if (!w || !V || !p) return;
+  const vw = w.clientWidth, vh = w.clientHeight, sx = p.x * V.z + V.x, sy = p.y * V.z + V.y;
+  if (sx > 20 && sx + RT_NW * V.z < vw - 20 && sy > 20 && sy + RT_NH * V.z < vh - 20) return;
+  V.x = vw / 2 - (p.x + RT_NW / 2) * V.z; V.y = vh / 2 - (p.y + RT_NH / 2) * V.z;
+  const c = $('#rtCanvas'); if (c && smooth) { c.style.transition = 'transform .35s ease'; setTimeout(() => { c.style.transition = ''; }, 380); }
+  rtApply();
+}
+function rtBind() {
+  const w = $('#rtreeWrap'); if (!w || w.dataset.bound) return; w.dataset.bound = '1';
+  rtApply();
+  const rel = e => { const r = w.getBoundingClientRect(), k = uiScale(); return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; };
+  w.addEventListener('pointerdown', e => {
+    if (e.target.closest('.rt-tools,.rt-legend')) return;
+    const p = rel(e); RT.pts.set(e.pointerId, p);
+    if (RT.pts.size === 2) { const [a, b] = [...RT.pts.values()], V = rtView(); RT.pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: V.z, x0: V.x, y0: V.y, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; RT.drag = null; return; }
+    const V = rtView(); RT.drag = { x: p.x, y: p.y, vx: V.x, vy: V.y, moved: false }; RT.dragged = false;
+  });
+  w.addEventListener('pointermove', e => {
+    if (RT.pts.has(e.pointerId)) RT.pts.set(e.pointerId, rel(e));
+    const V = rtView(); if (!V) return;
+    if (RT.pinch && RT.pts.size >= 2) { const [a, b] = [...RT.pts.values()], P2 = RT.pinch, z2 = clamp(P2.z0 * Math.hypot(a.x - b.x, a.y - b.y) / P2.d0, .3, 1.6); V.x = P2.mx - (P2.mx - P2.x0) * z2 / P2.z0; V.y = P2.my - (P2.my - P2.y0) * z2 / P2.z0; V.z = z2; RT.dragged = true; rtApply(); return; }
+    const d = RT.drag; if (!d) return; const p = rel(e);
+    if (!d.moved && Math.abs(p.x - d.x) + Math.abs(p.y - d.y) > 6) { d.moved = true; RT.dragged = true; w.classList.add('drag'); try { w.setPointerCapture(e.pointerId); } catch (er) { } }
+    if (d.moved) { V.x = d.vx + p.x - d.x; V.y = d.vy + p.y - d.y; rtApply(); }
+  });
+  const up = e => { RT.pts.delete(e.pointerId); if (RT.pts.size < 2) RT.pinch = null; if (RT.drag) { RT.drag = null; w.classList.remove('drag'); } };
+  w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+  w.addEventListener('wheel', e => { e.preventDefault(); const p = rel(e); rtZoomAt(e.deltaY > 0 ? .88 : 1.14, p.x, p.y); }, { passive: false });
+  w.addEventListener('mouseover', e => { const n = e.target.closest('.rnode'); if (n && n.dataset.id !== RT.hover) { RT.hover = n.dataset.id; rtHighlight(RT.hover); } });
+  w.addEventListener('mouseleave', () => { RT.hover = null; rtHighlight(RT.sel); });
+  rtHighlight(RT.sel);
+}
+// un glisser sur l'arbre ne doit pas valoir un clic sur un nœud
+window.addEventListener('click', e => { if (RT.dragged && e.target.closest && e.target.closest('#rtreeWrap')) { RT.dragged = false; e.stopPropagation(); e.preventDefault(); } }, true);
+function researchDetail(id) {
+  const nn = id ? rtNode(id) : null;
+  if (!nn) return `<div class="rk">Laboratoire</div><h4>Choisissez une technologie</h4><p class="desc">Cliquez sur un nœud pour voir ce qu'il débloque, ses conditions et son coût. Les nœuds à bord ambré sont disponibles tout de suite.</p>
+    <p class="desc">Les données viennent des archives, des pillards, des pylônes relais et du centre de données de la base.</p>`;
+  const v = nn.base ? 'done' : rVis(nn), chk = (ok, t) => `<li class="${ok ? '' : 'no'}">${t}</li>`;
+  const kids = RESEARCH.filter(r => rtParents(r).includes(id));
+  const kidsHtml = kids.length ? `<div class="slot-h" style="margin:4px 0 0">Ouvre la voie à</div><div class="nexts">${kids.map(r => { const kv = rVis(r); return kv === 'done' || kv === 'full' ? `<span data-act="rsel" data-id="${r.id}">${esc(r.n.replace(/^Châssis /, ''))}</span>` : kv === 'shadow' ? `<span data-act="rsel" data-id="${r.id}">? ? ?</span>` : ''; }).join('')}${kids.some(r => !rVis(r)) ? `<span style="cursor:default">+${kids.filter(r => !rVis(r)).length} inconnue${kids.filter(r => !rVis(r)).length > 1 ? 's' : ''}</span>` : ''}</div>` : '';
+  if (v === 'shadow') return `<div class="rk">Inconnu</div><h4>Technologie inconnue</h4><canvas id="rdCv" data-sil="1"></canvas><p class="desc">Elle se révèlera quand vous serez assez proche.</p><ul class="cond">${rReqs(nn).map(q => chk(has(q), esc(RESEARCH_BY_ID[q].n))).join('')}${(nn.lab || 1) > labLevel() ? chk(false, 'Laboratoire niveau ' + nn.lab) : ''}${nn.bld && !rBldOk(nn) ? chk(false, bldName(nn.bld)) : ''}</ul>`;
+  const ref = nn.ch || (id.startsWith('c_') ? id.slice(2) : null), wref = nn.w || (id.startsWith('w_') ? id.slice(2) : null);
+  let info = '';
+  if (ref && CHASSIS[ref]) { const C = CHASSIS[ref]; info = `<canvas id="rdCv"></canvas><div class="kv"><span>Rang</span><b>T${C.tier}</b><span>Affûts</span><b>${C.slots} × ${WSIZE_N[C.wsize].toLowerCase()}</b><span>Points de vie</span><b>${fmt(C.hp)}</b><span>Soute</span><b>${C.cargo} kg</b><span>Commandement</span><b>${fmtCmd(C.cmd)}</b>${C.fly ? '<span>Déplacement</span><b>vol</b>' : ''}${C.fab ? `<span>Fabrique</span><b>rang ${C.fab.tier} au plus</b>` : ''}</div>`; }
+  else if (wref && WEAPONS[wref]) { const W_ = WEAPONS[wref]; info = `<canvas id="rdCv" style="height:110px"></canvas><div class="kv"><span>Taille</span><b>${WSIZE_N[W_.size]}</b><span>Puissance</span><b>${esc(weaponStat(wref))}</b><span>Rôle</span><b>${isSupportW(wref) ? 'soutien' : W_ROLE_TXT[wRole(W_)] || '—'}</b></div>`; }
+  const head = `<div class="rk">${nn.base ? 'De base' : esc(nn.cat || '')}${nn.lab && !nn.base ? ' · labo ' + nn.lab : ''}${nn.bld ? ' · chantier ' + nn.bld[1] : ''}</div><h4>${esc(nn.n)}</h4>${info}<p class="desc">${nn.d || ''}</p>`;
+  if (nn.base) return head + kidsHtml;
+  const st = rState(nn);
+  if (st === 'done') return head + '<p class="good"><b>Acquis</b></p>' + kidsHtml;
+  const conds = rReqs(nn).map(q => chk(has(q), 'Après ' + esc(RESEARCH_BY_ID[q].n))).join('') + chk((nn.lab || 1) <= labLevel(), 'Laboratoire niveau ' + (nn.lab || 1)) + (nn.bld ? chk(rBldOk(nn), bldName(nn.bld)) : '');
+  return head + `<div class="slot-h" style="margin:4px 0 0">Conditions</div><ul class="cond">${conds}</ul><div class="slot-h" style="margin:4px 0 0">Coût</div><div class="cost">${costHtml(nn.cost)}</div>
+    <div><button class="btn ${st === 'ready' ? 'hot' : ''}" data-act="research" data-id="${nn.id}" ${st === 'ready' ? '' : 'disabled'}>Rechercher</button></div>` + kidsHtml;
+}
+function rtDrawDetail() {
+  const cv2 = $('#rdCv'); if (!cv2) return; const nn = RT.sel ? rtNode(RT.sel) : null; if (!nn) return;
+  const ref = nn.ch || (nn.id.startsWith('c_') ? nn.id.slice(2) : null), wref = nn.w || (nn.id.startsWith('w_') ? nn.id.slice(2) : null), sil = cv2.dataset.sil === '1';
+  if (ref && CHASSIS[ref]) { const al = CRAFT_WEAPONS.filter(w => WEAPONS[w].size <= CHASSIS[ref].wsize && weaponUnlocked(w)); drawRobotPreview(cv2, ref, MOUNTS[ref].map((_, i) => al[Math.min(i, al.length - 1)] || 'mg'), 0, { fill: .4, sil }); }
+  else if (wref && WEAPONS[wref]) drawWeaponIcon(cv2, wref, sil);
+  else { const c = cv2.getContext('2d'); cv2.width = cv2.clientWidth; cv2.height = cv2.clientHeight; c.fillStyle = '#0b1011'; c.fillRect(0, 0, cv2.width, cv2.height); c.fillStyle = 'rgba(165,156,136,.4)'; c.font = `700 40px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', cv2.width / 2, cv2.height / 2); }
+}
+function rDoneTxt(r) {
+  const id = r.id, k = id.slice(2);
+  if (id.startsWith('c_') && CHASSIS[k]) return r.n + ' : recherche terminée. Nouveau châssis à la forge.';
+  if (id.startsWith('w_') && WEAPONS[k]) return r.n + ' : recherche terminée. Nouvelle arme à la forge.';
+  if (id.startsWith('m_')) return r.n + ' : recherche terminée. Nouveau module à la forge.';
+  const nx = RESEARCH.filter(q => rReqs(q).includes(id) && rVis(q) === 'full').length;
+  return r.n + ' : recherche terminée.' + (nx ? ' ' + nx + ' nouvelle' + (nx > 1 ? 's' : '') + ' piste' + (nx > 1 ? 's' : '') + ' dans l\'arbre.' : '');
+}
+
+// ================= APERÇUS : ROBOTS ET ARMES =================
+function drawRobotPreview(cv, chassis, weapons, t, opts = {}) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = cv.clientWidth || cv.width, h = cv.clientHeight || cv.height;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  const ch = CHASSIS[chassis]; if (!ch) return null; const r = ch.r;
+  const ext = { ant: 1.5, crawler: 1.35, drone: 1.3, scout: 1.1, mule: 1.05, sentry: 1.05, gunship: 1.4, strider: 1.3, spider: 1.25, rhino: 1.4, goliath: 1.15, reaper: 1.1, airship: 1.1, titan: 1.05, behemoth: 1.35, colossus: 1.05, arche: 1.2 }[chassis] || PREV_EXT[chassis] || 1.2;
+  const sc = Math.min(w, h) * (opts.fill || .3) / (r * ext);
+  if (groundAtlas && !opts.sil) {
+    const ts = TILE * clamp(sc, .7, 1.5), ox = (w / 2) % ts - ts, oy = (h / 2) % ts - ts;
+    for (let y = oy, j = 0; y < h; y += ts, j++) for (let x = ox, i = 0; x < w; x += ts, i++) {
+      const v = (((Math.sin(i * .9) + Math.cos(j * .7) + 2) * 1.2) | 0) * 2 + ((i * 7 + j * 13) & 1);
+      c.drawImage(groundAtlas, clamp(v, 0, 7) * TILE, 0, TILE, TILE, x, y, ts + .5, ts + .5);
+    }
+    const g = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .2, w / 2, h / 2, Math.max(w, h) * .7);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.5)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  } else { c.fillStyle = '#0b1011'; c.fillRect(0, 0, w, h); }
+  c.save(); c.translate(w / 2, h / 2); c.scale(sc, sc);
+  const ang = opts.ang !== undefined ? opts.ang : opts.spin ? t * .35 : -Math.PI / 2 + .5;
+  c.rotate(ang);
+  if (!opts.sil) { c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(r * .12, r * .2, r * 1.05, r * .95, 0, 0, TAU); c.fill(); }
+  const P = PAL.ally; const fake = { cargoW: 3, cargoMax: 6 };
+  const sv = parts.length;
+  paintChassis(c, chassis, r, P, t * (opts.anim ? 1 : 0), opts.anim ? .6 : 0, fake);
+  const ms = MOUNTS[chassis];
+  weapons.forEach((wid, i) => {
+    if (!wid || !ms[i] || !WEAPONS[wid]) return; c.save(); c.translate(ms[i][0] * r, ms[i][1] * r);
+    c.rotate(opts.anim ? Math.sin(t * .8 + i) * .5 : 0);
+    paintMount(c, wid, MSCALE[chassis], P, 0, t, null); c.restore();
+  });
+  c.restore(); parts.length = sv;
+  if (opts.sil) { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(30,40,44,.96)'; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(165,156,136,.55)'; c.font = `700 ${Math.round(Math.min(w, h) * .28)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', w / 2, h / 2); }
+  // positions des affûts à l'écran (forge : marqueurs cliquables)
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  return ms.map(([mx, my]) => ({ x: w / 2 + (mx * r * ca - my * r * sa) * sc, y: h / 2 + (mx * r * sa + my * r * ca) * sc }));
+}
+function drawWeaponIcon(cv, wid, sil) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || 38, h = cv.clientHeight || 38;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillStyle = '#0b1011'; c.fillRect(0, 0, w, h);
+  const W_ = WEAPONS[wid]; if (!W_) return;
+  const sz = W_.size || 1, s = Math.min(w, h) / (22 + sz * 7);
+  c.save(); c.translate(w / 2, h * .6); c.rotate(-Math.PI / 2); c.scale(s * 2.5, s * 2.5);
+  const sv = parts.length; try { paintMount(c, wid, 1, PAL.ally, 0, 0, null); } catch (er) { } parts.length = sv; c.restore();
+  if (sil) { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(30,40,44,.96)'; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(165,156,136,.6)'; c.font = `700 ${Math.round(h * .45)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', w / 2, h / 2 + 1); }
+}
+
+// ================= FORGE INTERACTIVE =================
+const FGS = { fam: 'all', ang: -Math.PI / 2 + .5, dragT: -1e9, drag: null, marks: [], alt: null, role: 'all', last: 0, hoverMark: -1 };
+const FG_FAMS = [['all', 'Tous'], ['chenille', 'Chenillés'], ['marcheur', 'Marcheurs'], ['volant', 'Volants'], ['leger', 'Légers'], ['transport', 'Transport'], ['geant', 'Géants']];
+const FG_ROLES = [['all', 'Toutes'], ['light', 'Anti-infanterie'], ['heavy', 'Antiblindé'], ['aa', 'Antiaérien'], ['art', 'Artillerie'], ['titan', 'Anti-géant'], ['melee', 'Contact'], ['sup', 'Soutien']];
+function chFam(k) {
+  const id = k === 'crawler' ? 'x_crawler' : k === 'drone' ? 'x_drone' : 'c_' + k;
+  const B = RT_BRANCHES[0]; for (const f of B.fam) if (f.ids.includes(id)) return f.id; return 'autres';
+}
+const wRoleOf = w => isSupportW(w) ? 'sup' : wRole(WEAPONS[w]);
+function designStats(chassis, weapons, modules, RF) {
+  const st = robotStats({ chassis, modules: (modules || []).filter(Boolean), xp: RF ? RF.xp : 0, traits: RF ? RF.traits : [] }), C = CHASSIS[chassis];
+  const dps = weapons.reduce((s, id) => { const w = WEAPONS[id]; if (!w || (!w.dmg && !w.dps)) return s; return s + (w.dps || w.dmg * (w.pellets || 1) * (w.salvo || 1) * w.rate * (w.kind === 'flame' ? 2 : 1) * (w.strikes || 1)); }, 0) * st.dmg;
+  const range = weapons.reduce((m, id) => { const w = WEAPONS[id]; return w && !isSupportW(id) && w.kind !== 'melee' ? Math.max(m, w.range || 0) : m; }, 0);
+  return { hp: st.hp, armor: st.armor, spd: st.spd, cargo: st.cargo, dps, range, cmd: C.cmd };
+}
+const FG_ROWS = [['hp', 'Points de vie', v => fmt(v), 'log', 380000], ['armor', 'Blindage', v => Math.round(v * 100) + ' %', 'lin', .75], ['spd', 'Vitesse', v => Math.round(v), 'lin', 260], ['cargo', 'Soute', v => fmt(v) + ' kg', 'log', 2600], ['dps', 'Puissance', v => fmt(v) + ' dps', 'log', 40000], ['range', 'Portée', v => v ? fmt(v) + ' px' : 'contact', 'log', 6000], ['cmd', 'Commandement', v => fmtCmd(v), 'lin', 50]];
+const fgPct = (v, kind, mx) => clamp(kind === 'log' ? Math.log(1 + Math.max(0, v)) / Math.log(1 + mx) : v / mx, 0, 1) * 100;
+function fgStatsHTML() {
+  return `<div class="fg-stats">${FG_ROWS.map(([k, lb]) => `<span class="lb">${lb}</span><span class="bv"><i class="gh" id="fgG-${k}"></i><i id="fgB-${k}"></i></span><span class="vl" id="fgV-${k}"></span>`).join('')}</div>`;
+}
+function fgUpdateStats() {
+  const d = design, RF = d.refit ? save.robots.find(r => r.id === d.refit) : null;
+  const S0 = designStats(d.chassis, d.weapons, d.modules, RF), A = FGS.alt, S1 = A ? designStats(A.chassis, A.weapons, A.modules || d.modules, RF) : null;
+  for (const [k, , f, kind, mx] of FG_ROWS) {
+    const b = $('#fgB-' + k), g = $('#fgG-' + k), v = $('#fgV-' + k); if (!b) continue;
+    const p0 = fgPct(S0[k], kind, mx), p1 = S1 ? fgPct(S1[k], kind, mx) : p0;
+    b.style.width = (S1 ? Math.min(p0, p1) : p0) + '%'; g.style.width = Math.max(p0, p1) + '%'; g.style.background = S1 && p1 < p0 ? 'rgba(236,107,116,.55)' : 'rgba(242,193,78,.55)';
+    let dl = ''; if (S1) { const dv = S1[k] - S0[k]; if (Math.abs(dv) > 1e-6) dl = `<em class="${(k === 'cmd' ? -dv : dv) > 0 ? 'up' : 'dn'}">${dv > 0 ? '+' : '−'}${k === 'armor' ? Math.round(Math.abs(dv) * 100) + ' %' : k === 'cmd' ? fmtCmd(Math.abs(dv)) : fmt(Math.abs(dv))}</em>`; }
+    v.innerHTML = f(S1 ? S1[k] : S0[k]) + dl;
+  }
+}
+function fgSlotTxt(C) { const adj = ['', 'léger', 'moyen', 'lourd', 'titanesque', 'colossal', 'apocalyptique'][C.wsize]; return C.slots + ' affût' + (C.slots > 1 ? 's ' + adj + 's' : ' ' + adj); }
+function renderForge() {
+  uiInit(); fitDesign();
+  const d = design, ch = CHASSIS[d.chassis], lock = chassisLock(d.chassis);
+  const RF = d.refit ? save.robots.find(r => r.id === d.refit) : null; if (d.refit && !RF) d.refit = null;
+  const cost = RF ? refitCost(RF, d) : robotCost(d.chassis, d.weapons, d.brain, d.modules);
+  const room = hangarCap() - save.robots.length, qtyOk = Math.min(buildQty, room);
+  const canBuild = RF ? canAfford(cost) : (!lock && room > 0 && canAfford(cost, qtyOk) && (cost.heart ? qtyOk === 1 : true));
+  // --- châssis
+  const visC = CHASSIS_KEYS.filter(k => chVis(k)), hidC = CHASSIS_KEYS.length - visC.length;
+  const fams = FG_FAMS.filter(([f]) => f === 'all' || visC.some(k => f === 'geant' ? CHASSIS[k].tier >= 7 : chFam(k) === f));
+  if (!fams.some(([f]) => f === FGS.fam)) FGS.fam = 'all';
+  const inFam = k => FGS.fam === 'all' || (FGS.fam === 'geant' ? CHASSIS[k].tier >= 7 : chFam(k) === FGS.fam);
+  const cards = visC.filter(inFam).map(k => {
+    const C = CHASSIS[k], v = chVis(k);
+    if (v === 'shadow') { const r = RESEARCH_BY_ID['c_' + k]; return `<button class="ch-item shadow" data-act="fgshadow" data-id="c_${k}" title="Voir dans la recherche"><canvas data-prev="${k}" data-sil="1"></canvas><span class="tier">T${C.tier}</span><div class="nm">${esc(C.n)}</div><div class="tr">À rechercher${r && (r.lab || 1) > labLevel() ? ' · labo ' + r.lab : ''}</div></button>`; }
+    const lk = chassisLock(k), nw = uiMark('c:' + k);
+    return `<button class="ch-item ${k === d.chassis ? 'on' : ''} ${lk ? 'locked' : ''} ${nw ? 'isnew' : ''}" data-act="chassis" data-id="${k}"><canvas data-prev="${k}"></canvas><span class="tier">T${C.tier}</span>${newTag(nw)}<div class="nm">${esc(C.n)}</div><div class="tr">${lk || fgSlotTxt(C) + ' · ' + fmtCmd(C.cmd) + ' cmd'}</div></button>`;
+  }).join('') + (hidC && FGS.fam === 'all' ? `<div class="hidden-n" style="flex:none;width:156px">${hidC} châssis à découvrir</div>` : '');
+  // --- affûts
+  const many = ch.slots > 6;
+  const slots = d.weapons.map((w, i) => `<button class="slot ${i === activeSlot ? 'on' : ''}" data-act="slot" data-slot="${i}"><span class="sn">${i + 1}</span><small>${WSIZE_N[WEAPONS[w].size].toLowerCase()}</small>${esc(WEAPONS[w].n)}</button>`).join('');
+  // --- armurerie : tailles utilisables, filtre par rôle
+  const sizes = [1, 2, 3, 4, 5, 6].filter(sz => sz <= ch.wsize);
+  const roleOk = w => FGS.role === 'all' || wRoleOf(w) === FGS.role;
+  const vw = CRAFT_WEAPONS.filter(w => wVis(w) && WEAPONS[w].size <= ch.wsize);
+  const rolesHere = FG_ROLES.filter(([r]) => r === 'all' || vw.some(w => wVis(w) === 'own' && wRoleOf(w) === r));
+  if (!rolesHere.some(([r]) => r === FGS.role)) FGS.role = 'all';
+  const maxDps = Math.max(1, ...vw.map(w => wDps(WEAPONS[w])));
+  const cats = sizes.map(sz => {
+    const ws = CRAFT_WEAPONS.filter(w => WEAPONS[w].size === sz), shown = ws.filter(w => wVis(w) && roleOk(w)), hid = ws.filter(w => !wVis(w)).length;
+    if (!shown.length && !hid) return '';
+    const own = ws.filter(weaponUnlocked).length;
+    return `<div class="cat-h">${WSIZE_PL[sz]} <span>${own} / ${ws.length} connues</span></div>
+      <div class="armory">${shown.map(w => {
+        const W_ = WEAPONS[w], v = wVis(w);
+        if (v === 'shadow') return `<button class="wcard shadow" data-act="fgshadow" data-id="w_${w}" title="Voir dans la recherche"><canvas data-wicon="${w}" data-sil="1"></canvas><span class="nm">${esc(W_.n)}</span><span class="st">À rechercher</span></button>`;
+        const nw = uiMark('w:' + w), dp = wDps(W_), rg = W_.range || 0;
+        const bars = isSupportW(w) ? '' : `<span class="wb" title="Puissance relative">${[0, 1, 2, 3, 4].map(k => `<i class="${dp / maxDps > k / 5 + .001 ? 'f' : ''}"></i>`).join('')}</span>`;
+        return `<button class="wcard ${d.weapons[activeSlot] === w ? 'on' : ''} ${nw ? 'isnew' : ''}" data-act="weapon" data-id="${w}" data-hw="${w}" title="${esc(W_.d || '')}"><canvas data-wicon="${w}"></canvas><span class="nm">${esc(W_.n)}</span><span class="st">${esc(weaponStat(w))}</span><span class="wl">${bars}<em>${isSupportW(w) ? 'soutien' : (W_ROLE_TXT[wRole(W_)] || '')}</em></span>${newTag(nw)}</button>`;
+      }).join('')}${hid && FGS.role === 'all' ? `<div class="hidden-n">${hid} à découvrir</div>` : ''}</div>`;
+  }).join('');
+  const bigHidden = [5, 6].filter(sz => sz > ch.wsize && CRAFT_WEAPONS.some(w => WEAPONS[w].size === sz && wVis(w) === 'own')).length;
+  // --- modules
+  const ms = modSlots(d.chassis), mk = MODULE_KEYS.filter(k => mVis(k));
+  const modsHtml = ms && mk.length ? `<div><div class="slot-h">Modules · ${ms} emplacement${ms > 1 ? 's' : ''}</div>
+      <div class="slots">${d.modules.map((m, i) => `<button class="slot ${i === activeMod ? 'on' : ''}" data-act="modslot" data-slot="${i}"><span class="sn">${i + 1}</span><small>module</small>${m ? MODULES[m].n : 'Aucun'}</button>`).join('')}</div>
+      <div class="armory" style="margin-top:6px"><button class="wcard ${!d.modules[activeMod] ? 'on' : ''}" data-act="mod" data-id="" style="grid-template-columns:1fr"><span class="nm">Aucun</span><span class="st">Libérer l'emplacement</span></button>${mk.map(k => { const M = MODULES[k], ok = moduleUnlocked(k); if (!ok) return `<button class="wcard shadow" data-act="fgshadow" data-id="m_${k}" style="grid-template-columns:1fr"><span class="nm">${M.n}</span><span class="st">À rechercher</span></button>`; const nw = uiMark('m:' + k); return `<button class="wcard ${d.modules[activeMod] === k ? 'on' : ''} ${nw ? 'isnew' : ''}" data-act="mod" data-id="${k}" title="${esc(M.d)}" style="grid-template-columns:1fr"><span class="nm">${M.n}${M.active ? ' · actif' : ''}</span><span class="st">${M.d}</span>${newTag(nw)}</button>`; }).join('')}</div></div>` : '';
+  const brains = BRAIN_KEYS.filter(brainUnlocked);
+  const perks = [];
+  if (ch.fly) perks.push('<b>Vol</b> : ignore le terrain.'); else perks.push('<b>Écrase</b> : ' + CRUSH_TXT[ch.crush || 0].toLowerCase() + '.');
+  if (ch.fab) perks.push(`<b>Fabrique en raid</b> des robots du rang ${ch.fab.tier} au plus, ${ch.fab.cap} à la fois.`);
+  if (ch.perk === 'leap') perks.push('<b>Bond</b> : saute de lui-même sur ses proies.'); if (ch.perk === 'fortify') perks.push('<b>Carapace</b> : −25 % de dégâts à l\'arrêt.'); if (ch.perk === 'spikes') perks.push('<b>Pointes</b> : blesse au contact.'); if (ch.perk === 'range') perks.push('<b>Échasses</b> : +20 % de portée.');
+  const sumParts = [`<span>Forge <b>${forgeLevel()}</b> · rangs jusqu'à <b>${forgeMaxTier()}</b></span>`];
+  if (bLevel('shipyard')) sumParts.push(`<span>Chantier <b>${bLevel('shipyard')}</b> · géants jusqu'au rang <b>${6 + bLevel('shipyard')}</b></span>`);
+  sumParts.push(`<span>Hangar <b>${save.robots.length} / ${hangarCap()}</b></span>`);
+  return `<div class="phead"><h2 class="h2">${RF ? 'Réaménager · ' + esc(RF.name) : 'Forge'}</h2><div class="psum">${sumParts.join('')}</div></div>
+  <p class="lead hint">${RF ? `${RANKS[rankOf(RF.chassis, RF.xp || 0)]} · ${RF.kills || 0} victoires. Changez armes, modules et cerveau : vous ne payez que les nouvelles pièces, et le robot garde son expérience et ses traits.` : `Choisissez un châssis, puis cliquez un affût sur l'aperçu ou dans la liste, et une arme dans l'armurerie. Survolez une arme ou un châssis pour comparer avant de choisir.`}</p>
+  ${RF ? '' : `<div class="chips" style="margin-bottom:8px">${fams.map(([f, n]) => `<button class="chip ${FGS.fam === f ? 'on' : ''}" data-act="fgfam" data-id="${f}">${n}</button>`).join('')}</div><div class="fg-strip" id="fgStrip">${cards}</div>`}
+  <div class="forge">
+    <div class="fg-left">
+      <div class="forge-view" id="fgView"><canvas id="forgeCv"></canvas><div class="fv-tier">RANG ${ch.tier} · ${esc(fgSlotTxt(ch)).toUpperCase()}</div><div class="fv-hint">${TOUCH.on ? 'toucher un affût · glisser pour tourner' : 'clic sur un affût · glisser pour tourner'}</div><div class="tag">${esc(ch.n)}</div></div>
+      <div class="fg-panel">${fgStatsHTML()}<div class="fg-perk">${perks.join(' ')}</div>
+        <div class="fg-cost">${RF ? `<div class="slot-h" style="margin:0">Coût des nouvelles pièces</div><div class="cost">${Object.keys(cost).length ? costHtml(cost) : 'Gratuit'}</div>
+          <div class="launch"><button class="btn hot" data-act="applyrefit" ${canBuild ? '' : 'disabled'}>Appliquer</button><button class="btn" data-act="cancelrefit">Annuler</button></div>` : `
+          <div class="slot-h" style="margin:0">Coût ${qtyOk > 1 ? '× ' + qtyOk : ''}</div><div class="cost">${costHtml(cost, Math.max(1, qtyOk))}</div>
+          <div class="launch"><div class="chips">${[1, 5, 10].map(q => `<button class="chip ${buildQty === q ? 'on' : ''}" data-act="qty" data-id="${q}">× ${q}</button>`).join('')}</div>
+          <button class="btn hot" data-act="build" ${canBuild ? '' : 'disabled'}>${lock ? lock : room <= 0 ? 'Hangar plein' : 'Assembler' + (qtyOk > 1 ? ' ' + qtyOk + ' robots' : ' le robot')}</button></div>`}</div>
+      </div>
+    </div>
+    <div class="forge-cfg">
+      <div class="fg-panel"><p class="desc">${ch.d}</p>
+        <div><div class="slot-h">Nom</div><div style="display:flex;gap:6px"><input class="name" id="dName" maxlength="20" placeholder="Laisser vide pour un nom au hasard" value="${esc(d.name)}"><button class="btn sm" data-act="fgname" title="Nom au hasard" aria-label="Nom au hasard">Au hasard</button></div></div>
+        <div><div class="slot-h">Affûts · armes ${WSIZE_PL[ch.wsize].toLowerCase()} au plus</div>
+          <div class="slots ${many ? 'many' : ''}">${slots}</div>
+          ${ch.slots > 1 ? `<div class="chips" style="margin-top:6px"><button class="btn sm" data-act="allslots">Même arme sur tous les affûts</button></div>` : ''}</div>
+      </div>
+      <div class="fg-panel"><div class="slot-h" style="margin:0">Armurerie · affût ${activeSlot + 1}</div>
+        <div class="chips">${rolesHere.map(([r, n]) => `<button class="chip ${FGS.role === r ? 'on' : ''}" data-act="fgrole" data-id="${r}">${n}</button>`).join('')}</div>
+        <div id="fgArmory">${cats}</div>${bigHidden ? '' : ''}</div>
+      ${modsHtml ? `<div class="fg-panel">${modsHtml}</div>` : ''}
+      <div class="fg-panel"><div class="slot-h" style="margin:0">Cerveau</div><div class="chips">${brains.map(b => `<button class="chip ${b === d.brain ? 'on' : ''}" data-act="brain" data-id="${b}">${BRAINS[b].n}</button>`).join('')}</div>
+        <p class="desc">${BRAINS[d.brain].d}</p></div>
+    </div>
+  </div>`;
+}
+function fgBind() {
+  const v = $('#fgView'); if (!v || v.dataset.bound) return; v.dataset.bound = '1';
+  const rel = e => { const r = v.getBoundingClientRect(), k = uiScale(); return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; };
+  const hit = p => { let best = -1, bd = 26 * 26; FGS.marks.forEach((m, i) => { const q = d2(m.x, m.y, p.x, p.y); if (q < bd) { bd = q; best = i; } }); return best; };
+  v.addEventListener('pointerdown', e => { const p = rel(e); FGS.drag = { x: p.x, a: FGS.ang, moved: false }; try { v.setPointerCapture(e.pointerId); } catch (er) { } });
+  v.addEventListener('pointermove', e => {
+    const p = rel(e), D = FGS.drag;
+    if (D) { if (Math.abs(p.x - D.x) > 5) D.moved = true; if (D.moved) { FGS.ang = D.a + (p.x - D.x) * .012; FGS.dragT = performance.now(); } return; }
+    const h = hit(p); FGS.hoverMark = h; v.style.cursor = h >= 0 ? 'pointer' : '';
+  });
+  const up = e => { const D = FGS.drag; FGS.drag = null; if (D && !D.moved) { const h = hit(rel(e)); if (h >= 0 && h < design.weapons.length) { activeSlot = h; SFX.play('ui', 1); renderHub(); } } };
+  v.addEventListener('pointerup', up); v.addEventListener('pointercancel', () => { FGS.drag = null; });
+  v.addEventListener('pointerleave', () => { FGS.hoverMark = -1; });
+  fgHoverBind();
+  const s = $('#fgStrip'); if (s) { s.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { s.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false }); }
+  fgUpdateStats();
+}
+// survol : aperçu de l'arme ou du châssis, et comparaison des caractéristiques (une seule fois pour la console)
+function fgHoverBind() {
+  const m = $('#hubMain'); if (!m || m.dataset.fgb) return; m.dataset.fgb = '1';
+  const enter = e => {
+    const wc = e.target.closest('[data-hw]'), cc = e.target.closest('.ch-item[data-act=chassis]');
+    if (wc && !wc.disabled) { const ws = design.weapons.slice(); ws[activeSlot] = wc.dataset.hw; FGS.alt = { chassis: design.chassis, weapons: ws }; fgUpdateStats(); return; }
+    if (cc && !design.refit && cc.dataset.id !== design.chassis) { const k = cc.dataset.id, al = allowedWeapons(k), C = CHASSIS[k]; if (!C) return; const ws = MOUNTS[k].map((_, i) => { const cur = design.weapons[i]; return cur && al.includes(cur) ? cur : al.filter(w => !isSupportW(w)).sort((a, b) => WEAPONS[b].size - WEAPONS[a].size || wDps(WEAPONS[b]) - wDps(WEAPONS[a]))[0] || 'mg'; }); FGS.alt = { chassis: k, weapons: ws, modules: [] }; fgUpdateStats(); }
+  };
+  const leave = e => { const t = e.target.closest('[data-hw],.ch-item'); if (!t) return; const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('[data-hw],.ch-item') : null; if (to === t) return; FGS.alt = null; fgUpdateStats(); };
+  m.addEventListener('mouseover', e => { if (hubTab === 'atelier') enter(e); }); m.addEventListener('mouseout', e => { if (hubTab === 'atelier') leave(e); });
+}
+function animateHub(t) {
+  const f = $('#forgeCv'); if (!(f && hubTab === 'atelier' && drawerOpen)) return;
+  const now = performance.now(), dt = Math.min(.05, (now - (FGS.last || now)) / 1000); FGS.last = now;
+  if (now - FGS.dragT > 3500 && !FGS.drag) FGS.ang += dt * .22;
+  const A = FGS.alt, chs = A ? A.chassis : design.chassis, ws = A ? A.weapons : design.weapons;
+  const marks = drawRobotPreview(f, chs, ws, t, { anim: true, ang: FGS.ang, fill: CHASSIS[chs].tier >= 7 ? .42 : .3 }) || [];
+  FGS.marks = A && A.chassis !== design.chassis ? [] : marks;
+  // marqueurs d'affûts : l'affût actif pulse
+  const c = f.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const many = FGS.marks.length > 8;
+  FGS.marks.forEach((m, i) => {
+    const on = i === activeSlot, hv = i === FGS.hoverMark, R = many ? 8 : 10;
+    if (on) { const p = .5 + .5 * Math.sin(t * 5); c.strokeStyle = `rgba(242,193,78,${.35 + .4 * p})`; c.lineWidth = 2; c.beginPath(); c.arc(m.x, m.y, R + 5 + p * 4, 0, TAU); c.stroke(); }
+    c.fillStyle = on ? '#f2c14e' : hv ? 'rgba(236,226,204,.95)' : 'rgba(12,16,17,.82)'; c.beginPath(); c.arc(m.x, m.y, R, 0, TAU); c.fill();
+    c.strokeStyle = on ? '#f2c14e' : 'rgba(236,226,204,.55)'; c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = on || hv ? '#15191a' : '#ece2cc'; c.font = `700 ${many ? 9.5 : 11}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), m.x, m.y + .5);
+  });
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+}
+
+// ================= HANGAR =================
+const HG = { filter: 'all', sort: 'tier', open: new Set() };
+function renderHangar() {
+  const used = cmdUsed(), cap = cmdCap(), L = save.robots;
+  const flt = { all: r => true, dep: r => r.deploy && !r.exp, res: r => !r.deploy && !r.exp, dmg: r => r.hp < 1 && !r.exp, exp: r => !!r.exp };
+  const names = [['all', 'Tous'], ['dep', 'Déployés'], ['res', 'En réserve'], ['dmg', 'Abîmés'], ['exp', 'En expédition']].filter(([k]) => k !== 'exp' || L.some(flt.exp)).filter(([k]) => k !== 'dmg' || L.some(flt.dmg));
+  if (!names.some(([k]) => k === HG.filter)) HG.filter = 'all';
+  const power = r => { const st = designStats(r.chassis, r.weapons, r.modules, r); return Math.log(1 + st.hp) * Math.log(2 + st.dps); };
+  const sorters = { tier: (a, b) => CHASSIS[b.chassis].tier - CHASSIS[a.chassis].tier || b.id - a.id, power: (a, b) => power(b) - power(a), name: (a, b) => a.name.localeCompare(b.name, 'fr'), recent: (a, b) => b.id - a.id };
+  const list = L.filter(flt[HG.filter]).sort(sorters[HG.sort] || sorters.tier);
+  const body = list.length ? list.map(r => {
+    if (r.exp) return expHangarCard(r);
+    const ch = CHASSIS[r.chassis], miss = 1 - r.hp, rc = repairCost(r), rk = rankOf(r.chassis, r.xp || 0);
+    const nx = rk < 4 ? xpNeed(r.chassis, rk + 1) : 0, px = rk < 4 ? xpNeed(r.chassis, rk) : 0, xf = rk < 4 ? ((r.xp || 0) - px) / (nx - px) : 1;
+    return `<div class="card hg-card ${r.deploy ? 'dep' : ''}">
+      <div class="row"><canvas data-rid="${r.id}"></canvas><div style="min-width:0"><div class="nm">${esc(r.name)}<span class="rk">${RANKS[rk]}</span></div><div class="sub">${ch.n} · T${ch.tier} · ${fmtCmd(ch.cmd)} cmd · ${r.kills || 0} victoires</div><div class="sub">${wList(r.weapons)}${(r.modules || []).length ? ' · ' + r.modules.map(m => MODULES[m].n).join(', ') : ''}</div></div></div>
+      <div class="bars"><span>PV</span><div class="hpbar" title="Points de vie"><i style="width:${Math.round(r.hp * 100)}%;${r.hp < .35 ? 'background:var(--bad)' : ''}"></i></div><span>XP</span><div class="hpbar" title="Expérience${rk < 4 ? ' ' + Math.floor(r.xp || 0) + ' / ' + nx : ''}"><i style="width:${Math.round(clamp(xf, 0, 1) * 100)}%;background:var(--amber)"></i></div></div>
+      ${(r.traits || []).length ? `<div class="sub">Traits : ${r.traits.map(t => '<b>' + TRAITS[t].n + '</b>').join(', ')}</div>` : ''}
+      <div class="acts">
+        <button class="btn sm dep-tg ${r.deploy ? 'on' : ''}" data-act="deploy" data-rid="${r.id}"><span class="sw"></span>${r.deploy ? 'Déployé' : 'Déployer'}</button>
+        ${miss > .005 ? `<button class="btn sm" data-act="repair" data-rid="${r.id}" ${canAfford(rc) ? '' : 'disabled'} title="${esc(Object.keys(rc).map(k => rc[k] + ' ' + RES[k].n).join(', ') || 'gratuit')}">Réparer <span class="cst">${Object.keys(rc).map(k => `<span><i style="background:${RES[k].c}"></i>${fmt(rc[k])}</span>`).join('')}</span></button>` : ''}
+        <button class="btn sm" data-act="refit" data-rid="${r.id}">Réaménager</button>
+      </div>
+      <details data-rid="${r.id}" ${HG.open.has(r.id) ? 'open' : ''}><summary>Réglages</summary><div>
+        <div class="acts"><label class="sub">Cerveau <select data-act="setbrain" data-rid="${r.id}">${BRAIN_KEYS.filter(b => brainUnlocked(b) || b === r.brain).map(b => `<option value="${b}" ${b === r.brain ? 'selected' : ''}>${BRAINS[b].n}${b === 'tactical' && r.brain !== 'tactical' ? ' (1 noyau)' : ''}</option>`).join('')}</select></label>
+          <label class="sub">Groupe <select data-act="setgroup" data-rid="${r.id}">${[0, 1, 2, 3, 4, 5].map(g => `<option value="${g}" ${g === (r.group || 0) ? 'selected' : ''}>${g || '—'}</option>`).join('')}</select></label></div>
+        <div class="acts"><span class="sub" title="Concentré : toutes les armes sur la même cible. Fractionné : chaque arme choisit la cible qui lui convient.">Tir</span><button class="chip ${r.split ? '' : 'on'}" data-act="rsplit" data-rid="${r.id}" data-id="0">Concentré</button><button class="chip ${r.split ? 'on' : ''}" data-act="rsplit" data-rid="${r.id}" data-id="1">Fractionné</button></div>
+        ${fabPlanHTML(r)}
+        ${r.weapons.some(w => !isSupportW(w)) ? `<div class="acts"><span class="sub" title="Quand vous pilotez ce robot : une arme manuelle tire au clic gauche, une arme automatique choisit sa cible et tire seule.">En pilotage</span>${wmChips(r)}</div>` : ''}
+        <div class="acts"><button class="btn sm" data-act="scrap" data-rid="${r.id}">Démonter (rend la moitié des matériaux)</button></div>
+      </div></details></div>`;
+  }).join('') : L.length ? `<div class="card"><div class="nm">Aucun robot ici</div><div class="sub">Changez de filtre pour voir le reste de la flotte.</div></div>` : `<div class="card"><div class="nm">Hangar vide</div><div class="sub">Assemblez votre premier robot à la forge.</div><div class="acts"><button class="btn hot sm" data-tab="atelier">Aller à la forge</button></div></div>`;
+  return `<div class="phead"><h2 class="h2">Hangar</h2><div class="psum"><span>Commandement <b>${fmtCmd(used)} / ${cap}</b></span><span>Robots <b>${L.length} / ${hangarCap()}</b></span></div></div>
+  <p class="lead">Les robots déployés partent en raid avec vous. Ceux qui restent hors du cercle d'extraction, ou qui tombent, sont perdus. Une baie de réparation les soigne gratuitement à la base.</p>
+  <div class="meter"><span>Commandement ${fmtCmd(used)} / ${cap}</span><div class="bar ${used > cap ? 'over' : ''}"><i style="width:${Math.min(100, used / cap * 100)}%"></i></div></div>
+  <div class="hg-bar"><div class="chips">${names.map(([k, n]) => `<button class="chip ${HG.filter === k ? 'on' : ''}" data-act="hgf" data-id="${k}">${n}<span class="cn">${L.filter(flt[k]).length}</span></button>`).join('')}</div>
+    <label class="sub" style="display:flex;gap:6px;align-items:center">Trier <select data-act="hgsort">${[['tier', 'Rang'], ['power', 'Puissance'], ['name', 'Nom'], ['recent', 'Récents']].map(([k, n]) => `<option value="${k}" ${HG.sort === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    <div class="chips" style="margin-left:auto"><button class="btn sm" data-act="deployall">Déployer au maximum</button><button class="btn sm" data-act="undeployall">Tout retirer</button>${L.some(r => r.hp < 1 && !r.exp) ? '<button class="btn sm" data-act="repairall">Tout réparer</button>' : ''}</div></div>
+  <div class="grid-cards">${body}</div>`;
+}
+
+// ================= CONSTRUCTION =================
+const B_GROUPS = [['Production', ['scrapper', 'smelter', 'circuitfab', 'refinery', 'datacenter', 'corefab', 'warehouse']], ['Commandement et armée', ['hq', 'forge', 'lab', 'hangar', 'pad', 'uplink', 'repairbay', 'range', 'contracts', 'radar', 'expedition', 'shipyard']]];
+function renderBuildTab() {
+  uiInit();
+  const hq = hqLevel(), free = builderCap() - busyCount();
+  const groups = B_GROUPS.map(([t, ks]) => [t, ks.filter(k => BUILD[k])]);
+  const known = new Set(groups.flatMap(g => g[1])); groups[1][1].push(...BUILD_KEYS.filter(k => !BUILD[k].def && !known.has(k)));
+  groups.push(['Défenses', BUILD_KEYS.filter(k => BUILD[k].def)]);
+  const built = [];
+  const card = k => {
+    const D = BUILD[k], n = countType(k), lim = bLimit(k), cost = bCost(k, 1), v = bVis(k);
+    if (!v) return '';
+    if (v === 'shadow') return `<div class="card bcard shadow"><canvas data-bprev="${k}" data-sil="1"></canvas><div class="nm">${D.n}</div><div class="sub">Débloqué au QG niveau ${bNextHq(k)}</div></div>`;
+    const uniq = BLIMIT[k] && BLIMIT[k].every(x => x === 1);
+    if (uniq && n >= 1) { built.push(k); return ''; }
+    const why = attack && attack.phase === 'fight' ? 'Attaque en cours' : n >= lim ? (lim === 0 ? 'QG niveau ' + bNextHq(k) + ' requis' : 'Limite atteinte (' + n + ' / ' + lim + ')' + (bNextHq(k) ? ' · plus au QG ' + bNextHq(k) : '')) : free <= 0 ? 'Aucun ouvrier libre' : !canAfford(cost) ? 'Ressources insuffisantes' : '';
+    const nw = uiMark('b:' + k);
+    return `<div class="card bcard ${nw ? 'isnew' : ''}"><canvas data-bprev="${k}"></canvas><div class="nm">${D.n} ${newTag(nw)}</div><div class="sub">${D.w} × ${D.h} tuile${D.w * D.h > 1 ? 's' : ''} · ${n} / ${lim} construit${n > 1 ? 's' : ''} · ${instantB(k) ? 'immédiat' : dur(bTime(k, 1))}</div><div class="sub">${D.d}</div>
+      <div class="cost">${costHtml(cost)}</div><div class="acts"><button class="btn sm ${why ? '' : 'hot'}" data-act="place" data-id="${k}" ${why ? 'disabled' : ''}>Placer</button>${why ? `<span class="sub">${why}</span>` : ''}</div></div>`;
+  };
+  const html = groups.map(([title, keys]) => { const cs = keys.map(card).join(''), hid = keys.filter(k => !bVis(k)).length; return cs || hid ? `<div class="rs-cat">${title}</div><div class="grid-cards">${cs}${hid ? `<div class="hidden-n">${hid} bâtiment${hid > 1 ? 's' : ''} à découvrir</div>` : ''}</div>` : ''; }).join('');
+  return `<div class="phead"><h2 class="h2">Construire</h2><div class="psum"><span>QG <b>${hq}</b></span><span>Ouvriers libres <b>${free} / ${builderCap()}</b></span></div></div>
+  <p class="lead">Choisissez un bâtiment, puis posez-le dans l'enceinte de la base. Les constructions avancent en temps réel, même pendant vos raids. Améliorer le QG révèle de nouveaux bâtiments.</p>
+  ${html}${built.length ? `<details class="card" style="margin-top:14px"><summary class="slot-h" style="cursor:pointer;margin:0">Déjà construits · ${built.length}</summary><div class="sub" style="margin-top:6px">${built.map(k => BUILD[k].n).join(' · ')}. Cliquez sur eux à la base pour les améliorer ou les déplacer.</div></details>` : ''}`;
+}
+function drawBuildingPreview(cv2, type) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv2.clientWidth || 200, h = cv2.clientHeight || 120;
+  cv2.width = Math.round(w * dpr); cv2.height = Math.round(h * dpr);
+  const c = cv2.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (let y = 0; y < h; y += 40) for (let x = 0; x < w; x += 40) c.drawImage(groundAtlas, (((x + y) / 40) & 7) * TILE, 0, TILE, TILE, x, y, 40.5, 40.5);
+  c.fillStyle = 'rgba(8,12,13,.35)'; c.fillRect(0, 0, w, h);
+  const D = BUILD[type], sc = Math.min((w - 20) / (D.w * TILE), (h - 24) / (D.h * TILE), 2.2);
+  c.save(); c.translate((w - D.w * TILE * sc) / 2, (h - D.h * TILE * sc) / 2 + 4); c.scale(sc, sc);
+  const sv = parts.length; paintBuilding(c, { type, tx: 0, ty: 0, lvl: 1, busy: 0, id: -1 }, 1, true); parts.length = sv; c.restore();
+  if (cv2.dataset.sil === '1') { c.fillStyle = 'rgba(12,17,19,.82)'; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(165,156,136,.55)'; c.font = `700 34px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', w / 2, h / 2); }
+}
+
+// ================= RAIDS =================
+function renderRaidTab() {
+  uiInit(); refillOffers();
+  if (!regionUnlocked(save.region || 0)) save.region = 0;
+  if (!diffOwn(save.diff)) save.diff = 1;
+  const ri = save.region || 0, R = REGIONS[ri], offers = save.offers[ri];
+  save.active = save.active.filter(id => offers.some(c => c.id === id));
+  const dep = save.robots.filter(r => r.deploy && !r.exp), used = cmdUsed(), cap = cmdCap(), pad = bLevel('pad');
+  const groups = {}; for (const r of dep) groups[r.chassis] = (groups[r.chassis] || 0) + 1;
+  const hidR = REGIONS.filter((G, i) => !regionVis(i)).length, hidD = DIFFS.filter((D, i) => !diffVis(i)).length;
+  const regions = REGIONS.map((G, i) => {
+    const v = regionVis(i); if (!v) return '';
+    if (v === 'shadow') return `<div class="region shadow"><span class="tier">RÉGION ${G.tier}</span><span class="nm">? ? ?</span><span class="d">Région inconnue.</span><span class="m">Pour l'ouvrir : remplir 3 contrats dans « ${REGIONS[i - 1].n} » (${save.cdone[i - 1] || 0} / 3) ou abattre son boss.</span></div>`;
+    const nw = uiMark('g:' + i);
+    return `<button class="region ${i === ri ? 'on' : ''} ${nw ? 'isnew' : ''}" data-act="region" data-id="${i}"><span class="tier">RÉGION ${G.tier} ${newTag(nw)}</span><span class="nm">${G.n}</span><span class="d">${G.d}</span>
+      <span class="m">Ennemis +${22 * (G.tier - 1)} % · butin +${30 * (G.tier - 1)} % · ${G.rivals} équipe${G.rivals > 1 ? 's' : ''} rivale${G.rivals > 1 ? 's' : ''} · boss : ${ENEMIES[G.boss].n} · contrats remplis : ${save.cdone[i] || 0}</span></button>`;
+  }).join('') + (hidR ? `<div class="hidden-n">${hidR} région${hidR > 1 ? 's' : ''} inconnue${hidR > 1 ? 's' : ''}</div>` : '');
+  const diffs = DIFFS.map((D, i) => {
+    const v = diffVis(i); if (!v) return '';
+    if (v === 'shadow') return `<div class="diff shadow"><span class="nm">? ? ?</span><span class="d">${i === 2 ? 'Réussissez deux extractions, ou abattez un boss, pour la découvrir.' : 'Abattez un boss de région pour la découvrir.'}</span></div>`;
+    const nw = uiMark('d:' + i);
+    return `<button class="diff ${save.diff === i ? 'on' : ''}" data-act="diff" data-id="${i}"><span class="nm">${D.n} ${newTag(nw)}</span><span class="d">${D.d}</span><span class="m">PV ennemis ×${D.hp} · dégâts ×${D.dmg} · butin ×${D.loot}</span></button>`;
+  }).join('');
+  const pws = Object.keys(PWEAPONS).filter(pweaponUnlocked);
+  return `<div class="phead"><h2 class="h2">Partir en raid</h2><div class="psum"><span>Raids <b>${save.stats.raids}</b></span><span>Extractions <b>${save.stats.extract}</b></span></div></div>
+  <p class="lead">Choisissez une région, acceptez jusqu'à deux contrats, puis lancez l'insertion. Trois contrats remplis dans une région, ou son boss abattu, révèlent la suivante.</p>
+  <div class="rs-cat">Région</div>
+  <div class="regions">${regions}</div>
+  <div class="rs-cat">Contrats · ${R.n} <span>${save.active.length} / 2 acceptés</span></div>
+  ${bLevel('contracts') ? `<div class="grid-cards">${offers.map(c => { const on = save.active.includes(c.id); return `<button class="contract ${on ? 'on' : ''}" data-act="contract" data-id="${c.id}" aria-pressed="${on}">
+      <span class="nm">${esc(contractText(c))}</span><span class="d">Récompense : ${rewardHtml(c.reward)}${c.rep > 1 ? ' · +' + c.rep + ' réputation' : ''}</span><span class="st">${on ? 'Accepté ✓' : 'Cliquer pour accepter'}</span></button>`; }).join('')}</div>
+    <div class="launch" style="margin-top:8px"><button class="btn sm" data-act="reroll" ${save.res.data >= 8 ? '' : 'disabled'}>Renouveler les offres · 8 données</button></div>`
+    : '<p class="lead">Construisez un bureau des contrats à la base pour recevoir des offres.</p>'}
+  <div class="rs-cat">Difficulté</div>
+  <div class="diffs">${diffs}</div>
+  <div class="cols">
+    <div class="list">
+      ${pws.length > 1 ? `<div class="slot-h">Arme du pilote</div><div class="chips">${pws.map(k => { const nw = uiMark('p:' + k); return `<button class="chip ${save.pweapon === k ? 'on' : ''}" data-act="pweapon" data-id="${k}">${PWEAPONS[k].n}${nw ? ' •' : ''}</button>`; }).join('')}</div>` : ''}
+      <div class="slot-h" style="margin-top:14px">Armée déployée</div>
+      <div class="meter"><span>${fmtCmd(used)} / ${cap}</span><div class="bar ${used > cap ? 'over' : ''}"><i style="width:${Math.min(100, used / cap * 100)}%"></i></div></div>
+      <div class="sub" style="font-size:13.5px;line-height:1.6;color:var(--mute)">${dep.length ? Object.keys(groups).map(k => CHASSIS[k].n + ' × ' + groups[k]).join('<br>') : 'Aucun robot : vous partez seul.'}</div>
+      <div class="launch" style="margin-top:10px"><button class="btn sm" data-tab="hangar">Gérer au hangar</button></div>
+    </div>
+    <div class="brief">
+      <p><b>Ancrage.</b> La balise se pose avec ${keyLabel('beacon')}. Elle charge en 55 s, plus 0,3 s par kilo transporté, 2,5 fois plus vite près d'un pylône relais activé.${pad > 1 ? ' Plateforme niveau ' + pad + ' : balise +' + 20 * (pad - 1) + ' %.' : ''}</p>
+      <p><b>Rivaux.</b> D'autres équipes fouillent la zone, ouvrent les caisses et posent leur propre balise. Abattez leur chef pour récupérer son butin, ou détruisez leur balise.</p>
+      <p><b>Fenêtre.</b> Charge terminée, 16 s pour entrer dans le cercle. Le lift emporte le pilote et chaque robot à l'intérieur.</p>
+    </div>
+  </div>
+  <div class="raid-go"><button class="btn hot big" data-act="launch" ${used > cap || !pad ? 'disabled' : ''}>Lancer le raid · ${R.n}</button>${NET.kind === 'http' && !TUT.on && tabVis('online') ? '<button class="btn" data-tab="online">Raid partagé à plusieurs…</button>' : ''}<span class="sumr"><b>${DIFFS[save.diff].n}</b> · ${dep.length} robot${dep.length > 1 ? 's' : ''} · ${save.active.length} contrat${save.active.length > 1 ? 's' : ''}</span>${used > cap ? '<span class="lost">Commandement dépassé.</span>' : ''}${!pad ? '<span class="lost">Construisez une plateforme de largage.</span>' : ''}</div>`;
+}
+
+// ================= CONSOLE : RENDU ET ÉVÉNEMENTS =================
+function renderHub() {
+  uiInit(); resNote();
+  if (uiPendTab !== hubTab) { uiCommit(); uiPendTab = hubTab; }
+  const rv = RES_KEYS.filter(resVis), rb = $('#resBar'); rb.classList.toggle('many', rv.length >= 7);
+  rb.innerHTML = rv.map(k => `<span class="res ${(save.res[k] || 0) <= 0 ? 'zero' : ''}" title="${RES[k].n}"><i style="background:${RES[k].c}"></i><span>${RES[k].n}</span><b>${fmt(save.res[k])}</b></span>`).join('');
+  document.querySelectorAll('#hubNav [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === hubTab));
+  const s = save.stats;
+  $('#navFoot').innerHTML = `${s.raids} raids · ${s.extract} extractions<br>${s.kills} hostiles abattus${s.boss ? '<br>Souverain vaincu ×' + s.boss : ''}`;
+  const m = $('#hubMain'), st = $('#fgStrip'), stl = st ? st.scrollLeft : 0;
+  m.innerHTML = hubTab === 'online' ? renderOnline() : hubTab === 'construire' ? renderBuildTab() : hubTab === 'atelier' ? renderForge() : hubTab === 'hangar' ? renderHangar() : hubTab === 'recherche' ? renderResearch() : hubTab === 'expe' ? renderExpTab() : renderRaidTab();
+  m.querySelectorAll('canvas[data-prev]').forEach(cv2 => { const k = cv2.dataset.prev; const al = allowedWeapons(k); drawRobotPreview(cv2, k, MOUNTS[k].map((_, i) => al.length && !chassisLock(k) ? al[Math.min(i, al.length - 1)] : null), 0, { fill: .44, sil: cv2.dataset.sil === '1' }); });
+  m.querySelectorAll('canvas[data-rid]').forEach(cv2 => { const r = save.robots.find(x => x.id === +cv2.dataset.rid); if (r) drawRobotPreview(cv2, r.chassis, r.weapons, 0, { fill: .44 }); });
+  m.querySelectorAll('canvas[data-bprev]').forEach(cv2 => drawBuildingPreview(cv2, cv2.dataset.bprev));
+  m.querySelectorAll('canvas[data-wicon]').forEach(cv2 => drawWeaponIcon(cv2, cv2.dataset.wicon, cv2.dataset.sil === '1'));
+  m.querySelectorAll('canvas[data-emap]').forEach(cv2 => { const id = +cv2.dataset.emap; drawExpMap(cv2, EXP.cx.get(id), (save.exps || []).find(e => e.id === id)); }); expTabN = (save.exps || []).length;
+  const nm = $('#dName'); if (nm) nm.addEventListener('input', e => { design.name = e.target.value; });
+  const st2 = $('#fgStrip'); if (st2) { st2.scrollLeft = stl; if (!stl) { const on = st2.querySelector('.ch-item.on'); if (on) st2.scrollLeft = Math.max(0, on.offsetLeft - st2.clientWidth / 2 + on.clientWidth / 2); } }
+  if (hubTab === 'recherche') { rtBind(); rtDrawDetail(); }
+  if (hubTab === 'atelier') fgBind();
+  updateNav();
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest && e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  switch (act) {
+    case 'rtbr': if (RT.br !== id) { RT.br = id; RT.sel = null; SFX.play('ui', 1); renderHub(); } break;
+    case 'rtzoom': { const w = $('#rtreeWrap'); if (w) rtZoomAt(id === 'in' ? 1.2 : 1 / 1.2, w.clientWidth / 2, w.clientHeight / 2); break; }
+    case 'rtfit': { const w = $('#rtreeWrap'), V = rtView(); if (w && V && RT.lay) { V.z = clamp(Math.min(w.clientWidth / RT.lay.W, w.clientHeight / RT.lay.H), .3, 1); V.x = 0; V.y = 0; rtApply(); } break; }
+    case 'rtnext': { const ids = RT.lay ? RT.lay.order.filter(x => { const nn = rtNode(x); return !nn.base && rVis(nn) === 'full' && rState(nn) !== 'done'; }) : []; if (!ids.length) { toast('Rien à rechercher dans cette branche pour l\'instant.'); break; } const ready = ids.filter(x => rState(rtNode(x)) === 'ready'), L2 = ready.length ? ready : ids, i = (L2.indexOf(RT.sel) + 1) % L2.length; RT.sel = L2[i]; rtFocus(RT.sel, true); document.querySelectorAll('.rnode.sel').forEach(n => n.classList.remove('sel')); const nd = document.querySelector(`.rnode[data-id="${RT.sel}"]`); if (nd) nd.classList.add('sel'); $('#rdetail').innerHTML = researchDetail(RT.sel); rtDrawDetail(); rtHighlight(RT.sel); SFX.play('ui', .6); break; }
+    case 'fgfam': FGS.fam = id; SFX.play('ui', .8); renderHub(); { const s2 = $('#fgStrip'); if (s2) s2.scrollLeft = 0; } break;
+    case 'fgrole': FGS.role = id; SFX.play('ui', .8); renderHub(); break;
+    case 'fgname': design.name = randomName(design.chassis); SFX.play('ui', .8); renderHub(); break;
+    case 'fgshadow': { const r = RESEARCH_BY_ID[id]; if (!r) break; RT.br = rtBranchOf(id); RT.sel = id; hubTab = 'recherche'; SFX.play('ui', 1); renderHub(); $('#hubMain').scrollTop = 0; setTimeout(() => rtFocus(id, true), 30); break; }
+    case 'hgf': HG.filter = id; SFX.play('ui', .8); renderHub(); break;
+  }
+}, true);
+// sélection d'un nœud : le détail suit, l'arbre se recentre si besoin (le gestionnaire d'origine affiche le détail)
+document.addEventListener('click', e => {
+  const el = e.target.closest && e.target.closest('[data-act=rsel]'); if (!el) return;
+  RT.sel = el.dataset.id; const br = rtBranchOf(RT.sel);
+  if (br !== RT.br && !RT_BASE[RT.sel]) { RT.br = br; setTimeout(() => { renderHub(); rtFocus(RT.sel, true); }, 0); return; }
+  setTimeout(() => { document.querySelectorAll('.rnode.sel').forEach(n => n.classList.toggle('sel', n.dataset.id === RT.sel)); rtDrawDetail(); rtHighlight(RT.hover || RT.sel); if (!el.classList.contains('rnode')) rtFocus(RT.sel, true); }, 0);
+}, false);
+// les réglages dépliés d'un robot restent ouverts quand le hangar se redessine
+document.addEventListener('toggle', e => { const d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset.rid) { const id = +d.dataset.rid; if (d.open) HG.open.add(id); else HG.open.delete(id); } }, true);
+document.addEventListener('change', e => { const el = e.target; if (el && el.dataset && el.dataset.act === 'hgsort') { HG.sort = el.value; renderHub(); } });
+
 function init() {
   applyColors(); applyTouch(); applyUiScale(); setRegionPalette(null); resize(); refreshKeyHints(); registerSW();
   window.addEventListener('keydown', e => { if (e.key === 'GoBack' || e.key === 'BrowserBack') { e.preventDefault(); window.colosseBack(); } });
