@@ -3,16 +3,22 @@
 Extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre, expéditions autonomes, équipes rivales et assauts en ligne.
 Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance : il s'ouvre dans n'importe quel navigateur, sur ordinateur comme sur téléphone.
 
+**Version 2.0.0** : sortie de la phase alpha. Les nouveautés de chaque version sont dans [CHANGELOG.md](CHANGELOG.md), et dans le jeu (lien « Nouveautés » de l'écran titre).
+
 ## Contenu du dossier
 
 | Élément | Rôle |
 |---|---|
-| `index.html` | Le jeu complet (graphismes et sons générés par le code). |
+| `index.html` | Le jeu complet (graphismes et sons générés par le code), construit depuis `src/`. |
+| `src/`, `outils/construire.js` | Sources du jeu, découpées par domaine, et leur assemblage en `index.html`. |
 | `server/server.js` | Serveur en ligne : Node.js seul, **aucun paquet à installer**, IPv6 et IPv4. |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installation sur l'écran d'accueil et jeu hors ligne (version web). |
 | `electron/`, `package.json` | Version bureau : `.exe` Windows et `.AppImage` Linux. |
 | `android/` | Version Android : `.apk` (WebView plein écran, sans bibliothèque). |
 | `.github/workflows/` | Compilation automatique sur GitHub et version web sur GitHub Pages. |
+| `site/` | Page de présentation (`presentation.html`) et ses captures, publiées avec la version web. |
+| `CHANGELOG.md` | Historique des versions, repris dans les notes de chaque release GitHub. |
+| `cle-android/` | Clé de signature Android : **reste sur votre ordinateur**, jamais envoyée sur GitHub (voir plus bas). |
 | `publier.sh`, `publier.bat` | Envoi du dossier sur GitHub depuis le terminal. |
 | `serveur.sh`, `serveur.bat` | Lancement du serveur en ligne. |
 
@@ -23,7 +29,7 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
   - Joystick gauche : se déplacer. Joystick droit : viser, et tirer en poussant plus loin.
   - Touchez un robot pour le sélectionner, puis le sol pour l'y envoyer, ou un ennemi pour l'attaquer.
   - Deux doigts : zoomer. Bouton « Tactique » : temps ralenti et sélection au cadre en glissant.
-  - Boutons : Esquive, Agir (maintenir pour ouvrir une caisse), Capacité, Piloter, Balise, Flotte, Carte, menu ☰.
+  - Boutons : Esquive, Agir (maintenir pour ouvrir une caisse, ou un seul appui selon les Réglages), Capacité, Piloter, Balise, Flotte, Carte, menu ☰.
   - À la base, « Base » ouvre la construction, la forge, le hangar, la recherche, les raids, les expéditions et le mode en ligne.
   - Vue d'une expédition : glisser pour déplacer la vue, deux doigts pour zoomer, toucher un robot pour le suivre.
 
@@ -36,7 +42,7 @@ En 34 étapes guidées (consignes adaptées au clavier ou à l'écran tactile, f
 - assembler un robot à la forge (affûts sur l'aperçu, comparaison des armes) et le déployer depuis le hangar ;
 - en raid : ramasser le butin, fouiller une caisse, démonter au tir cristaux et épaves, lire la carte, combattre ;
 - commander la flotte : sélectionner, envoyer, rappeler, ordonner une attaque ;
-- activer un pylône, poser la balise, la défendre et réussir l'extraction ;
+- activer un pylône, poser la balise, la défendre et réussir l'extraction (pendant la fenêtre, la flotte rejoint le cercle d'elle-même) ;
 - à la base : récolter, construire une tourelle, lancer une recherche dans l'arbre par familles, repousser une attaque et accepter un contrat.
 
 La dernière étape présente ce qui se dévoile ensuite : badges « Nouveau », poste d'expédition et géants du Chantier titanesque.
@@ -212,7 +218,11 @@ Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à 
 - Si deux appareils jouent avec le même compte, la partie enregistrée le plus récemment l'emporte.
 - Sans réseau, la partie continue sur l'appareil et se renvoie au serveur à la connexion suivante.
 - Sur claude.ai, la partie suit automatiquement le compte claude.ai.
-- Le mot de passe est chiffré sur le serveur (scrypt) et n'est jamais gardé sur l'appareil : seul un jeton de session l'est.
+- **Copie de secours** : le jeu garde l'avant-dernier état enregistré. Une sauvegarde illisible n'est jamais écrasée : elle est mise de côté et la copie de secours est restaurée, avec un message.
+- **Changer d'appareil sans serveur** : Réglages → Sauvegarde → « Exporter un fichier » ou « Copier le code », puis « Importer… » sur l'autre appareil. La partie remplacée devient la copie de secours. Dans l'application Android, qui ne gère pas les fichiers, passez par « Copier le code ».
+- Effacer la partie, garder celle du tutoriel ou importer une partie se confirment dans le jeu ; la partie précédente reste dans la copie de secours.
+- Une partie venant d'une version plus récente du jeu n'est jamais écrasée par une version plus ancienne.
+- Le mot de passe est haché sur le serveur (scrypt), jamais stocké en clair, et n'est jamais gardé sur l'appareil : seul un jeton de session l'est.
 
 ### Son
 
@@ -305,20 +315,20 @@ GitHub demande de vous identifier : utilisez un *personal access token* (Setting
 ### 3. Lancer la compilation et créer une version
 
 ```bash
-./publier.sh v1.0.0          # Windows : publier.bat v1.0.0
+./publier.sh v2.0.0          # Windows : publier.bat v2.0.0
 ```
 
 ou :
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v2.0.0
+git push origin v2.0.0
 ```
 
-Le workflow **Compiler Colosse** se lance (onglet *Actions*, environ 10 minutes). Il produit puis publie dans **Releases** :
+Le workflow **Compiler Colosse** se lance (onglet *Actions*, environ 10 minutes). Il reconstruit `index.html` depuis `src/`, puis produit et publie dans **Releases**, avec comme description la section de cette version dans `CHANGELOG.md` :
 - `Colosse-…-portable.exe` : se lance sans installation ;
 - `Colosse-…-nsis.exe` : l'installeur Windows ;
-- `Colosse-v1.0.0.apk` : Android, à installer en autorisant les sources inconnues ;
+- `Colosse-v2.0.0.apk` : Android, à installer en autorisant les sources inconnues ;
 - `Colosse-….AppImage` : Linux ;
 - `Colosse-web-et-serveur.zip` : la version web et le serveur.
 
@@ -327,14 +337,65 @@ Vous pouvez aussi lancer la compilation sans version : onglet *Actions* → *Com
 ### 4. Version web (facultatif)
 
 Une seule fois : Settings → Pages → Build and deployment → Source : **GitHub Actions**. Relancez ensuite le workflow *Version web (GitHub Pages)* depuis l'onglet *Actions*.
-Le jeu sera en ligne sur https://azertyuser09876-spec.github.io/colosse/ et jouable sur téléphone (« Ajouter à l'écran d'accueil »).
+Le jeu sera en ligne sur https://azertyuser09876-spec.github.io/colosse/ et jouable sur téléphone (« Ajouter à l'écran d'accueil »). La page de présentation sera sur https://azertyuser09876-spec.github.io/colosse/presentation.html.
 Tant que Pages n'est pas activé, ce workflow se termine sans erreur et l'indique dans son résumé. La compilation du .exe et de l'.apk n'en dépend pas.
 
 ### Notes
 
 - Windows peut afficher un avertissement SmartScreen : le `.exe` n'est pas signé. Choisissez « Informations complémentaires → Exécuter quand même ».
-- L'`.apk` est signé avec une clé de débogage : parfait pour l'installer soi-même, mais il faut votre propre clé pour le Play Store.
+- L'`.apk` est signé avec la clé fixe de Colosse si les secrets GitHub sont en place (voir ci-dessous), sinon avec une clé de débogage différente à chaque compilation.
 - Tester la version bureau en local, si vous avez Node.js : `npm install` puis `npm start`.
+
+### 5. Clé de signature Android (une seule fois)
+
+Android n'installe une mise à jour par-dessus l'ancienne que si les deux portent la même signature. La version 2.0.0 fournit donc une clé fixe, dans le dossier `cle-android/` (créé une seule fois, propre à votre jeu). Ce dossier est exclu de git : gardez-en une copie en lieu sûr.
+
+1. Sur GitHub : Settings → Secrets and variables → Actions → **New repository secret**.
+2. Secret `ANDROID_KEYSTORE_BASE64` : collez tout le contenu de `cle-android/ANDROID_KEYSTORE_BASE64.txt`.
+3. Secret `ANDROID_KEYSTORE_PASSWORD` : collez le contenu de `cle-android/ANDROID_KEYSTORE_PASSWORD.txt`.
+
+Les compilations suivantes signent l'APK avec cette clé. Sur un téléphone qui a une version 1.x, la 2.0.0 ne peut pas s'installer par-dessus : il faut désinstaller l'ancienne version, ce qui efface sa partie (sauf avec un compte sur un serveur Colosse, la partie étant alors sur le serveur). Les versions suivantes s'installeront par-dessus sans rien perdre. Le détail est dans `cle-android/LISEZMOI.txt`.
+
+## Structure du code
+
+Le jeu est écrit en JavaScript sans bibliothèque. Ses sources sont dans `src/` et s'assemblent en un seul `index.html` :
+
+```
+node outils/construire.js             reconstruit index.html
+node outils/construire.js --verifier  vérifie que index.html correspond aux sources
+```
+
+`publier.sh` / `publier.bat` et la compilation sur GitHub reconstruisent `index.html` automatiquement : il suffit de modifier `src/`. Le numéro de version se change à un seul endroit, `package.json` : la construction le reporte dans le jeu, le cache hors ligne (`sw.js`) et l'application Android.
+
+| Fichier | Contenu |
+|---|---|
+| `src/page.html` | Squelette de la page : écrans, menus, commandes tactiles. |
+| `src/style.css` | Thème « console de commandement ». |
+| `src/js/01-outils.js` | Mathématiques, aléas, dessin de base. |
+| `src/js/02-audio.js` | Son synthétisé : effets spatialisés, musique générative, ambiances. |
+| `src/js/03-reglages.js` | Réglages et accessibilité. |
+| `src/js/04-donnees.js` | Châssis, armes, ennemis, bâtiments, recherches, régions, contrats. |
+| `src/js/05-sauvegarde.js` | Sauvegarde de la partie. |
+| `src/js/06-monde.js` | Génération des régions et de la base. |
+| `src/js/07-peintres.js` | Dessin procédural des robots, armes, bâtiments et géants. |
+| `src/js/08-raid-etat.js` | État d'une partie, hachage spatial, collisions. |
+| `src/js/09-combat.js` | Dégâts, projectiles, montures, armes spéciales, ciblage. |
+| `src/js/10-ia.js` | Déplacement, navigation, ligne de tir, comportement des robots et ennemis. |
+| `src/js/11-raid.js` | Déroulement d'un raid, balise, pilote, ordres. |
+| `src/js/12-flotte.js` | Vétérans, capacités, formations, patrouilles. |
+| `src/js/13-base.js` | Base jouable et défense contre les pillards. |
+| `src/js/14-rivaux-contrats.js` | Équipes rivales et contrats. |
+| `src/js/15-en-ligne.js`, `16-direct.js` | Comptes, classement, pillages, raids partagés en direct. |
+| `src/js/17-environnement.js` | Heure, météo, lumières. |
+| `src/js/18-expeditions.js` | Expéditions autonomes. |
+| `src/js/19-geants.js` | Mécaniques des géants. |
+| `src/js/20-tutoriel.js`, `21-assaut.js` | Tutoriel jouable, mode assaut. |
+| `src/js/22-rendu.js`, `23-tactile.js` | Rendu et HUD, commandes tactiles. |
+| `src/js/24-interface.js`, `25-entrees.js` | Console de commandement, souris et clavier. |
+| `src/js/26-nouveautes.js` | Notes de version affichées après une mise à jour. |
+| `src/js/27-demarrage.js` | Boucle d'images et démarrage. |
+
+Les fichiers s'assemblent dans l'ordre de leur numéro.
 
 ## Licence
 

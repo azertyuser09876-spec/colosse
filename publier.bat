@@ -29,6 +29,19 @@ if not exist .git (
 git config user.name >nul 2>nul || git config user.name "azertyuser09876-spec"
 git config user.email >nul 2>nul || git config user.email "azertyuser09876-spec@users.noreply.github.com"
 
+rem index.html se reconstruit depuis src\ (Node.js), pour qu'il corresponde toujours aux sources
+where node >nul 2>nul
+if errorlevel 1 (
+  echo Node.js absent : index.html est envoye tel quel ^(https://nodejs.org pour le reconstruire^).
+) else (
+  node outils\construire.js
+  if errorlevel 1 (
+    echo.
+    echo Construction impossible : rien n'a ete envoye.
+    pause
+    exit /b 1
+  )
+)
 git add -A
 git commit -m "Colosse %date% %time%" || echo Rien de nouveau a enregistrer.
 git push -u origin main

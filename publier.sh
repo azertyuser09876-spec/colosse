@@ -19,6 +19,12 @@ if [ ! -d .git ]; then
 fi
 git config user.name >/dev/null || git config user.name "azertyuser09876-spec"
 git config user.email >/dev/null || git config user.email "azertyuser09876-spec@users.noreply.github.com"
+# index.html se reconstruit depuis src/ (Node.js), pour qu'il corresponde toujours aux sources
+if command -v node >/dev/null 2>&1; then
+  node outils/construire.js || { echo "Construction impossible : rien n'a été envoyé."; exit 1; }
+else
+  echo "Node.js absent : index.html est envoyé tel quel (https://nodejs.org pour le reconstruire)."
+fi
 git add -A
 git commit -m "Colosse $(date +%Y-%m-%d\ %H:%M)" || echo "Rien de nouveau à enregistrer."
 git push -u origin main

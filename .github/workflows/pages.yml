@@ -47,6 +47,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node outils/construire.js
       - run: mkdir -p site && cp -r index.html manifest.webmanifest sw.js icons site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

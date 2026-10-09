@@ -10,3 +10,6 @@ android/local.properties
 android/app/src/main/assets/index.html
 .DS_Store
 Thumbs.db
+
+# clé de signature Android : à garder hors du dépôt (voir README)
+cle-android/

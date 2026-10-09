@@ -8,14 +8,28 @@ android {
         applicationId 'io.github.azertyuser09876spec.colosse'
         minSdk 24
         targetSdk 34
-        versionCode 10
-        versionName '1.8.0'
+        versionCode 20000
+        versionName '2.0.0'
+    }
+    // Clé de signature fixe, fournie par la compilation GitHub (secrets ANDROID_KEYSTORE_BASE64 et ANDROID_KEYSTORE_PASSWORD) :
+    // toutes les versions portent la même signature, et les mises à jour s'installent par-dessus la précédente.
+    // Sans ces secrets, l'APK reçoit une clé de débogage (il faut alors désinstaller avant chaque mise à jour).
+    def cleColosse = System.getenv('COLOSSE_KEYSTORE')
+    def avecCle = cleColosse != null && new File(cleColosse).exists()
+    signingConfigs {
+        if (avecCle) {
+            colosse {
+                storeFile file(cleColosse)
+                storePassword System.getenv('COLOSSE_KEYSTORE_PASSWORD')
+                keyAlias 'colosse'
+                keyPassword System.getenv('COLOSSE_KEYSTORE_PASSWORD')
+            }
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
-            // Signature de débogage : l'APK s'installe directement. Pour le Play Store, remplacez par votre propre clé.
-            signingConfig signingConfigs.debug
+            signingConfig avecCle ? signingConfigs.colosse : signingConfigs.debug
         }
     }
     compileOptions {

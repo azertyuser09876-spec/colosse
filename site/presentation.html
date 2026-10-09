@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Colosse</title>
+<meta name="description" content="Colosse : extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre. Gratuit, sur navigateur, Windows, Android et Linux.">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Fiche de mission : une console sombre comme celle du jeu ; la capture de nuit en ouverture, puis la règle des rangs à l'échelle comme pièce maîtresse. */
+:root {
+  --nuit: #12181a;      /* fond, la nuit des Cendres */
+  --acier: #1a2327;     /* panneaux */
+  --trait: #2e3c42;     /* filets */
+  --sable: #e8dcc4;     /* texte */
+  --cendre: #a49b88;    /* texte secondaire */
+  --ambre: #f2c14e;     /* repères, comme le HUD */
+  --braise: #ea6c33;    /* l'action principale */
+  --allie: #6fe3c8;     /* la flotte */
+  --ombre: rgba(8, 11, 12, .82);
+  --f-titre: 'Barlow Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  --f-texte: 'Barlow', 'Bahnschrift', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --gouttiere: clamp(16px, 4vw, 48px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--nuit); }
+body { margin: 0; background: var(--nuit); color: var(--sable); font-family: var(--f-texte); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+img { max-width: 100%; height: auto; display: block; }
+:focus-visible { outline: 2px solid var(--ambre); outline-offset: 3px; }
+.page { padding-inline: var(--gouttiere); }
+.large { max-width: 1240px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--f-titre); text-wrap: balance; margin: 0; line-height: 1; letter-spacing: .01em; }
+h2 { font-size: clamp(34px, 5vw, 58px); font-weight: 800; text-transform: uppercase; }
+h3 { font-size: 26px; font-weight: 700; }
+p { margin: 0; max-width: 62ch; }
+.doux { color: var(--cendre); }
+
+/* ---------- ouverture ---------- */
+.ouverture { position: relative; min-height: clamp(520px, 74vh, 780px); display: grid; align-items: end; overflow: hidden; border-bottom: 1px solid var(--trait); }
+.ouverture img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 50%; }
+.ouverture::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12, 16, 17, .94) 0%, rgba(12, 16, 17, .72) 42%, rgba(12, 16, 17, 0) 75%), linear-gradient(0deg, rgba(12, 16, 17, .85) 0%, rgba(12, 16, 17, 0) 40%); }
+.ouverture > .page { position: relative; z-index: 1; min-width: 0; width: 100%; }
+.ouverture .contenu { position: relative; z-index: 1; padding-block: 96px 64px; display: flex; flex-direction: column; gap: 22px; }
+.nom { font-size: clamp(54px, 16.5vw, 236px); font-weight: 800; line-height: .8; letter-spacing: .02em; color: #efe5cf; text-shadow: 0 6px 40px rgba(0, 0, 0, .55); }
+.accroche { font-size: clamp(18px, 2vw, 22px); max-width: 34em; color: var(--sable); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.bouton { max-width: 100%; text-align: center; display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 12px 24px; font-family: var(--f-titre); font-size: 21px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--trait); background: var(--acier); color: var(--sable); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); transition: background .15s, border-color .15s; }
+.bouton:hover { border-color: var(--ambre); background: #22303a; }
+.bouton.principal { background: var(--braise); border-color: #f58a52; color: #fff8ee; }
+.bouton.principal:hover { background: #ff7d40; }
+.note { font-size: 15px; color: var(--cendre); }
+
+/* ---------- sections ---------- */
+section.bloc { padding-block: clamp(64px, 9vw, 120px); border-bottom: 1px solid var(--trait); }
+.tete { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+.duo { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 4vw, 64px); align-items: center; }
+.duo.inverse { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.duo.inverse .texte { order: 2; }
+.texte { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.cadre { border: 1px solid var(--trait); background: var(--acier); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+
+/* un raid : trois temps, dans l'ordre */
+.etapes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; counter-reset: etape; }
+.etapes li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 16px; counter-increment: etape; }
+.etapes li::before { content: counter(etape); grid-row: span 2; font-family: var(--f-titre); font-weight: 800; font-size: 46px; line-height: .9; color: var(--ambre); font-variant-numeric: tabular-nums; }
+.etapes h3 { align-self: end; }
+
+/* la règle des rangs : la pièce maîtresse */
+.echelle { margin-top: 8px; }
+figure.echelle { margin: 0; }
+.echelle .vue { position: relative; border: 1px solid var(--trait); overflow: hidden; }
+.regle { position: relative; height: 128px; margin-top: 0; }
+.regle .bande { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: repeating-linear-gradient(-45deg, var(--ambre) 0 12px, #1d1b16 12px 24px); }
+.cran { position: absolute; top: 8px; width: 1px; height: 14px; background: var(--ambre); transform: translateX(-.5px); }
+.etiquette { position: absolute; top: 30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; white-space: nowrap; text-align: center; }
+.etiquette::before { content: ''; position: absolute; top: -8px; left: 50%; width: 1px; height: 8px; background: var(--ambre); }
+.etiquette b { font-family: var(--f-titre); font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; line-height: 1.1; }
+.etiquette span { font-size: 13.5px; color: var(--cendre); font-variant-numeric: tabular-nums; }
+.etiquette.debut { transform: none; align-items: flex-start; text-align: left; }
+.etiquette.bas { top: 78px; }
+.etiquette.bas::before { top: -56px; height: 56px; }
+.etiquette.debut::before { left: 0; }
+.chiffres { display: flex; flex-wrap: wrap; gap: 14px 40px; margin-top: 28px; }
+.chiffres div { display: flex; flex-direction: column; }
+.chiffres b { font-family: var(--f-titre); font-size: 40px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.chiffres span { color: var(--cendre); font-size: 15px; }
+
+/* et ensuite */
+.liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--trait); }
+.liste li { padding: 26px 26px 26px 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.liste li + li { padding-left: 26px; border-left: 1px solid var(--trait); }
+
+/* téléchargements */
+.plateformes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--trait); }
+.plateformes li { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) auto; gap: 8px 28px; align-items: center; padding-block: 22px; border-bottom: 1px solid var(--trait); }
+.plateformes h3 { font-size: 30px; text-transform: uppercase; }
+.plateformes .bouton { font-size: 18px; min-height: 44px; padding: 8px 18px; }
+footer { padding-block: 40px 56px; color: var(--cendre); font-size: 15px; display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; }
+footer a { color: var(--sable); }
+
+@media (max-width: 900px) {
+  .duo, .duo.inverse { grid-template-columns: minmax(0, 1fr); }
+  .duo.inverse .texte { order: 0; }
+  .liste { grid-template-columns: minmax(0, 1fr); }
+  .liste li, .liste li + li { padding: 22px 0; border-left: 0; border-bottom: 1px solid var(--trait); }
+  .plateformes li { grid-template-columns: minmax(0, 1fr); }
+  .etiquette.facultatif { display: none; }
+}
+@media (max-width: 560px) {
+  .regle { height: 84px; }
+  .etiquette b { font-size: 16px; }
+  .etiquette span { font-size: 12px; }
+  .etiquette.moyen { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="ouverture">
+  <img src="captures/raid-nuit.jpg" alt="Une flotte de robots en plein combat de nuit dans les Cendres, éclairée par les explosions." width="1600" height="900">
+  <div class="page"><div class="large contenu">
+    <h1 class="nom">COLOSSE</h1>
+    <p class="accroche">Bâtissez votre base, forgez une armée de robots, de la fourmi d'acier à la ville-machine, puis lancez-la dans un monde dévasté et tenez la balise jusqu'à l'extraction.</p>
+    <div class="actions">
+      <a class="bouton principal" href="./index.html">Jouer dans le navigateur</a>
+      <a class="bouton" href="#telecharger">Télécharger</a>
+    </div>
+    <p class="note">Gratuit et en français, sur ordinateur, téléphone et navigateur. Version 2.0.0.</p>
+  </div></div>
+</header>
+
+<main>
+  <section class="bloc page" aria-labelledby="t-raid">
+    <div class="large duo">
+      <div class="texte">
+        <h2 id="t-raid">Un raid, trois temps</h2>
+        <ol class="etapes">
+          <li><h3>Fouiller</h3><p class="doux">Caisses, épaves, cristaux, pylônes relais : vos robots ramassent tout ce qui se revend, pendant que l'alerte monte dans la région.</p></li>
+          <li><h3>Poser la balise</h3><p class="doux">Son signal attire tout ce qui rôde à des kilomètres. Tenez jusqu'à 100 %, de préférence près d'un pylône relais activé : la balise y charge deux fois et demie plus vite.</p></li>
+          <li><h3>S'extraire</h3><p class="doux">Seize secondes pour entrer dans le cercle, où la flotte vous rejoint. Ce qui reste dehors est perdu, robots compris.</p></li>
+        </ol>
+      </div>
+      <img class="cadre" src="captures/raid-jour.jpg" alt="Raid de jour dans le marais d'acide : la flotte avance entre les cristaux et les ruines." width="1600" height="900">
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-echelle">
+    <div class="large">
+      <div class="tete">
+        <h2 id="t-echelle">De la fourmi à la ville-machine</h2>
+        <p class="doux">Neuf rangs de robots, montrés ici à la même échelle. La Fourmi tient dans une case et se remplace pour dix ferrailles ; la Ville-machine couvre un quartier, porte quatorze armes et fabrique ses propres renforts en plein raid.</p>
+      </div>
+      <figure class="echelle">
+        <div class="vue"><img src="captures/echelle.jpg" alt="Neuf robots alignés à la même échelle, de la minuscule Fourmi à l'immense Ville-machine." width="1600" height="900"></div>
+        <div class="regle" aria-hidden="true">
+          <div class="bande"></div>
+          <i class="cran" style="left:4.1%"></i><i class="cran" style="left:6.2%"></i><i class="cran" style="left:8.4%"></i><i class="cran" style="left:10.9%"></i><i class="cran" style="left:13.9%"></i><i class="cran" style="left:19.4%"></i><i class="cran" style="left:30%"></i><i class="cran" style="left:46.5%"></i><i class="cran" style="left:76.1%"></i>
+          <div class="etiquette debut" style="left:4.1%"><b>Fourmi</b><span>rang 1 · 46 PV</span></div>
+          <div class="etiquette bas moyen facultatif" style="left:19.4%"><b>Colosse</b><span>rang 6 · 11 000 PV</span></div>
+          <div class="etiquette moyen" style="left:30%"><b>Rempart</b><span>rang 7 · 38 000 PV</span></div>
+          <div class="etiquette bas moyen" style="left:46.5%"><b>Cyclope</b><span>rang 8 · 92 000 PV</span></div>
+          <div class="etiquette" style="left:76.1%"><b>Ville-machine</b><span>rang 9 · 360 000 PV</span></div>
+        </div>
+        <figcaption class="chiffres">
+          <div><b>36</b><span>châssis</span></div>
+          <div><b>52</b><span>armes, de la mitrailleuse au trou noir</span></div>
+          <div><b>114</b><span>recherches</span></div>
+          <div><b>4</b><span>régions de 12 km²</span></div>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-base">
+    <div class="large duo inverse">
+      <div class="texte">
+        <h2 id="t-base">Une base qui tourne sans vous</h2>
+        <p class="doux">Collecteurs, fonderies et centres de données produisent pendant que vous êtes en raid. Chaque extraction fait monter la menace : au-delà de 60 %, des pillards viennent frapper à la porte, et vos tourelles comme vos robots stationnés les reçoivent.</p>
+        <p class="doux">Vingt-neuf bâtiments, à améliorer jusqu'au niveau 5, et un Chantier titanesque pour assembler les géants.</p>
+      </div>
+      <img class="cadre" src="captures/base.jpg" alt="Vue de la base : quartier général, forge, laboratoire, usines et tourelles." width="1040" height="585">
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-forge">
+    <div class="large duo">
+      <div class="texte">
+        <h2 id="t-forge">La forge</h2>
+        <p class="doux">Choisissez un châssis, cliquez sur un affût de l'aperçu, montez une arme et comparez avant d'assembler. Chaque robot gagne de l'expérience, monte en grade et reçoit des traits ; un cerveau règle son comportement, de l'escorte au récolteur.</p>
+      </div>
+      <img class="cadre" src="captures/forge.jpg" alt="L'écran de la forge : un Goliath avec ses trois affûts numérotés et l'armurerie." width="1600" height="900">
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-suite">
+    <div class="large">
+      <div class="tete"><h2 id="t-suite">Et quand la base est solide</h2></div>
+      <ul class="liste">
+        <li><h3>Expéditions</h3><p class="doux">Jusqu'à trois escouades fouillent seules pendant que vous jouez, et même jeu fermé. Vous pouvez les regarder en direct depuis la base.</p></li>
+        <li><h3>En ligne</h3><p class="doux">Avec un serveur Colosse : raids à plusieurs en coopération ou en affrontement, classement, et pillage des bases des autres joueurs.</p></li>
+        <li><h3>Tutoriel jouable</h3><p class="doux">Une dizaine de minutes dans une partie à part, pour tout apprendre en jouant, du premier tir à la défense de la base.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="bloc page" id="telecharger" aria-labelledby="t-dl">
+    <div class="large">
+      <div class="tete"><h2 id="t-dl">Télécharger</h2><p class="doux">Changez d'appareil sans perdre votre partie : exportez-la (Réglages → Sauvegarde) puis importez-la sur l'autre, ou créez un compte sur un serveur Colosse.</p></div>
+      <ul class="plateformes">
+        <li><h3>Navigateur</h3><p class="doux">Sur ordinateur ou téléphone, sans rien installer. Le jeu s'ajoute à l'écran d'accueil et reste jouable hors ligne.</p><a class="bouton principal" href="./index.html">Jouer</a></li>
+        <li><h3>Windows</h3><p class="doux">Version portable, ou installeur avec raccourci.</p><a class="bouton" href="https://github.com/azertyuser09876-spec/colosse/releases/latest">Fichier .exe</a></li>
+        <li><h3>Android</h3><p class="doux">Android vous demande d'autoriser l'installation depuis votre navigateur : acceptez. À partir de la 2.0.0, les mises à jour s'installent par-dessus la précédente ; depuis une version 1.x, désinstallez d'abord l'ancienne, ce qui efface sa partie (sauf avec un compte sur un serveur Colosse).</p><a class="bouton" href="https://github.com/azertyuser09876-spec/colosse/releases/latest">Fichier .apk</a></li>
+        <li><h3>Linux</h3><p class="doux">Un seul fichier à rendre exécutable, puis à lancer.</p><a class="bouton" href="https://github.com/azertyuser09876-spec/colosse/releases/latest">Fichier .AppImage</a></li>
+        <li><h3>Serveur</h3><p class="doux">Pour jouer en ligne entre amis : Node.js suffit, aucun paquet à installer.</p><a class="bouton" href="https://github.com/azertyuser09876-spec/colosse/releases/latest">Archive .zip</a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="page large">
+  <span>Colosse est un logiciel libre, sous licence MIT. Graphismes et sons sont entièrement générés par le code.</span>
+  <a href="https://github.com/azertyuser09876-spec/colosse">Code source sur GitHub</a>
+</footer>
+</body>
+</html>

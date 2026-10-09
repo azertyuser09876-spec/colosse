@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f1416">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script>window.COLOSSE_STANDALONE = true;</script>
+<title>COLOSSE — extraction en monde ouvert</title>
+<style>
+/*@STYLE*/
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv" aria-label="Zone de jeu"></canvas>
+
+  <section id="title" class="screen">
+    <canvas id="titleCv" aria-hidden="true"></canvas>
+    <div class="title-wrap">
+      <p class="title-kicker">Extraction · flottes de robots · géants</p>
+      <h1 class="title-name">COLOSSE</h1>
+      <p class="title-sub">Bâtissez votre base, forgez des armées de robots, de la fourmi d'acier au méca titanesque qui écrase tout sur son passage, puis lancez-les dans un monde dévasté de 12 km² et tenez la balise jusqu'à l'extraction.</p>
+      <div class="title-row">
+        <button class="btn hot big" data-act="enter">Entrer dans la base</button>
+        <button class="btn" data-act="tutorial">Tutoriel</button>
+        <button class="btn" data-act="help">Commandes</button>
+        <button class="btn" data-act="settings">Réglages</button>
+        <button class="btn" data-act="account" id="accBtn">Compte</button>
+        <button class="btn" data-act="reset">Effacer la sauvegarde</button>
+      </div>
+      <p class="small-note" id="accLine">Invité (partie sur cet appareil)</p>
+      <p class="small-note title-ver">Version <b id="verNum"></b> · <button class="linkbtn" data-act="notes">Nouveautés</button></p>
+      <p class="small-note" id="titleNote">Clavier et souris, ou écran tactile en mode paysage. ZQSD ou WASD : les touches suivent la position physique du clavier.</p>
+    </div>
+  </section>
+
+  <section id="hub" class="screen">
+    <div class="hub-top">
+      <div class="hub-logo">COLOSSE</div>
+      <div class="res-bar" id="resBar"></div>
+      <button class="btn hub-close" data-act="closedrawer"><span class="kbonly">Retour à la base · Échap</span><span class="touchonly">Fermer ✕</span></button>
+    </div>
+    <nav class="hub-nav" id="hubNav">
+      <button data-tab="construire">Construire</button>
+      <button data-tab="atelier" class="on">Forge</button>
+      <button data-tab="hangar">Hangar</button>
+      <button data-tab="recherche">Recherche</button>
+      <button data-tab="raid">Partir en raid</button>
+      <button data-tab="expe">Expéditions</button>
+      <button data-tab="online">En ligne</button>
+      <div class="nav-foot" id="navFoot"></div>
+    </nav>
+    <main class="hub-main" id="hubMain"></main>
+  </section>
+
+  <div id="loading" class="overlay"><div class="dlg"><h3>Génération</h3><p id="loadTxt">Le monde se forme…</p></div></div>
+  <div id="pause" class="overlay"><div class="dlg">
+    <h3>Pause</h3>
+    <p id="pauseTxt">Le raid est figé. Abandonner compte comme une mort : butin transporté et robots déployés sont perdus.</p>
+    <div class="btns">
+      <button class="btn hot" data-act="resume">Reprendre</button>
+      <button class="btn" data-act="help">Commandes</button>
+      <button class="btn" data-act="settings">Réglages</button>
+      <button class="btn" data-act="abandon" id="abandonBtn">Abandonner le raid</button>
+      <button class="btn" data-act="totitle" id="titleBtn">Écran titre</button>
+    </div>
+  </div></div>
+  <div id="result" class="overlay"><div class="dlg" id="resultBox"></div></div>
+  <div id="settings" class="overlay"><div class="dlg" id="settingsBox"></div></div>
+  <div id="account" class="overlay"><div class="dlg" id="accountBox"></div></div>
+  <div id="tutDlg" class="overlay"><div class="dlg" id="tutDlgBox"></div></div>
+  <div id="help" class="overlay"><div class="dlg">
+    <h3>Commandes</h3>
+    <div class="keys" id="helpKeys"></div>
+    <div class="btns"><button class="btn hot" data-act="closehelp">Fermer</button></div>
+  </div></div>
+  <div id="baseBar" class="basebar">
+    <button class="btn" data-act="opentab" data-id="construire">Construire <kbd id="kbBuild">C</kbd></button>
+    <button class="btn" data-act="opentab" data-id="atelier">Forge</button>
+    <button class="btn" data-act="opentab" data-id="hangar">Hangar</button>
+    <button class="btn" data-act="opentab" data-id="recherche">Recherche</button>
+    <button class="btn" data-act="opentab" data-id="expe">Expéditions</button>
+    <button class="btn hot" data-act="opentab" data-id="raid">Partir en raid</button>
+    <button class="btn" data-act="pausebase" aria-label="Menu">Menu</button>
+  </div>
+  <div id="bPanel" class="bpanel"></div>
+  <div id="touchUI" class="tui" aria-label="Commandes tactiles">
+    <div class="tcol tleft">
+      <button class="tb" data-tk="beacon">Balise</button>
+      <button class="tb" data-tk="base">Base</button>
+      <button class="tb" data-tk="fleet">Flotte</button>
+      <button class="tb" data-tk="tactical">Tactique</button>
+    </div>
+    <div class="tcol tright">
+      <button class="tb big" data-tk="dash">Esquive</button>
+      <button class="tb big" data-tk="act">Agir</button>
+      <button class="tb" data-tk="ability">Capacité</button>
+      <button class="tb" data-tk="pilot">Piloter</button>
+    </div>
+    <div class="ttop">
+      <button class="tb sm" data-tk="menu" aria-label="Menu">☰</button>
+      <button class="tb sm" data-tk="map">Carte</button>
+      <button class="tb sm hot" data-tk="place">Terminer la pose</button>
+    </div>
+    <div id="fleetPop" class="fpop">
+      <button class="tb" data-tk="f-follow">Me suivre</button><button class="tb" data-tk="f-hold">Tenir</button>
+      <button class="tb" data-tk="f-beacon">Défendre balise</button><button class="tb" data-tk="f-auto">Autonomie</button>
+      <button class="tb" data-tk="f-all">Tout sélect.</button><button class="tb" data-tk="f-none">Désélect.</button>
+      <button class="tb" data-tk="f-form">Formation</button><button class="tb" data-tk="f-patrol">Patrouille</button>
+    </div>
+  </div>
+  <div id="rotate" class="overlay"><div class="dlg" style="text-align:center"><h3>Tournez l'écran</h3><p>Colosse se joue en mode paysage : deux joysticks, un pour se déplacer, un pour viser et tirer.</p><div class="btns" style="justify-content:center"><button class="btn" data-act="portraitok">Continuer en portrait</button></div></div></div>
+  <div id="tutBox" class="tut" aria-live="polite"></div>
+  <div id="notes" class="overlay"><div class="dlg notes" id="notesBox"></div></div>
+  <div id="askDlg" class="overlay" role="alertdialog" aria-modal="true" aria-labelledby="askT"><div class="dlg ask" id="askBox"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+/*@SCRIPT*/
+</script>
+</body>
+</html>
