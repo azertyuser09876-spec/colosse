@@ -38,16 +38,16 @@ function updateItems(dt) {
       if (LIVE.guest()) { // en raid partagé, l'hôte attribue le butin
         let who = free >= w ? P : null;
         if (!who) { let bd = 420 * 420; for (const r of fleet) { if (r.dead || r === P || r.cargoMax - r.cargoW < w) continue; const q = d2(r.x, r.y, P.x, P.y); if (q < bd) { bd = q; who = r; } } }
-        if (who) LIVE.pick(it, who); else if (fullWarnT <= 0) { msg('Soute pleine : aucun robot de transport à portée.', '#f2c14e', 3); fullWarnT = 4; }
+        if (who) LIVE.pick(it, who); else if (fullWarnT <= 0) { msg(TL('Soute pleine : aucun robot de transport à portée.'), '#f2c14e', 3); fullWarnT = 4; }
         continue;
       }
       let got = addCargo(P, it.res, it.amt);
-      if (got > 0) { it.amt -= got; floatText(it.x, it.y - 10, '+' + got + ' ' + RES[it.res].n, RES[it.res].c); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[it.res] || 880, chord: it.res === 'heart' || it.res === 'cores' }); if (it.res === 'heart') msg('Cœur de Colosse récupéré. Ramenez-le vivant.', '#ff8a5c', 8); }
+      if (got > 0) { it.amt -= got; floatText(it.x, it.y - 10, TL('+{n} {res}', { n: got, res: RES[it.res].n }), RES[it.res].c); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[it.res] || 880, chord: it.res === 'heart' || it.res === 'cores' }); if (it.res === 'heart') msg(TL('Cœur de Colosse récupéré. Ramenez-le vivant.'), '#ff8a5c', 8); }
       if (it.amt > 0) { // transfert vers le robot de soute le plus proche
         let best = null, bd = 420 * 420;
         for (const r of fleet) { if (r.dead || r === P || r.cargoMax - r.cargoW < w) continue; const q = d2(r.x, r.y, P.x, P.y); if (q < bd) { bd = q; best = r; } }
-        if (best) { const g2 = addCargo(best, it.res, it.amt); if (g2 > 0) { it.amt -= g2; beams.push({ x1: it.x, y1: it.y, x2: best.x, y2: best.y, life: .3, max: .3, col: '#6fe3c8', w: 2 }); floatText(best.x, best.y - best.r - 8, '+' + g2 + ' ' + RES[it.res].n, '#6fe3c8'); } }
-        else if (fullWarnT <= 0) { msg('Soute pleine : aucun robot de transport à portée.', '#f2c14e', 3); fullWarnT = 4; }
+        if (best) { const g2 = addCargo(best, it.res, it.amt); if (g2 > 0) { it.amt -= g2; beams.push({ x1: it.x, y1: it.y, x2: best.x, y2: best.y, life: .3, max: .3, col: '#6fe3c8', w: 2 }); floatText(best.x, best.y - best.r - 8, TL('+{n} {res}', { n: g2, res: RES[it.res].n }), '#6fe3c8'); } }
+        else if (fullWarnT <= 0) { msg(TL('Soute pleine : aucun robot de transport à portée.'), '#f2c14e', 3); fullWarnT = 4; }
       }
       if (it.amt <= 0) it.dead = true;
     }
@@ -58,7 +58,7 @@ function updateItems(dt) {
     for (const it of items) {
       if (it.dead || it.t < .35) continue;
       if (d2(it.x, it.y, r.x, r.y) < (r.r + 18) ** 2 && LIVE.guest()) { if (r.cargoMax - r.cargoW >= RES[it.res].w) LIVE.pick(it, r); continue; }
-      if (d2(it.x, it.y, r.x, r.y) < (r.r + 18) ** 2) { const g = addCargo(r, it.res, it.amt); if (g > 0) { it.amt -= g; floatText(r.x, r.y - r.r - 8, '+' + g + ' ' + RES[it.res].n, '#6fe3c8'); } if (it.amt <= 0) it.dead = true; }
+      if (d2(it.x, it.y, r.x, r.y) < (r.r + 18) ** 2) { const g = addCargo(r, it.res, it.amt); if (g > 0) { it.amt -= g; floatText(r.x, r.y - r.r - 8, TL('+{n} {res}', { n: g, res: RES[it.res].n }), '#6fe3c8'); } if (it.amt <= 0) it.dead = true; }
     }
   }
   if (fullWarnT > 0) fullWarnT -= dt;
@@ -82,7 +82,7 @@ function fireMount0(u, m, tx, ty, tgt) {
   if (w.slow || w.aa || w.pull || w.cluster) for (let i = nb0; i < bullets.length; i++) { const b = bullets[i]; b.slow = w.slow; b.aa = w.aa; b.pull = w.pull; b.cluster = w.cluster; }
   return res;
 }
-function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u, m); const a = m.aim; const sc = u.mscale || 1;
+function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u, m); const a = m.aim; const sc = m.ds || u.mscale || 1;
   const spr = (u.kind === 'robot' && u.brain === 'tactical' && !u.piloted) ? .4 : 1;
   const mz = 13 * sc; const sx = mx + Math.cos(a) * mz, sy = my + Math.sin(a) * mz;
   const dmg = w.dmg;
@@ -104,7 +104,7 @@ function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u,
       const fx = mx + Math.cos(ang) * rr2 + rnd(-err, err), fy = my + Math.sin(ang) * rr2 + rnd(-err, err);
       const nuke = w.kind === 'nuke';
       bullets.push({ kind: 'mortar', nuke, x: sx, y: sy, x0: sx, y0: sy, tx: fx, ty: fy, t: 0, T: nuke ? 2.6 + rr2 / 900 : .35 + rr2 / 900, arc: nuke ? 420 : w.arc, dmg, team: u.team, splash: w.splash, col: w.col, src: u, h: 0, sc: nuke ? sc * 1.6 : sc * .7, vis: NETVIS });
-      muzzle(sx, sy, a, '#ffe0a0', sc); if (nuke && !NETVIS) { addShakeNear(sx, sy, 6); msg((w.n || 'Missile Aube') + ' lancé. Impact dans ' + Math.ceil(2.6 + rr2 / 900) + ' s.', '#fff1b0', 4); }
+      muzzle(sx, sy, a, '#ffe0a0', sc); if (nuke && !NETVIS) { addShakeNear(sx, sy, 6); msg(TL('{w} lancé. Impact dans {n} s.', { w: w.n || TL('Missile Aube'), n: Math.ceil(2.6 + rr2 / 900) }), '#fff1b0', 4); }
       break;
     }
     case 'singularity': {
@@ -126,13 +126,15 @@ function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u,
     }
     case 'rail': rail(u, sx, sy, a, w.range, dmg, w.col); addShakeNear(sx, sy, 3); break;
     case 'melee': {
-      if (!tgt || tgt.dead || tgt.hidden) return false;
+      if (!tgt || tgt.dead || tgt.hidden || tgt.team === u.team) return false;
       const reach = u.r + tgt.r + 18 * sc; if (d2(u.x, u.y, tgt.x, tgt.y) > reach * reach) return false;
       damage(tgt, dmg, u); sparks(lerp(u.x, tgt.x, .6), lerp(u.y, tgt.y, .6), 6, '#e8f0ff'); m.recoil = 1; SFX.play(w.snd || 'melee', vol, u.x, u.y, { size: w.size || 1, self: u.piloted && !u.net }); if (u.piloted && !u.net) buzz(12); return true;
     }
     default: return false;
   }
   m.recoil = 1;
+  // les grosses armes font reculer tout le robot d'un coup sec
+  if ((w.size || 1) >= 3 && u.kind !== 'building') { u.kick = Math.min(u.r * .14, (u.kick || 0) + u.r * (.025 + .012 * w.size)); u.kickA = a; }
   if (w.snd === 'flame') SFX.hold('f' + u.id + '_' + u.mounts.indexOf(m), 'flame', vol * .7, sx, sy);
   else if (w.snd) { SFX.play(w.snd, vol, sx, sy, { size: w.size || (u.mscale > 1.6 ? 2 : 1), self: u.piloted && !u.net }); if (u.piloted && !u.net && (w.size || 1) >= 2) buzz((w.size || 1) >= 3 ? 30 : 14); }
   return true;
@@ -178,7 +180,11 @@ function boom(x, y, rad) {
   for (let i = 0; i < nf; i++) { const a = Math.random() * TAU, s = rnd(20, rad * 2.2); parts.push({ type: 'fire', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.25, .55), max: .55, size: rnd(rad * .12, rad * .3) }); }
   for (let i = 0; i < Math.min(14, 4 + rad / 12) * lite; i++) { const a = Math.random() * TAU, s = rnd(10, rad * .8); parts.push({ type: 'smoke', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 15, life: rnd(1, 2.2), max: 2.2, size: rnd(rad * .2, rad * .45), col: 'rgba(60,56,52,' }); }
   sparks(x, y, 8, '#ffcf7a');
-  decals.push({ x, y, r: rad * .55, a: rnd(0, 6) }); if (decals.length > 160) decals.shift();
+  // le sol garde la marque : brûlure, cratère, et pour les plus grosses, du verre de cratère
+  if (!NETVIS) { if (rad >= 45) scarSprite('crater', x, y, rad * .62, Math.random() * TAU); else scarSprite('scorch', x, y, rad * .6, Math.random() * TAU); if (rad >= 260) glassify(x, y, rad * .42); }
+  // éclats projetés par les grosses explosions
+  if (rad >= 50 && fxQ() !== 'low') for (let i = 0; i < Math.min(10, rad / 18 | 0) * lite; i++) { const a = Math.random() * TAU, s = rnd(rad * .8, rad * 2.4); parts.push({ type: 'shard', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.5, 1), max: 1, size: rnd(2, 3 + rad * .03), rot: rnd(0, 6), col: Math.random() < .5 ? '#2a2622' : '#4a443c' }); }
+  if (rad >= 70 && fxQ() !== 'low') for (let i = 0; i < Math.min(16, rad / 10 | 0) * lite; i++) { const a = Math.random() * TAU, s = rnd(30, rad * 1.2); parts.push({ type: 'ember', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 30, life: rnd(.8, 1.8), max: 1.8, size: rnd(1.2, 2.4) }); }
   if (rad > 24) FX.dust(x, y, Math.min(9, 2 + rad / 18 | 0), rad * .3, rad * 1.1);
   addShakeNear(x, y, rad / 9);
   SFX.play('explo', clamp(rad / 90, .45, 1), x, y, { size: rad / 60 });
@@ -191,22 +197,25 @@ function damage(u, amt, src) {
 
   if (u.kind === 'player' && u.inv > 0) return;
   if (u.jumping) return;
-  if (u.dodge && Math.random() < u.dodge) { if (Math.random() < .3) floatText(u.x, u.y - u.r - 6, 'esquive', '#e8dcc4'); return; }
+  if (u.invul) { u.hitFlash = .06; return; } // objectif d'opération pas encore engagé
+  if (u.dodge && Math.random() < u.dodge) { if (Math.random() < .3) floatText(u.x, u.y - u.r - 6, TL('esquive'), '#e8dcc4'); return; }
   if (u.kind === 'building' && src && src.siege) amt *= 3;
   if (u.fortifyOn) amt *= .75;
   amt *= 1 - (u.armor || 0); u.lastHurt = time;
   if (u.shield > 0) { const a = Math.min(u.shield, amt); u.shield -= a; amt -= a; u.shieldHit = .15; if (amt <= 0) { if (isMine(u)) SFX.play('shield', .6); return; } }
   if (u.etype === 'cible') { if (TUT.on && isMine(src)) { TUT.hits++; if (player.inside) TUT.pilotHits++; } u.hp -= amt; u.hitFlash = .1; u.lastHit = time; if (Math.random() < .3) floatText(u.x, u.y - 20, Math.round(amt) + '', '#e8dcc4'); if (u.hp <= 0) { u.hp = u.maxhp; boom(u.x, u.y, 30); } return; }
   u.hp -= amt; u.hitFlash = .1;
-  if (TUT.on && u.kind === 'player' && u.hp <= 0 && state === 'raid') { u.hp = u.maxhp * .5; u.inv = 2.5; msg('Tutoriel : votre pilote aurait dû tomber ici. En vrai, tout ce qu\'il transporte serait perdu.', '#ec6b74', 7); return; }
+  if (TUT.on && u.kind === 'player' && u.hp <= 0 && state === 'raid') { u.hp = u.maxhp * .5; u.inv = 2.5; msg(TL('Tutoriel : votre pilote aurait dû tomber ici. En vrai, tout ce qu\'il transporte serait perdu.'), '#ec6b74', 7); return; }
   if (u.kind === 'player') { u.lastHurt = time; addShake(Math.min(7, amt * .25)); }
   if (isMine(u) && amt > .5) playerHurt(u, amt, src);
   if (u.kind === 'enemy' && src && src.team !== 1 && src.team !== undefined && !src.dead && !src.hidden && (!u.target || u.target.dead)) u.target = src;
   if (u.hp <= 0) kill(u, src);
 }
+// annonce de la chute d'un boss (aussi refaite à l'arrivée chez les autres joueurs, dans leur langue)
+function bossFallTxt(et) { return et === 'souverain' || et === 'archonte' ? TL('{foe} EST TOMBÉ. Son cœur gît dans le cratère.', { foe: ENEMIES[et].n.toUpperCase() }) : TL('{foe} EST TOMBÉ !', { foe: ENEMIES[et].n.toUpperCase() }); }
 function kill(u, src) {
   if (u.dead) return;
-  if (state === 'base' && u.kind === 'player') { u.hp = u.maxhp; const sp = W.spawn; boom(u.x, u.y, 40); u.x = sp.x; u.y = sp.y; u.vx = u.vy = 0; u.inv = 3; msg('Pilote évacué vers le QG.', '#ec6b74', 4); return; }
+  if (state === 'base' && u.kind === 'player') { u.hp = u.maxhp; const sp = W.spawn; boom(u.x, u.y, 40); u.x = sp.x; u.y = sp.y; u.vx = u.vy = 0; u.inv = 3; msg(TL('Pilote évacué vers le QG.'), '#ec6b74', 4); return; }
   u.dead = true; u.hp = 0; u.sel = false;
   if (u.kind === 'building') { buildingDestroyed(u); return; }
   FX.wreck(u);
@@ -219,26 +228,27 @@ function kill(u, src) {
   if (u.r > 40) { const wt = EXPSIM, nb = Math.min(14, 4 + Math.floor(u.r / 90)); for (let k = 0; k < nb; k++) setTimeout(() => { if (state === 'raid' && EXPSIM === wt && !wt) boom(u.x + rnd(-u.r, u.r) * .8, u.y + rnd(-u.r, u.r) * .8, Math.min(u.r * .9, 260)); }, 180 + k * (u.r > 200 ? 170 : 220)); }
   if (u.kind === 'minion') return;
   if (u.kind === 'rival' || u.kind === 'beacon2') { rivalDown(u, src); return; }
+  if (u.kind === 'enemy' && u.noCredit) return; // sapeur qui s'est fait sauter : ni victoire ni butin
   if (u.kind === 'enemy') {
     if (raidStats && !remote) { raidStats.kills++; raidStats.byType[u.etype] = (raidStats.byType[u.etype] || 0) + 1; }
     if (u.baseRaid) attackLoot(u); else dropTable(ENEMIES[u.etype].loot, u.x, u.y);
-    if (u.elite && !remote) msg('Mastodonte abattu.', '#f2c14e');
-    if (u.giant && !remote) { msg(ENEMIES[u.etype].n.toUpperCase() + ' EST ABATTU !', '#ff8a5c', 9); SFX.play('explo', 1, u.x, u.y, { size: 5, reach: 3 }); addShake(22); buzz([60, 40, 90]); }
+    if (u.elite && !u.bounty && !remote) msg(TL('{foe} abattu.', { foe: ENEMIES[u.etype].n }), '#f2c14e');
+    if (u.giant && !remote) { msg(TL('{foe} EST ABATTU !', { foe: ENEMIES[u.etype].n.toUpperCase() }), '#ff8a5c', 9); SFX.play('explo', 1, u.x, u.y, { size: 5, reach: 3 }); addShake(22); buzz([60, 40, 90]); }
     if (u.boss) {
-      const coop = LIVE.game && LIVE.game.mode === 'coop', credit = !remote || coop, txt = ENEMIES[u.etype].n.toUpperCase() + ' EST TOMBÉ' + (u.etype === 'souverain' || u.etype === 'archonte' ? '. Son cœur gît dans le cratère.' : ' !');
-      msg(txt, '#ff8a5c', 10); if (LIVE.game) LIVE.note(txt, '#ff8a5c', coop ? { boss: u.etype } : {});
+      const coop = LIVE.game && LIVE.game.mode === 'coop', credit = !remote || coop, txt = bossFallTxt(u.etype);
+      msg(txt, '#ff8a5c', 10); if (LIVE.game) LIVE.note(txt, '#ff8a5c', Object.assign({ k: 'boss', fe: u.etype }, coop ? { boss: u.etype } : {}));
       if (raidStats && credit && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = u.etype; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; } SFX.play('explo', 1, u.x, u.y, { size: 5, reach: 3 }); SFX.play('success', .6); buzz([60, 40, 90]); addShake(25);
     }
   } else if (u.kind === 'robot') {
     for (const k in u.cargo) if (u.cargo[k] > 0) spawnItem(k, u.cargo[k], u.x, u.y);
     u.cargo = {}; u.cargoW = 0;
-    msg(u.name + ' détruit. Son chargement est tombé au sol.', '#ec6b74'); if (raidStats) raidStats.lost++;
+    msg(TL('{name} détruit. Son chargement est tombé au sol.', { name: u.name }), '#ec6b74'); if (raidStats) raidStats.lost++;
     if (player.inside === u) ejectPlayer(true);
     for (const m of u.mounts) for (const d of m.drones) if (!d.dead) { d.dead = true; boom(d.x, d.y, 20); }
   } else if (u.kind === 'beacon') {
-    B.keep = (B.charge || 0) * .4; B.state = 'broken'; B.cd = 22; B.unit = null; msg('Balise détruite. Réimpression dans 22 s' + (B.keep >= .05 ? ' : elle gardera ' + Math.round(B.keep * 100) + ' % de la charge.' : '.'), '#ec6b74', 6); SFX.play('alarm', .8);
+    B.keep = (B.charge || 0) * .4; B.state = 'broken'; B.cd = 22; B.unit = null; msg(B.keep >= .05 ? TL('Balise détruite. Réimpression dans 22 s : elle gardera {n} % de la charge.', { n: Math.round(B.keep * 100) }) : TL('Balise détruite. Réimpression dans 22 s.'), '#ec6b74', 6); SFX.play('alarm', .8);
   } else if (u.kind === 'player') {
-    boom(u.x, u.y, 50); SFX.play('death', 1); buzz([80, 60, 160]); endT = 2.4; endSuccess = false; msg('Signal du pilote perdu.', '#ec6b74', 6);
+    boom(u.x, u.y, 50); SFX.play('death', 1); buzz([80, 60, 160]); endT = 2.4; endSuccess = false; msg(TL('Signal du pilote perdu.'), '#ec6b74', 6);
   }
 }
 function ejectPlayer(forced) {
@@ -247,8 +257,8 @@ function ejectPlayer(forced) {
   const a = u.ang + Math.PI; let px = u.x + Math.cos(a) * (u.r + 20), py = u.y + Math.sin(a) * (u.r + 20);
   const sp = findWalkableNear(u.x, u.y, u.r + 16, u.r + 60, 30); if (sp) { px = sp.x; py = sp.y; }
   player.x = px; player.y = py; player.vx = player.vy = 0; player.inv = .6;
-  if (forced) { player.hp -= 15; msg('Éjection d\'urgence !', '#f2c14e'); if (player.hp <= 0) { player.hp = 1; } }
-  else msg('Vous quittez ' + u.name + '.', '#a59c88', 3);
+  if (forced) { player.hp -= 15; msg(TL('Éjection d\'urgence !'), '#f2c14e'); if (player.hp <= 0) { player.hp = 1; } }
+  else msg(TL('Vous quittez {name}.', { name: u.name }), '#a59c88', 3);
 }
 
 // ================= PROJECTILES =================
@@ -310,7 +320,7 @@ function repairTick(u, m, dt, mx, my) {
   m.rt -= dt;
   if (m.rt <= 0) {
     m.rt = .4; m.tgt = null; let best = .98; const R2 = m.w.range * m.w.range;
-    const cands = fleet.concat(player.hidden ? [] : [player]);
+    const cands = u.team === 0 ? fleet.concat(player.hidden ? [] : [player]) : []; if (u.team === 1) foesNear(u, m.w.range, v => { if (!v.human) cands.push(v); });
     for (const v of cands) { if (v === u || v.dead || v.hidden) continue; const f = v.hp / v.maxhp; if (f < best && d2(v.x, v.y, u.x, u.y) < R2) { best = f; m.tgt = v; } }
   }
   const v = m.tgt;
@@ -377,7 +387,7 @@ function fusionShot(u, m, mx, my, w) {
 function boomLite(x, y, rad) {
   for (let i = 0; i < 3; i++) { const a = Math.random() * TAU, s = rnd(20, rad * 1.5); parts.push({ type: 'fire', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.3, .6), max: .6, size: rnd(rad * .2, rad * .4) }); }
   parts.push({ type: 'smoke', x, y, vx: rnd(-20, 20), vy: -15, life: 1.6, max: 1.6, size: rad * .5, col: 'rgba(60,56,52,' });
-  decals.push({ x, y, r: rad * .5, a: 0 }); if (decals.length > 220) decals.shift();
+  if (!NETVIS) scarSprite('scorch', x, y, rad * .55, Math.random() * TAU);
 }
 function nukeBoom(x, y, rad, dmg, team, src) {
   explode(x, y, rad, dmg, team, src);
@@ -390,7 +400,7 @@ let flashT = 0;
 function shieldTick(u, m, dt) {
   if (state === 'base') return;
   const w = m.w, R2 = w.range * w.range;
-  const list = u.team === 0 ? fleet.concat(player.hidden ? [] : [player]) : [u];
+  const list = u.team === 0 ? fleet.concat(player.hidden ? [] : [player]) : []; if (u.team !== 0) foesNear(u, w.range, v => list.push(v));
   for (const v of list) { if (v.dead || v.hidden) continue; if (d2(v.x, v.y, u.x, u.y) > R2) continue; v.shieldMax = Math.max(v.shieldMax || 0, w.cap); v.shield = Math.min(w.cap, (v.shield || 0) + w.regen * dt); v.shieldT = time; }
 }
 function bayTick(u, m, dt, mx, my) {
@@ -412,7 +422,7 @@ function minionAI(d, dt) {
 function updateFires(dt) {
   for (let i = fires.length - 1; i >= 0; i--) {
     const f = fires[i]; f.t -= dt; f.tick -= dt;
-    if (f.t <= 0) { if (f.vortex) singCollapse(f); fires.splice(i, 1); continue; }
+    if (f.t <= 0) { if (f.vortex) singCollapse(f); else if (!NETVIS && f.r > 20) scarSprite('burn', f.x, f.y, f.r * 1.1, Math.random() * TAU); fires.splice(i, 1); continue; }
     if (f.vortex) { singTick(f, dt); continue; }
     if (Math.random() < dt * f.r * .25) parts.push({ type: 'fire', x: f.x + rnd(-f.r, f.r) * .8, y: f.y + rnd(-f.r, f.r) * .8, vx: rnd(-10, 10), vy: -rnd(20, 50), life: .5, max: .5, size: rnd(6, 14) });
     if (f.tick <= 0 && !f.vis) {
@@ -437,7 +447,7 @@ function wRole(w) {
   if (w.big || (w.size || 1) >= 3 || w.kind === 'rail' || w.kind === 'shell' || w.kind === 'fusion' || w.kind === 'plasma' || w.kind === 'beam' || (w.kind === 'rocket' && (w.splash || 0) >= 70)) return 'heavy';
   return 'light';
 }
-const W_ROLE_TXT = { aa: 'antiaérien', art: 'artillerie', melee: 'contact', heavy: 'antiblindé', light: 'anti-infanterie', titan: 'anti-géant' };
+const W_ROLE_TXT = { aa: TL('antiaérien'), art: TL('artillerie'), melee: TL('contact'), heavy: TL('antiblindé'), light: TL('anti-infanterie'), titan: TL('anti-géant') };
 function mountReach(u, m, t) {
   const w = m.w, p = mountWorldPos(u, m), d = Math.hypot(t.x - p[0], t.y - p[1]);
   if (w.kind === 'melee') return d <= u.r + t.r + 18 * u.mscale + 8;
@@ -532,9 +542,9 @@ function drawTargets(c, vis, vx0, vy0, vx1, vy1) {
     if (!inV(t)) continue;
     const r = t.r + 7 / z + 3, lock = time - (t.lockT || -9) < .25;
     bracket(c, t.x, t.y, r, e.cur ? '#ffffff' : COL.ally, e.cur ? .9 : .75, lw);
-    let lbl = e.n > 1 ? '×' + e.n : ''; if (e.m.length) lbl = (lbl ? lbl + ' · ' : '') + 'affût ' + e.m.join(', ');
+    let lbl = e.n > 1 ? '×' + e.n : ''; if (e.m.length) lbl = (lbl ? lbl + ' · ' : '') + TL('affût {list}', { list: e.m.join(', ') });
     if (lbl) { c.fillStyle = COL.ally; c.globalAlpha = .9; c.fillText(lbl, t.x + r + 3 / z, t.y - r + 9 / z); c.globalAlpha = 1; }
-    if (e.cur) { c.fillStyle = '#ffffff'; c.globalAlpha = .9; c.textAlign = 'center'; const nm = t.kind === 'enemy' ? ENEMIES[t.etype].n : t.kind === 'rival' ? (t.crew ? t.crew.name : 'Rival') : t.kind === 'beacon2' ? 'Balise rivale' : t.name || ''; c.fillText(nm + ' · ' + Math.ceil(t.hp) + ' PV', t.x, t.y + r + 13 / z); c.textAlign = 'left'; c.globalAlpha = 1; }
+    if (e.cur) { c.fillStyle = '#ffffff'; c.globalAlpha = .9; c.textAlign = 'center'; const nm = t.kind === 'enemy' ? ENEMIES[t.etype].n : t.kind === 'rival' ? (t.crew ? t.crew.name : TL('Rival')) : t.kind === 'beacon2' ? TL('Balise rivale') : t.name || ''; c.fillText(nm + ' · ' + TL('{n} PV', { n: Math.ceil(t.hp) }), t.x, t.y + r + 13 / z); c.textAlign = 'left'; c.globalAlpha = 1; }
     if (lock) { c.save(); c.translate(t.x, t.y); c.rotate(time * 3); c.strokeStyle = '#ff8a3d'; c.lineWidth = 2 / z; const q = r + 6 / z; c.beginPath(); c.moveTo(0, -q); c.lineTo(q, 0); c.lineTo(0, q); c.lineTo(-q, 0); c.closePath(); c.stroke(); c.restore(); }
   }
   // missiles amis verrouillés sur une cible que personne d'autre ne vise
@@ -575,7 +585,7 @@ function drawThreatHUD(c) {
   const P = worldToScreen(me.x, me.y), ui = uiScale(), R = Math.max(80, me.r * cam.zoom + 60) / ui;
   const px = P.x / ui, py = P.y / ui, p = .55 + .45 * Math.sin(time * 16);
   c.save(); c.globalAlpha = p; c.fillStyle = COL.enemy; c.font = `800 14px ${FONT}`; c.textAlign = 'center';
-  c.fillText(n > 1 ? n + ' MISSILES VERROUILLÉS' : 'MISSILE VERROUILLÉ', px, py - R - 10);
+  c.fillText(n > 1 ? TLn(n, '{n} MISSILE VERROUILLÉ', '{n} MISSILES VERROUILLÉS') : TL('MISSILE VERROUILLÉ'), px, py - R - 10);
   for (const a of dirs) { c.save(); c.translate(px + Math.cos(a) * R, py + Math.sin(a) * R); c.rotate(a); c.beginPath(); c.moveTo(16, 0); c.lineTo(-4, -10); c.lineTo(-4, 10); c.closePath(); c.fill(); c.restore(); }
   c.restore();
 }
@@ -593,19 +603,19 @@ function drawPilotWeapons(c, x, yBottom, w) {
     rows.forEach((r, k) => {
       const xx = x + 4 + (k % per) * (bw + 4), y = yBottom + 4 + Math.floor(k / per) * (rh + 4);
       c.fillStyle = r.sup ? 'rgba(111,227,200,.15)' : r.auto ? 'rgba(111,227,200,.32)' : 'rgba(255,138,61,.3)'; c.fillRect(xx, y, bw, rh);
-      c.fillStyle = '#e8dcc4'; c.font = `700 11px ${FONT}`; c.textAlign = 'center'; c.fillText(fitText(c, (r.i + 1) + ' · ' + (r.sup ? 'soutien' : r.auto ? 'auto' : 'manuel'), bw - 4), xx + bw / 2, y + 15);
+      c.fillStyle = '#e8dcc4'; c.font = `700 11px ${FONT}`; c.textAlign = 'center'; c.fillText(fitText(c, (r.i + 1) + ' · ' + (r.sup ? TL('soutien') : r.auto ? TL('auto') : TL('manuel')), bw - 4), xx + bw / 2, y + 15);
       if (!r.sup) hudWRows.push({ x: xx, y, w: bw, h: rh, i: r.i });
     });
     c.textAlign = 'left'; return yBottom + nr * (rh + 4) + 4;
   }
   const h = rows.length * rh + 26, y0 = yBottom - h; panel(c, x, y0, w, h);
-  c.font = `700 12px ${FONT}`; c.fillStyle = '#a59c88'; c.textAlign = 'left'; c.fillText('Armes · clic pour basculer · [' + keyLabel('wmode') + '] tout', x + 10, y0 + 16);
+  c.font = `700 12px ${FONT}`; c.fillStyle = '#a59c88'; c.textAlign = 'left'; c.fillText(TL('Armes') + ' · ' + TL('clic pour basculer') + ' · ' + TL('[{key}] tout', { key: keyLabel('wmode') }), x + 10, y0 + 16);
   rows.forEach((r, k) => {
     const y = y0 + 22 + k * rh, name = WEAPONS[r.m.wid].n, t = r.m.tgt2 && !r.m.tgt2.dead && r.auto ? r.m.tgt2 : null;
     c.fillStyle = r.sup ? 'rgba(111,227,200,.12)' : r.auto ? 'rgba(111,227,200,.22)' : 'rgba(255,138,61,.2)'; c.fillRect(x + 6, y, w - 12, rh - 2);
     c.fillStyle = '#e8dcc4'; c.font = `600 12px ${FONT}`; c.fillText(fitText(c, (r.i + 1) + '. ' + name, w * .45), x + 12, y + 12);
     c.textAlign = 'right'; c.font = `700 11.5px ${FONT}`; c.fillStyle = r.sup ? '#6fe3c8' : r.auto ? '#6fe3c8' : '#ff8a3d';
-    c.fillText(r.sup ? 'soutien auto' : r.auto ? (t ? 'auto → ' + fitText(c, t.kind === 'enemy' ? ENEMIES[t.etype].n : t.name || 'cible', w * .3) : 'auto · cherche') : 'manuel · clic gauche', x + w - 12, y + 12);
+    c.fillText(r.sup ? TL('soutien auto') : r.auto ? (t ? TL('auto') + ' → ' + fitText(c, t.kind === 'enemy' ? ENEMIES[t.etype].n : t.name || TL('cible'), w * .3) : TL('auto') + ' · ' + TL('cherche')) : TL('manuel') + ' · ' + TL('clic gauche'), x + w - 12, y + 12);
     c.textAlign = 'left';
     if (!r.sup) hudWRows.push({ x: x + 6, y, w: w - 12, h: rh - 2, i: r.i });
   });
@@ -616,19 +626,19 @@ function saveWeaponModes(u) { const sr = save.robots.find(s => s.id === u.sid); 
 function toggleWeaponMode(i) {
   const u = player && player.inside; if (!u || !u.mounts[i] || SUPPORT_W[u.mounts[i].w.kind]) return;
   u.wm = u.wm || u.mounts.map(() => 'm'); u.wm[i] = u.wm[i] === 'a' ? 'm' : 'a'; u.mounts[i].tgt2 = null;
-  msg('Affût ' + (i + 1) + ' (' + WEAPONS[u.mounts[i].wid].n + ') : ' + (u.wm[i] === 'a' ? 'automatique, il choisit sa cible et tire seul.' : 'manuel, il tire au clic gauche.'), '#ff8a3d', 3);
+  msg(u.wm[i] === 'a' ? TL('Affût {n} ({w}) : automatique, il choisit sa cible et tire seul.', { n: i + 1, w: WEAPONS[u.mounts[i].wid].n }) : TL('Affût {n} ({w}) : manuel, il tire au clic gauche.', { n: i + 1, w: WEAPONS[u.mounts[i].wid].n }), '#ff8a3d', 3);
   SFX.play('ui', 1); saveWeaponModes(u);
 }
 function cycleWeaponModes() {
   const u = player && player.inside;
-  if (!u) { msg('Montez dans un robot pour régler ses armes. Au hangar, chaque robot a aussi son réglage de tir.', '#a59c88', 4); return; }
+  if (!u) { msg(TL('Montez dans un robot pour régler ses armes. Au hangar, chaque robot a aussi son réglage de tir.'), '#a59c88', 4); return; }
   const idx = u.mounts.map((m, i) => i).filter(i => !SUPPORT_W[u.mounts[i].w.kind]); if (!idx.length) return;
   u.wm = u.wm || u.mounts.map(() => 'm');
   const allM = idx.every(i => u.wm[i] !== 'a'), allA = idx.every(i => u.wm[i] === 'a');
   let txt;
-  if (allM && idx.length > 1) { idx.forEach((i, k) => u.wm[i] = k === 0 ? 'm' : 'a'); txt = 'arme principale manuelle, les autres automatiques'; }
-  else if (allM || (!allA && idx.length > 1)) { idx.forEach(i => u.wm[i] = 'a'); txt = 'toutes automatiques'; }
-  else { idx.forEach(i => u.wm[i] = 'm'); txt = 'toutes manuelles (clic gauche)'; }
+  if (allM && idx.length > 1) { idx.forEach((i, k) => u.wm[i] = k === 0 ? 'm' : 'a'); txt = TL('Armes de {name} : arme principale manuelle, les autres automatiques.', { name: u.name }); }
+  else if (allM || (!allA && idx.length > 1)) { idx.forEach(i => u.wm[i] = 'a'); txt = TL('Armes de {name} : toutes automatiques.', { name: u.name }); }
+  else { idx.forEach(i => u.wm[i] = 'm'); txt = TL('Armes de {name} : toutes manuelles (clic gauche).', { name: u.name }); }
   for (const m of u.mounts) m.tgt2 = null;
-  msg('Armes de ' + u.name + ' : ' + txt + '.', '#ff8a3d', 3); SFX.play('ui', 1); saveWeaponModes(u);
+  msg(txt, '#ff8a3d', 3); SFX.play('ui', 1); saveWeaponModes(u);
 }

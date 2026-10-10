@@ -99,11 +99,13 @@ function writeSaveFile(id, obj) { const f = saveFile(id), tmp = f + '.tmp'; fs.w
 // Ressources pillables, part protégée (QG + entrepôt), taux selon les étoiles, bouclier ensuite.
 const STEAL = { scrap: 150, alloy: 40, circuits: 30, crystals: 25, data: 10 };
 const SHIELD_H = [0, 1, 2, 4];
+// part des stocks à l'abri grâce à l'entrepôt blindé (même règle que le jeu, niveaux 1 à 10)
+const whProtect = L => Math.min(.85, .15 + .1 * Math.min(L, 5) + .04 * Math.max(0, L - 5));
 function stealFrom(base, stars, pct) {
   const res = base.res || {}, hq = base.hq || 1, wh = base.wh || 0, loot = {};
   const rate = [0, .1, .18, .25][stars] * (.4 + .6 * pct / 100);
   for (const k in STEAL) {
-    const have = Math.max(0, res[k] || 0), prot = Math.max(STEAL[k] * (1 + .5 * hq), have * Math.min(.7, .15 + .1 * wh));
+    const have = Math.max(0, res[k] || 0), prot = Math.max(STEAL[k] * (1 + .5 * hq), have * whProtect(wh));
     const n = Math.min(5000, Math.floor(Math.max(0, have - prot) * rate));
     if (n > 0) { loot[k] = n; res[k] = have - n; }
   }
@@ -190,15 +192,16 @@ async function apiRoute(req, res, url) {
 
   // --- classement, base publiée ---
   if (p === '/api/score') {
-    Object.assign(pl, { name: pl.pass ? pl.name : (cleanName(b.name) || pl.name), score: int(b.score, 0, 1e9), extract: int(b.extract, 0, 1e7), kills: int(b.kills, 0, 1e9), boss: int(b.boss, 0, 1e6), defenses: int(b.defenses, 0, 1e6), assaults: int(b.assaults, 0, 1e6), hq: int(b.hq, 1, 5), region: int(b.region, 1, 4), t: now });
+    Object.assign(pl, { name: pl.pass ? pl.name : (cleanName(b.name) || pl.name), score: int(b.score, 0, 1e9), extract: int(b.extract, 0, 1e7), kills: int(b.kills, 0, 1e9), boss: int(b.boss, 0, 1e6), defenses: int(b.defenses, 0, 1e6), assaults: int(b.assaults, 0, 1e6), hq: int(b.hq, 1, 10), region: int(b.region, 1, 4), t: now });
     dirty = true; return send(res, 200, { ok: true });
   }
   if (p === '/api/base') {
-    if (!Array.isArray(b.b) || b.b.length > 400) return send(res, 400, { error: 'base invalide' });
-    const list = b.b.filter(a => Array.isArray(a) && a.length === 4).map(a => [int(a[0], 0, 63), int(a[1], 0, 299), int(a[2], 0, 299), int(a[3], 1, 5)]);
+    // 2.1 : bâtiments jusqu'au niveau 10 et jusqu'à ~530 constructions au QG 10
+    if (!Array.isArray(b.b) || b.b.length > 700) return send(res, 400, { error: 'base invalide' });
+    const list = b.b.filter(a => Array.isArray(a) && a.length === 4).map(a => [int(a[0], 0, 63), int(a[1], 0, 299), int(a[2], 0, 299), int(a[3], 1, 10)]);
     const old = db.bases[me] || {}, r = {};
     if (b.res && typeof b.res === 'object') for (const k in STEAL) r[k] = int(b.res[k], 0, 1e9);
-    db.bases[me] = { b: list, hq: int(b.hq, 1, 5), def: int(b.def, 0, 400), wh: int(b.wh, 0, 5), res: b.res ? r : (old.res || {}), shield: old.shield || 0, lock: old.lock || 0, t: now }; dirty = true;
+    db.bases[me] = { b: list, hq: int(b.hq, 1, 10), def: int(b.def, 0, 700), wh: int(b.wh, 0, 10), res: b.res ? r : (old.res || {}), shield: old.shield || 0, lock: old.lock || 0, t: now }; dirty = true;
     return send(res, 200, { ok: true, shield: db.bases[me].shield > now ? db.bases[me].shield : 0 });
   }
   if (p === '/api/assault/start') {
@@ -281,7 +284,7 @@ class Conn {
       case 'create': {
         if (R) leaveRoom(this, 'left');
         const id = String(roomSeq++);
-        const room = { id, label: String(m.label || '').replace(/[<>]/g, '').slice(0, 40), mode: m.mode === 'pvp' ? 'pvp' : 'coop', region: int(m.region, 0, 3), diff: int(m.diff, 0, 3), max: int(m.max, 2, 4), host: this.pid, members: new Map(), started: false, seed: 0, t: Date.now(), chat: [] };
+        const room = { id, label: String(m.label || '').replace(/[<>]/g, '').slice(0, 40), mode: m.mode === 'pvp' ? 'pvp' : 'coop', region: int(m.region, 0, 3), diff: int(m.diff, 0, 5), max: int(m.max, 2, 4), host: this.pid, members: new Map(), started: false, seed: 0, t: Date.now(), chat: [] };
         rooms.set(id, room); joinRoom(this, room, m.power); return;
       }
       case 'join': { const room = rooms.get(String(m.id)); if (!room) return this.send({ t: 'err', e: 'Ce salon n\'existe plus.' }); if (R && R !== room) leaveRoom(this, 'left'); if (room.members.size >= room.max && !room.members.has(this.pid)) return this.send({ t: 'err', e: 'Salon complet.' }); joinRoom(this, room, m.power); return; }

@@ -11,7 +11,7 @@ const ERRLOG = { list: [], n: 0, shownT: -1e9,
     this.list.push({ kind, msg, where: String(where || '').slice(0, 300), count: 1, first: Date.now(), last: Date.now(), state: typeof state !== 'undefined' ? state : '?' });
     if (this.list.length > 30) this.list.shift();
     const now = Date.now();
-    if (now - this.shownT > 60000 && typeof toast === 'function') { this.shownT = now; try { toast('Incident technique : la partie continue (détails dans Réglages → À propos).'); } catch (e) { } }
+    if (now - this.shownT > 60000 && typeof toast === 'function') { this.shownT = now; try { toast(TL('Incident technique : la partie continue (détails dans Réglages → À propos).')); } catch (e) { } }
   },
   report() { return 'Colosse ' + VERSION + ' · ' + navigator.userAgent + '\n' + this.list.map(e => `[${new Date(e.first).toISOString()}] ${e.kind} ×${e.count} (${e.state}) ${e.msg}${e.where ? '\n    ' + e.where : ''}`).join('\n'); },
 };

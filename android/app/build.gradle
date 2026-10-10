@@ -8,8 +8,8 @@ android {
         applicationId 'io.github.azertyuser09876spec.colosse'
         minSdk 24
         targetSdk 34
-        versionCode 20000
-        versionName '2.0.0'
+        versionCode 30000
+        versionName '3.0.0'
     }
     // Clé de signature fixe, fournie par la compilation GitHub (secrets ANDROID_KEYSTORE_BASE64 et ANDROID_KEYSTORE_PASSWORD) :
     // toutes les versions portent la même signature, et les mises à jour s'installent par-dessus la précédente.

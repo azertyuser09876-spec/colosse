@@ -2,13 +2,12 @@
 
 // ================= ÉQUIPES RIVALES =================
 let crews = [], raidContracts = [], radarLv = 0;
-const CREW_NAMES = ['Les Charognards', 'Clan Boulon', 'Compagnie Rouille-Noire', 'Les Ferrovores', 'Brigade Écrou', 'Les Vautours de fer', 'Syndicat du Rivet'];
+const CREW_NAMES = [TL('Les Charognards'), TL('Clan Boulon'), TL('Compagnie Rouille-Noire'), TL('Les Ferrovores'), TL('Brigade Écrou'), TL('Les Vautours de fer'), TL('Syndicat du Rivet')];
 const RIVAL_CHASSIS = [['crawler', 'drone', 'sentry', 'ant', 'scout'], ['gunship', 'mantis', 'strider', 'mule'], ['rhino', 'spider', 'goliath', 'echassier', 'tortue'], ['reaper', 'airship', 'scolopendre', 'titan']];
-function dirName(dx, dy) { const a = Math.atan2(dy, dx), k = Math.round(a / (Math.PI / 4)); return ['à l\'est', 'au sud-est', 'au sud', 'au sud-ouest', 'à l\'ouest', 'au nord-ouest', 'au nord', 'au nord-est'][(k + 8) % 8]; }
+function dirName(dx, dy) { const a = Math.atan2(dy, dx), k = Math.round(a / (Math.PI / 4)); return [TL('à l\'est'), TL('au sud-est'), TL('au sud'), TL('au sud-ouest'), TL('à l\'ouest'), TL('au nord-ouest'), TL('au nord'), TL('au nord-est')][(k + 8) % 8]; }
 function rivalWeapons(ch) {
-  const C = CHASSIS[ch];
-  const pool = CRAFT_WEAPONS.filter(w => { const W_ = WEAPONS[w]; return W_.size <= C.wsize && W_.size < 4 && W_.size >= C.wsize - 1 && !['repair', 'shield', 'bay', 'nuke'].includes(w); });
-  return MOUNTS[ch].map(() => pick(pool.length ? pool : ['mg']));
+  // chaque affût reçoit une arme de sa taille ou d'une taille en dessous (jamais titanesque)
+  return MOUNTS[ch].map((_, i) => { const s = slotSize(ch, i), pool = CRAFT_WEAPONS.filter(w => { const W_ = WEAPONS[w]; return W_.size <= s && W_.size < 4 && W_.size >= s - 1 && !['repair', 'shield', 'bay', 'nuke'].includes(w); }); return pick(pool.length ? pool : ['mg']); });
 }
 function spawnRivals() {
   crews = [];
@@ -71,16 +70,16 @@ function crewsTick(dt) {
 }
 function plantRivalBeacon(cr) {
   const L = cr.leader, p = findWalkableNear(L.x, L.y, 30, 80, 20) || { x: L.x + 30, y: L.y };
-  const b = baseUnit({ kind: 'beacon2', team: 2, x: p.x, y: p.y, r: 18, maxhp: 900 * diff.hp, hp: 900 * diff.hp, static: true, crew: cr, active: true, name: 'Balise rivale' });
+  const b = baseUnit({ kind: 'beacon2', team: 2, x: p.x, y: p.y, r: 18, maxhp: 900 * diff.hp, hp: 900 * diff.hp, static: true, crew: cr, active: true, name: TL('Balise rivale') });
   units.push(b); cr.beacon = b; cr.state = 'anchor'; cr.charge = 0; cr.pulseT = 5;
-  const F = focus(); msg(cr.name + ' ancre une balise ' + dirName(b.x - F.x, b.y - F.y) + ' (' + Math.round(Math.hypot(b.x - F.x, b.y - F.y) / 10) + ' m).', COL.rival, 7);
+  const F = focus(); msg(TL('{crew} ancre une balise {dir} ({n} m).', { crew: cr.name, dir: dirName(b.x - F.x, b.y - F.y), n: Math.round(Math.hypot(b.x - F.x, b.y - F.y) / 10) }), COL.rival, 7);
   SFX.play('beacon', .5); reveal(b.x, b.y, 320);
 }
 function rivalExtract(cr) {
   cr.out = true; const b = cr.beacon;
   for (const u of [cr.leader].concat(cr.bots)) if (!u.dead) { u.dead = true; parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .3, max: .3, size: u.r * 3, col: '#fff', a: 0 }); }
   if (b) { b.dead = true; parts.push({ type: 'ring', x: b.x, y: b.y, vx: 0, vy: 0, life: .9, max: .9, size: 300, col: cr.pal.acc }); }
-  msg(cr.name + ' s\'est extrait avec son butin.', COL.rival, 6);
+  msg(TL('{crew} s\'est extrait avec son butin.', { crew: cr.name }), COL.rival, 6);
 }
 function rivalDown(u, src) {
   const cr = u.crew, byUs = src && src.team === 0 && !src.net;
@@ -89,14 +88,14 @@ function rivalDown(u, src) {
     if (cr && !cr.out) { cr.beacon = null; if (cr.state === 'anchor') { cr.state = 'loot'; cr.t = 75; cr.goal = null; } }
     if (cr) for (const k in cr.bag) { const n = Math.floor(cr.bag[k] * .4); if (n > 0) { spawnItem(k, n, u.x, u.y); cr.bag[k] -= n; } }
     if (raidStats && byUs) raidStats.sabotage++;
-    msg('Balise de ' + (cr ? cr.name : 'l\'équipe rivale') + ' détruite !', COL.rival, 5); return;
+    msg(cr ? TL('Balise de {crew} détruite !', { crew: cr.name }) : TL('Balise de l\'équipe rivale détruite !'), COL.rival, 5); return;
   }
   if (u.role === 'leader') {
     cr.dead = true;
     for (const k in cr.bag) if (cr.bag[k] >= 1) spawnItem(k, Math.round(cr.bag[k]), u.x, u.y);
     spawnItem('data', rndi(3, 6), u.x, u.y); if (Math.random() < .35) spawnItem('cores', 1, u.x, u.y);
     if (raidStats && byUs) raidStats.rivalKills++;
-    msg('Le chef de ' + cr.name + ' est tombé. Son butin est au sol.', COL.rival, 6);
+    msg(TL('Le chef de {crew} est tombé. Son butin est au sol.', { crew: cr.name }), COL.rival, 6);
     if (cr.beacon && !cr.beacon.dead) { cr.beacon.dead = true; boom(cr.beacon.x, cr.beacon.y, 50); }
   } else dropTable([['scrap', 3, 8, 1], ['alloy', 1, 4, .6], ['circuits', 1, 3, .5]], u.x, u.y);
 }
@@ -106,7 +105,7 @@ function rivalsHear(bx, by) {
     if (d2(cr.leader.x, cr.leader.y, bx, by) < 2400 * 2400 && Math.random() < .45) {
       cr.ambush = true; if (cr.crate) { cr.crate.claimed = null; cr.crate = null; }
       cr.goal = findWalkableNear(bx, by, 260, 480, 20) || { x: bx, y: by };
-      msg(cr.name + ' a capté votre signal et approche !', COL.rival, 6);
+      msg(TL('{crew} a capté votre signal et approche !', { crew: cr.name }), COL.rival, 6);
     }
   }
 }
@@ -115,6 +114,7 @@ function rivalsHear(bx, by) {
 function fleetCargo(res) { let n = player.cargo[res] || 0; for (const r of fleet) if (!r.dead) n += r.cargo[res] || 0; return n; }
 function contractProgress(c) {
   const s = raidStats; if (!s) return [0, 1];
+  if (isMission(c)) return misProgress(c);
   switch (c.kind) {
     case 'hunt': return [s.byType[c.target] || 0, c.count];
     case 'elite': return [s.byType.mastodonte || 0, c.count];
@@ -135,9 +135,10 @@ function contractDone(c, gained) {
   const [a, b] = contractProgress(c); return a >= b;
 }
 function contractLine(c) {
+  if (isMission(c)) return misLine(c);
   const [a, b] = contractProgress(c);
-  if (c.kind === 'speed') return contractText(c) + ' · ' + (raidTime <= c.time ? 'reste ' + mmss(c.time - raidTime) : 'délai dépassé');
-  if (c.kind === 'noloss') return contractText(c) + (raidStats && raidStats.lost ? ' · échoué' : '');
+  if (c.kind === 'speed') return contractText(c) + ' · ' + (raidTime <= c.time ? TL('reste {t}', { t: mmss(c.time - raidTime) }) : TL('délai dépassé'));
+  if (c.kind === 'noloss') return contractText(c) + (raidStats && raidStats.lost ? ' · ' + TL('échoué') : '');
   return contractText(c) + ' · ' + Math.min(a, b) + ' / ' + b;
 }
-function rewardHtml(r) { return Object.keys(r).map(k => fmt(r[k]) + ' ' + RES[k].n).join(', '); }
+function rewardHtml(r) { return Object.keys(r).map(k => TL('{n} {res}', { n: fmt(r[k]), res: RES[k].n })).join(', '); }

@@ -37,6 +37,7 @@ function physics(u, dt) {
   if (sp > 12 + u.r * .1 && !(u.human && u.target) && !u.piloted) { const dA = angDiff(u.ang, Math.atan2(u.vy, u.vx)), mx = dt * (7 / (1 + u.r / 25)); u.ang += clamp(dA * Math.min(1, dt * 9), -mx, mx); }
   u.t += dt * (.25 + u.mv * .95);
   if (u.hitFlash > 0) u.hitFlash -= dt;
+  if (u.kick > 0) u.kick = Math.max(0, u.kick - dt * (u.kick * 9 + 4));
 }
 function separate(dt) {
   for (const u of units) {
@@ -83,10 +84,10 @@ function bossExtra(e, dt, t) {
   if (e.hive) { e.sumT = (e.sumT || 4) - dt; if (t && e.sumT <= 0) { e.sumT = 9; for (let k = 0; k < 4 + Math.round(diff.spawn * 2); k++) { const a = Math.random() * TAU; makeEnemy('essaim', e.x + Math.cos(a) * e.r, e.y + Math.sin(a) * e.r, { active: true, target: t }); } } return; }
   e.sumT = (e.sumT || 8) - dt;
   if (t && e.hp < e.maxhp * .6 && e.sumT <= 0) {
-    e.sumT = 13; msg(ENEMIES[e.etype].n + ' lâche un essaim.', '#ff6b74', 3);
+    e.sumT = 13; msg(TL('{foe} lâche un essaim.', { foe: ENEMIES[e.etype].n }), '#ff6b74', 3);
     for (let k = 0; k < 5 + Math.round(diff.spawn * 2); k++) { const a = Math.random() * TAU; makeEnemy('essaim', e.x + Math.cos(a) * e.r, e.y + Math.sin(a) * e.r, { active: true, target: t }); }
   }
-  if (e.hp < e.maxhp * .3 && !e.enraged) { e.enraged = true; e.spd *= 1.4; for (const m of e.mounts) m.w.rate *= 1.4; msg(ENEMIES[e.etype].n + ' entre en surchauffe !', '#ff6b74', 5); SFX.play('alarm', .8); }
+  if (e.hp < e.maxhp * .3 && !e.enraged) { e.enraged = true; e.spd *= 1.4; for (const m of e.mounts) m.w.rate *= 1.4; msg(TL('{foe} entre en surchauffe !', { foe: ENEMIES[e.etype].n }), '#ff6b74', 5); SFX.play('alarm', .8); }
 }
 
 // ================= IA : NAVIGATION, LIGNE DE TIR, RÉCOLTE =================
@@ -269,7 +270,7 @@ const hasDirect = u => u.hasDir !== undefined ? u.hasDir : (u.hasDir = u.mounts.
 function pickTarget(u, range, weakest) {
   const cand = [], r2 = range * range;
   query(u.x - range, u.y - range, u.x + range, u.y + range, v => {
-    if (v.team === u.team || v.dead || v.hidden || v.etype === 'cible') return;
+    if (v.team === u.team || v.dead || v.hidden || v.etype === 'cible' || v.invul) return;
     const dd = d2(u.x, u.y, v.x, v.y); if (dd > r2 + v.r * v.r * 2) return;
     if (v.cloak && time - v.lastFire > 1.5 && dd > r2 * .16) return;
     cand.push([v, weakest ? (v.hp / v.maxhp) * 4e6 + dd : dd]);
@@ -539,7 +540,7 @@ function gatherAI(u, L, dt, tgt) {
     u.gOpen = (u.gOpen || 0) + dt; if (Math.random() < dt * 6) sparks(c.x, c.y, 2, '#f2c14e');
     if (u.gOpen >= 2.2) {
       if (LIVE.guest()) LIVE.openCrate(c);
-      else { c.open = true; dropTable(CRATE_LOOT[c.type], c.x, c.y); SFX.play('open', .8, c.x, c.y); if (c.type === 'donnees' && raidStats) { raidStats.archives++; floatText(c.x, c.y - 20, 'Archive de données', '#7fa9ff'); } }
+      else { c.open = true; dropTable(CRATE_LOOT[c.type], c.x, c.y); SFX.play('open', .8, c.x, c.y); if (c.type === 'donnees' && raidStats) { raidStats.archives++; floatText(c.x, c.y - 20, TL('Archive de données'), '#7fa9ff'); } }
       c.gBy = null; u.gCrate = null; u.gt = 0;
     }
     return;
@@ -569,10 +570,11 @@ function enemyAI(e, dt) {
     e.tt = .35 + Math.random() * .25;
     let t = pickTarget(e, e.sight * (1 + alertLv * .06) * (e.alerted ? 1.2 : 1) * (e.boss ? 1 : ENV.sightMul), false); // la nuit et la brume réduisent leur vue
     if (!t && e.target && !e.target.dead && !e.target.hidden && d2(e.x, e.y, e.target.x, e.target.y) < 1100 * 1100) t = e.target;
-    if (!t && e.forced && !e.forced.dead) t = e.forced;
+    if (!t && e.forced && !e.forced.dead && e.forced.team !== e.team) t = e.forced; // un objectif allié (générateur) est un point de ralliement, pas une cible
     e.target = t;
   }
   const t = e.target && !e.target.dead && !e.target.hidden ? e.target : null;
+  if ((e.suicide || e.support) && foeSpecial(e, t, dt)) return;
   if (e.static) { if (t) e.ang = turnTo(e.ang, Math.atan2(t.y - e.y, t.x - e.x), dt); if (e.boss) bossExtra(e, dt, t); return; }
   if (e.human && t) e.ang = turnTo(e.ang, Math.atan2(t.y - e.y, t.x - e.x), dt * 8);
   if (e.boss) bossExtra(e, dt, t);
@@ -585,7 +587,7 @@ function enemyAI(e, dt) {
   else {
     e.wt = (e.wt || 0) - dt;
     if (!e.wp || e.wt <= 0) { e.wp = findWalkableNear(e.home.x, e.home.y, 40, 230, 8) || { x: e.home.x + rnd(-230, 230), y: e.home.y + rnd(-230, 230) }; e.wt = rnd(3, 6); }
-    goTo(e, e.wp.x, e.wp.y, dt, .45, 12);
+    goTo(e, e.wp.x, e.wp.y, dt, e.roam && d2(e.x, e.y, e.home.x, e.home.y) > 400 * 400 ? .8 : .45, 12); // une cible traquée change de terrain d'un bon pas
   }
 }
 

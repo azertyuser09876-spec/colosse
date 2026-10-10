@@ -4,25 +4,25 @@
 const TILE = 40, WT = 300, WPX = WT * TILE;
 // sols : 0 cendres, 1 humus, 2 bitume, 3 marais toxique, 4 sol cristallin, 5 verre de cratère, 6 béton, 7 roche-mère
 const GROUND = [
-  { n: 'Cendres', base: [64, 60, 54], v: 12, mm: '#5c574d' },
-  { n: 'Humus', base: [40, 47, 34], v: 10, mm: '#3a4630' },
-  { n: 'Bitume', base: [47, 50, 54], v: 8, mm: '#464b51' },
-  { n: 'Marais toxique', base: [42, 58, 27], v: 7, mm: '#4f7a26' },
-  { n: 'Sol cristallin', base: [52, 45, 70], v: 10, mm: '#4f4370' },
-  { n: 'Verre de cratère', base: [38, 26, 28], v: 8, mm: '#4a2a2c' },
-  { n: 'Béton', base: [76, 75, 70], v: 7, mm: '#706e66' },
-  { n: 'Roche-mère', base: [22, 23, 25], v: 5, mm: '#18191b' },
+  { n: TL('Cendres'), base: [64, 60, 54], v: 12, mm: '#5c574d' },
+  { n: TL('Humus'), base: [40, 47, 34], v: 10, mm: '#3a4630' },
+  { n: TL('Bitume'), base: [47, 50, 54], v: 8, mm: '#464b51' },
+  { n: TL('Marais toxique'), base: [42, 58, 27], v: 7, mm: '#4f7a26' },
+  { n: TL('Sol cristallin'), base: [52, 45, 70], v: 10, mm: '#4f4370' },
+  { n: TL('Verre de cratère'), base: [38, 26, 28], v: 8, mm: '#4a2a2c' },
+  { n: TL('Béton'), base: [76, 75, 70], v: 7, mm: '#706e66' },
+  { n: TL('Roche-mère'), base: [22, 23, 25], v: 5, mm: '#18191b' },
 ];
 // obstacles : 1 arbre, 2 rocher, 3 mur, 4 cristal, 5 épave, 6 rempart, 7 falaise
 const OBS = [null,
-  { n: 'arbre', hp: 30, lv: 1, mm: '#26331f' },
-  { n: 'rocher', hp: 140, lv: 2, mm: '#6a6862' },
-  { n: 'mur', hp: 170, lv: 3, mm: '#8a7c6a' },
-  { n: 'cristal', hp: 60, lv: 1, mm: '#b07cff', drop: [['crystals', 2, 5, 1]] },
-  { n: 'épave', hp: 90, lv: 2, mm: '#8a5a3a', drop: [['scrap', 3, 7, 1], ['alloy', 1, 2, .45], ['circuits', 1, 2, .35]] },
-  { n: 'rempart', hp: 450, lv: 4, mm: '#a29a7c' },
-  { n: 'falaise', hp: 1e12, lv: 99, mm: '#101112' },
-  { n: 'bâtiment', hp: 1e12, lv: 99, mm: '#8a8478' },
+  { n: TL('arbre'), hp: 30, lv: 1, mm: '#26331f' },
+  { n: TL('rocher'), hp: 140, lv: 2, mm: '#6a6862' },
+  { n: TL('mur'), hp: 170, lv: 3, mm: '#8a7c6a' },
+  { n: TL('cristal'), hp: 60, lv: 1, mm: '#b07cff', drop: [['crystals', 2, 5, 1]] },
+  { n: TL('épave'), hp: 90, lv: 2, mm: '#8a5a3a', drop: [['scrap', 3, 7, 1], ['alloy', 1, 2, .45], ['circuits', 1, 2, .35]] },
+  { n: TL('rempart'), hp: 450, lv: 4, mm: '#a29a7c' },
+  { n: TL('falaise'), hp: 1e12, lv: 99, mm: '#101112' },
+  { n: TL('bâtiment'), hp: 1e12, lv: 99, mm: '#8a8478' },
 ];
 let W = null; // monde courant
 const GROUND_DEF = GROUND.map(g => ({ base: g.base.slice(), mm: g.mm, n: g.n }));
@@ -32,7 +32,7 @@ function setRegionPalette(id) {
   curPalette = id; iceMode = id === 'glacier';
   GROUND.forEach((g, i) => { g.base = GROUND_DEF[i].base.slice(); g.mm = GROUND_DEF[i].mm; g.n = GROUND_DEF[i].n; });
   const o = REGION_GROUND[id]; if (o) for (const i in o) { GROUND[i].base = o[i][0].slice(); GROUND[i].mm = o[i][1]; }
-  if (iceMode) GROUND[3].n = 'Eau glacée';
+  if (iceMode) GROUND[3].n = TL('Eau glacée');
   buildAtlases(); if (typeof chunkCache !== 'undefined') chunkCache.clear();
 }
 
@@ -139,7 +139,8 @@ function clearTiles(tx, ty, r) {
   for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) {
     if (x < 3 || y < 3 || x >= WT - 3 || y >= WT - 3) continue;
     if ((x - tx) ** 2 + (y - ty) ** 2 > r * r + 1) continue;
-    const i = y * WT + x; if (W.obs[i]) lodMark(x, y); W.obs[i] = 0; if (W.ground[i] === 3 || W.ground[i] === 7) W.ground[i] = 1;
+    const i = y * WT + x, had = W.obs[i] || W.ground[i] === 3 || W.ground[i] === 7; W.obs[i] = 0; if (W.ground[i] === 3 || W.ground[i] === 7) W.ground[i] = 1;
+    if (had) miniSetTile(x, y); // minicarte et niveaux de détail suivent
   }
 }
 const tileAt = (x, y) => { const tx = (x / TILE) | 0, ty = (y / TILE) | 0; return (tx < 0 || ty < 0 || tx >= WT || ty >= WT) ? -1 : ty * WT + tx; };
@@ -299,15 +300,33 @@ function genBase(list) {
   const nD = makeNoise(4242), nC = makeNoise(99);
   const world = { seed: 0, ground: g, obs: o, ohp: hp, biome: b, shade: sh, bases: [], pylons: [], spawn: null, isBase: true };
   W = world;
-  const M = 7;
-  for (let y = BY0 - M; y <= BY1 + M; y++) for (let x = BX0 - M; x <= BX1 + M; x++) {
-    const i = y * WT + x, edge = Math.min(x - (BX0 - M), y - (BY0 - M), (BX1 + M) - x, (BY1 + M) - y);
+  const M = 7, nF = makeNoise(7171), nR = makeNoise(31);
+  for (let y = 0; y < WT; y++) for (let x = 0; x < WT; x++) {
+    const i = y * WT + x;
     sh[i] = Math.round(clamp((nD(x * .07, y * .07, 3) - .28) * 3, 0, 1) * 255);
-    if (edge < 2 + (nC(x * .2, y * .2, 2) > .55 ? 1 : 0)) { g[i] = 7; o[i] = 7; continue; }
+    // bord du monde : roche-mère
+    if (Math.min(x, y, WT - 1 - x, WT - 1 - y) < 3 + (nC(x * .2, y * .2, 2) > .55 ? 1 : 0)) continue;
     g[i] = 0; o[i] = 0;
-    const inZone = x >= BX0 && x <= BX1 && y >= BY0 && y <= BY1;
-    if (!inZone) { const r = hash2(x, y, 7); g[i] = nC(x * .1, y * .1) > .52 ? 1 : 0; if (r < .2) o[i] = 1; else if (r < .26) o[i] = 2; else if (r < .27) o[i] = 5; }
-    else { g[i] = 6; if ((x === BX0 || x === BX1 || y === BY0 || y === BY1) && Math.abs(x - 150) > 2 && Math.abs(y - 150) > 2) o[i] = 6; }
+    const dx = Math.max(BX0 - M - x, x - BX1 - M, 0), dy = Math.max(BY0 - M - y, y - BY1 - M, 0), d = Math.max(dx, dy);
+    if (d === 0) {
+      // abords immédiats et zone constructible
+      const inZone = x >= BX0 && x <= BX1 && y >= BY0 && y <= BY1;
+      if (!inZone) { const r = hash2(x, y, 7); g[i] = nC(x * .1, y * .1) > .52 ? 1 : 0; if (r < .2) o[i] = 1; else if (r < .26) o[i] = 2; else if (r < .27) o[i] = 5; }
+      else { g[i] = 6; if ((x === BX0 || x === BX1 || y === BY0 || y === BY1) && Math.abs(x - 150) > 2 && Math.abs(y - 150) > 2) o[i] = 6; }
+      continue;
+    }
+    // au-delà : la friche autour de la base (routes depuis les portes, bosquets, rochers, épaves, ruines et buttes rocheuses)
+    const road = (Math.abs(x - 150) <= 1 && (y < BY0 || y > BY1)) || (Math.abs(y - 150) <= 1 && (x < BX0 || x > BX1));
+    const n1 = nC(x * .1, y * .1), n2 = nF(x * .045, y * .045, 3), r = hash2(x, y, 7);
+    g[i] = n1 > .52 ? 1 : 0;
+    if (d > 16 && n2 > .66) g[i] = 5; // verre de cratère
+    if (road) { g[i] = 2; continue; }
+    // rien à récupérer ici (pas d'épaves ni de cristaux) : la friche n'est qu'un décor
+    const far = clamp((d - 4) / 30, 0, 1); // plus on s'éloigne, plus le terrain est encombré
+    if (d > 22 && n2 < .26 && nR(x * .09, y * .09, 2) > .45) { o[i] = 7; continue; } // buttes rocheuses
+    if (d > 10 && hash2((x / 6) | 0, (y / 6) | 0, 21) < .07 && (x % 6 === 0 || y % 6 === 0) && r < .7) { o[i] = 3; g[i] = 6; continue; } // ruines
+    if (r < (g[i] === 1 ? .08 + .14 * far : .015)) o[i] = 1;
+    else if (hash2(x, y, 17) < .025 + .05 * far) o[i] = 2;
   }
   for (let i = 0; i < N; i++) if (o[i]) hp[i] = OBS[o[i]].hp;
   bTileMap.fill(0);

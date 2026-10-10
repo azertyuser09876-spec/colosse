@@ -13,10 +13,9 @@ function fabAutoDesigns(maxT) {
   for (const k of chs.slice(0, 2)) {
     const al = allowedWeapons(k).filter(w => !isSupportW(w) && WEAPONS[w].kind !== 'nuke' && WEAPONS[w].kind !== 'singularity');
     al.sort((a, b) => (WEAPONS[b].size - WEAPONS[a].size) || (wDps(WEAPONS[b]) - wDps(WEAPONS[a])));
-    const top = al.slice(0, 3); if (!top.length) top.push('mg');
-    out.push({ chassis: k, weapons: MOUNTS[k].map((_, i) => top[i % top.length]), modules: [], brain: 'hunter', name: CHASSIS[k].n, split: true });
+    out.push({ chassis: k, weapons: MOUNTS[k].map((_, i) => { const t = al.filter(w => WEAPONS[w].size <= slotSize(k, i)).slice(0, 3); return t.length ? t[i % t.length] : 'mg'; }), modules: [], brain: 'hunter', name: CHASSIS[k].n, split: true });
   }
-  return out.length ? out : [{ chassis: 'crawler', weapons: ['mg'], modules: [], brain: 'hunter', name: 'Rampeur', split: false }];
+  return out.length ? out : [{ chassis: 'crawler', weapons: ['mg'], modules: [], brain: 'hunter', name: TL('Rampeur'), split: false }];
 }
 // plans choisis au hangar (robots de 3 rangs en dessous ou moins), sinon les meilleurs modèles débloqués
 function fabDesigns(u) {
@@ -50,7 +49,7 @@ function fabTick(u, dt) {
   u.fabDur = u.fabT = F.t * (.45 + .55 * C.tier / F.tier);
   parts.push({ type: 'ring', x, y, vx: 0, vy: 0, life: .7, max: .7, size: C.r * 2.4 + 30, col: '#6fe3c8' }); sparks(x, y, 14, '#6fe3c8');
   SFX.play('build', .7, x, y);
-  if (u.fabN === 1 && (u.piloted || isMine(u) || u.team === 0)) msg(u.name + ' : premiers renforts sortis de la chaîne (' + C.n + ').', '#6fe3c8', 4);
+  if (u.fabN === 1 && (u.piloted || isMine(u) || u.team === 0)) msg(TL('{name} : premiers renforts sortis de la chaîne ({ch}).', { name: u.name, ch: C.n }), '#6fe3c8', 4);
 }
 // les renforts détruits quittent la liste de la flotte
 function fabHouse(dt) {
@@ -125,7 +124,7 @@ function giantWave(p, opts) {
   const n = units.reduce((s, e) => s + (e.giant && !e.dead ? 1 : 0), 0); if (n >= 6) return;
   const type = armyPower >= 60 && Math.random() < .3 ? 'devoreur' : 'colosse_r';
   makeEnemy(type, p.x + rnd(-80, 80), p.y + rnd(-80, 80), Object.assign({ active: true }, opts));
-  msg(ENEMIES[type].n + ' rejoint la traque.', '#ff6b74', 4);
+  msg(TL('{foe} rejoint la traque.', { foe: ENEMIES[type].n }), '#ff6b74', 4);
 }
 function giantExtra(e, dt, t) {
   const E = ENEMIES[e.etype];
@@ -144,17 +143,17 @@ function giantExtra(e, dt, t) {
           const q = findWalkableNear(e.x + Math.cos(a) * d, e.y + Math.sin(a) * d, 0, 180, 20) || { x: e.x + Math.cos(a) * (e.r + R + 30), y: e.y + Math.sin(a) * (e.r + R + 30) };
           makeEnemy(type, q.x, q.y, { active: true, target: t });
         }
-        if (!e.spawnMsg) { e.spawnMsg = true; msg(E.n + ' assemble des renforts !', '#ff6b74', 5); }
+        if (!e.spawnMsg) { e.spawnMsg = true; msg(TL('{foe} assemble des renforts !', { foe: E.n }), '#ff6b74', 5); }
         parts.push({ type: 'ring', x: e.x + Math.cos(a0) * e.r * .8, y: e.y + Math.sin(a0) * e.r * .8, vx: 0, vy: 0, life: .8, max: .8, size: 180, col: '#ff6b74' });
         SFX.play('build', .8, e.x, e.y);
       }
     }
   }
-  if (e.hp < e.maxhp * .3 && !e.enraged) { e.enraged = true; e.spd *= 1.3; for (const m of e.mounts) if (m.w.rate) m.w.rate *= 1.3; msg(E.n + ' entre en surchauffe !', '#ff6b74', 5); SFX.play('alarm', .8); }
+  if (e.hp < e.maxhp * .3 && !e.enraged) { e.enraged = true; e.spd *= 1.3; for (const m of e.mounts) if (m.w.rate) m.w.rate *= 1.3; msg(TL('{foe} entre en surchauffe !', { foe: E.n }), '#ff6b74', 5); SFX.play('alarm', .8); }
 }
 
 // ---------- parking des géants : le long de la base, hors de la zone constructible ----------
-// la base est une île entourée de falaises : le géant se taille sa place dans la roche
+// au-delà des murs s'étend la friche : le géant s'y gare (et se taille une place s'il touche la roche du bord)
 function giantPark(r) {
   const zx0 = BX0 * TILE, zx1 = BX1 * TILE, zy0 = BY0 * TILE, zy1 = BY1 * TILE, cx = (zx0 + zx1) / 2, cy = (zy0 + zy1) / 2, gap = 90;
   const sides = [['s', cx, zy1 + gap + r], ['e', zx1 + gap + r, cy], ['w', zx0 - gap - r, cy], ['n', cx, zy0 - gap - r]];
@@ -192,7 +191,10 @@ function expMinZ() {
   return R <= 160 ? .4 : clamp(.4 * Math.pow(160 / R, .9), .085, .4);
 }
 const pilotZoomMul = r => r <= 145 ? clamp(1.12 - r / 250, .55, 1) : .55 * Math.pow(145 / r, .8);
-const zoomFloor = () => Math.max(.07, VW / (WPX * 1.15));
+// la vue ne dépasse jamais le monde : on ne dézoome pas au-delà de la carte entière
+const zoomFloor = () => Math.max(.07, Math.max(VW, VH) / WPX);
+// au bord de la carte, la caméra s'arrête au lieu de montrer le vide (v : largeur ou hauteur de la vue)
+function camBound(p, z, v) { const h = v / 2 / z; return 2 * h >= WPX ? WPX / 2 : clamp(p, h, WPX - h); }
 // les pas d'un géant font trembler le sol autour de lui
 function giantStep(u) {
   if (u.r <= 200 || u.fly || !player) return;
@@ -202,7 +204,7 @@ function giantStep(u) {
 
 // ---------- rendu par niveaux de détail ----------
 // niveaux : 0 pleine résolution, 1 moitié, 2 moitié avec obstacles intégrés, 3 quart, 4 huitième (obstacles intégrés)
-const LOD_S = [1, .5, .5, .25, .125], LOD_CAP = [46, 46, 64, 140, 400], LOD_N = 5;
+const LOD_S = [1, .5, .5, .25, .125], LOD_N = 5;
 const lodLevel = z => { const zd = z * DPR; return zd >= 1 ? 0 : zd >= .55 ? 1 : zd >= .3 ? 2 : zd >= .15 ? 3 : 4; };
 // obstacle détruit : les morceaux de sol en basse résolution (obstacles intégrés) seront redessinés
 function lodMark(tx, ty) {
@@ -223,8 +225,8 @@ function fabPlanHTML(r) {
   const F = CHASSIS[r.chassis].fab; if (!F) return '';
   const plan = Array.isArray(r.plan) ? r.plan : [], seen = new Set();
   const el = save.robots.filter(b => b !== r && CHASSIS[b.chassis].tier <= F.tier && !CHASSIS[b.chassis].fab).filter(b => { const k = b.chassis + ':' + b.weapons.join(','); if (seen.has(k) && !plan.includes(b.id)) return false; seen.add(k); return true; }).sort((a, b) => CHASSIS[b.chassis].tier - CHASSIS[a.chassis].tier).slice(0, 14);
-  return `<div class="acts"><span class="sub" title="En raid, ce géant fabrique des renforts d'après ces plans (trois au plus, fabriqués à tour de rôle). Les renforts se battent et ramassent, puis sont démontés à l'extraction : leur chargement est gardé.">Fabrique · rang ${F.tier} au plus · ${F.cap} à la fois</span>
-    <button class="chip ${plan.length ? '' : 'on'}" data-act="rplan" data-rid="${r.id}" data-id="auto" title="Les meilleurs modèles débloqués">Automatique</button>
+  return `<div class="acts"><span class="sub" title="${esc(TL('En raid, ce géant fabrique des renforts d\'après ces plans (trois au plus, fabriqués à tour de rôle). Les renforts se battent et ramassent, puis sont démontés à l\'extraction : leur chargement est gardé.'))}">${TL('Fabrique')} · ${TL('rang {n} au plus', { n: F.tier })} · ${TL('{n} à la fois', { n: F.cap })}</span>
+    <button class="chip ${plan.length ? '' : 'on'}" data-act="rplan" data-rid="${r.id}" data-id="auto" title="${esc(TL('Les meilleurs modèles débloqués'))}">${TL('Automatique')}</button>
     ${el.map(b => `<button class="chip ${plan.includes(b.id) ? 'on' : ''}" data-act="rplan" data-rid="${r.id}" data-id="${b.id}" title="${esc(b.weapons.map(w => WEAPONS[w].n).join(', '))}">${esc(b.name)} · ${CHASSIS[b.chassis].n}</button>`).join('')}</div>`;
 }
 function setFabPlan(R, id) {
@@ -241,8 +243,8 @@ function wList(ws) {
 // boutons manuel/auto du hangar : un par affût, ou un par type d'arme sur les géants
 function wmChips(r) {
   const wm = r.wm || [];
-  if (r.weapons.length <= 6) return r.weapons.map((w, i) => isSupportW(w) ? '' : `<button class="chip ${wm[i] === 'a' ? 'on' : ''}" data-act="rwm" data-rid="${r.id}" data-slot="${i}" title="${esc(WEAPONS[w].n)} · ${W_ROLE_TXT[wRole(WEAPONS[w])]}">${i + 1}. ${esc(WEAPONS[w].n)} · ${wm[i] === 'a' ? 'auto' : 'manuel'}</button>`).join('');
+  if (r.weapons.length <= 6) return r.weapons.map((w, i) => isSupportW(w) ? '' : `<button class="chip ${wm[i] === 'a' ? 'on' : ''}" data-act="rwm" data-rid="${r.id}" data-slot="${i}" title="${esc(WEAPONS[w].n)} · ${esc(W_ROLE_TXT[wRole(WEAPONS[w])])}">${i + 1}. ${esc(WEAPONS[w].n)} · ${wm[i] === 'a' ? TL('auto') : TL('manuel')}</button>`).join('');
   const g = new Map(); r.weapons.forEach((w, i) => { if (!isSupportW(w)) { if (!g.has(w)) g.set(w, []); g.get(w).push(i); } });
-  return [...g].map(([w, L]) => { const na = L.filter(i => wm[i] === 'a').length, st = na === L.length ? 'auto' : na ? 'mixte' : 'manuel';
-    return `<button class="chip ${na === L.length ? 'on' : ''}" data-act="rwm" data-rid="${r.id}" data-slot="${L[0]}" data-group="${w}" title="${esc(WEAPONS[w].n)} · ${W_ROLE_TXT[wRole(WEAPONS[w])]} · ${L.length} affûts">${esc(WEAPONS[w].n)}${L.length > 1 ? ' ×' + L.length : ''} · ${st}</button>`; }).join('');
+  return [...g].map(([w, L]) => { const na = L.filter(i => wm[i] === 'a').length, st = na === L.length ? TL('auto') : na ? TL('mixte') : TL('manuel');
+    return `<button class="chip ${na === L.length ? 'on' : ''}" data-act="rwm" data-rid="${r.id}" data-slot="${L[0]}" data-group="${w}" title="${esc(WEAPONS[w].n)} · ${esc(W_ROLE_TXT[wRole(WEAPONS[w])])} · ${esc(TLn(L.length, '{n} affût', '{n} affûts'))}">${esc(WEAPONS[w].n)}${L.length > 1 ? ' ×' + L.length : ''} · ${st}</button>`; }).join('');
 }

@@ -5,9 +5,9 @@ function pauseGame() {
   if (!inGame()) return;
   paused = true; for (const k in keys) keys[k] = false; mouse.l = false;
   const base = state === 'base';
-  $('#abandonBtn').textContent = state === 'assault' ? 'Se retirer (garder les étoiles)' : 'Abandonner le raid';
-  $('#pauseTxt').textContent = state === 'assault' ? 'Assaut en pause. Vous pouvez vous retirer en gardant les étoiles déjà acquises.' : base ? 'La base est en pause, mais vos bâtiments continuent de produire et de se construire en temps réel.' : 'Le raid est figé. Abandonner compte comme une mort : butin transporté et robots déployés sont perdus.';
-  if (LIVE.game && state === 'raid') $('#pauseTxt').textContent = 'Raid partagé : le monde continue de tourner pendant ce menu, vos robots se défendent seuls. Abandonner compte comme une mort : votre butin reste au sol.';
+  $('#abandonBtn').textContent = state === 'assault' ? TL('Se retirer (garder les étoiles)') : TL('Abandonner le raid');
+  $('#pauseTxt').textContent = state === 'assault' ? TL('Assaut en pause. Vous pouvez vous retirer en gardant les étoiles déjà acquises.') : base ? TL('La base est en pause, mais vos bâtiments continuent de produire et de se construire en temps réel.') : TL('Le raid est figé. Abandonner compte comme une mort : butin transporté et robots déployés sont perdus.');
+  if (LIVE.game && state === 'raid') $('#pauseTxt').textContent = TL('Raid partagé : le monde continue de tourner pendant ce menu, vos robots se défendent seuls. Abandonner compte comme une mort : votre butin reste au sol.');
   $('#abandonBtn').style.display = base ? 'none' : ''; $('#titleBtn').style.display = base ? '' : 'none';
   showOverlay('pause', true);
 }
@@ -73,7 +73,7 @@ window.addEventListener('keydown', e => {
   if (rebinding) {
     e.preventDefault();
     if (e.code === 'Escape') { rebinding = null; renderSettings(); return; }
-    if (/^(Key[WASD]|Arrow|Digit|Shift|Control|Alt|Meta)/.test(e.code)) { toast('Touche réservée au déplacement ou aux groupes.'); return; }
+    if (/^(Key[WASD]|Arrow|Digit|Shift|Control|Alt|Meta)/.test(e.code)) { toast(TL('Touche réservée au déplacement ou aux groupes.')); return; }
     const k = normKey(e); for (const a in ACTIONS) if (a !== rebinding && keyOf(a) === k) settings.keys[a] = '';
     settings.keys[rebinding] = k; rebinding = null; saveSettings(); renderSettings(); return;
   }
@@ -101,11 +101,11 @@ window.addEventListener('keydown', e => {
   if (/^Digit[1-5]$/.test(code)) {
     const n = +code.slice(5);
     if (e.shiftKey) {
-      const sel = fleet.filter(r => r.sel && !r.dead); if (!sel.length) { msg('Sélectionnez d\'abord des robots.', '#a59c88', 3); return; }
+      const sel = fleet.filter(r => r.sel && !r.dead); if (!sel.length) { msg(TL('Sélectionnez d\'abord des robots.'), '#a59c88', 3); return; }
       for (const r of fleet) { if (r.sel) r.group = n; else if (r.group === n) r.group = 0; const sr = save.robots.find(s => s.id === r.sid); if (sr) sr.group = r.group; }
-      msg('Groupe ' + n + ' : ' + sel.length + ' robot' + (sel.length > 1 ? 's' : '') + '.', COL.ally, 3);
+      msg(TLn(sel.length, 'Groupe {g} : {n} robot.', 'Groupe {g} : {n} robots.', { g: n }), COL.ally, 3);
     } else {
-      const g = fleet.filter(r => r.group === n && !r.dead); if (!g.length) { msg('Groupe ' + n + ' vide. Maj+' + n + ' pour l\'assigner.', '#a59c88', 3); return; }
+      const g = fleet.filter(r => r.group === n && !r.dead); if (!g.length) { msg(TL('Groupe {g} vide. Maj+{g} pour l\'assigner.', { g: n }), '#a59c88', 3); return; }
       for (const r of fleet) r.sel = r.group === n && !r.dead;
     }
     SFX.play('ui', 1); return;

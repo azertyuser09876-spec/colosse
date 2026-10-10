@@ -22,7 +22,7 @@ function updateTouchUI() {
   ui.querySelector('[data-tk=map]').style.display = state === 'raid' ? '' : 'none';
   ui.querySelector('[data-tk=place]').style.display = base && placing ? '' : 'none';
   ui.querySelector('[data-tk=tactical]').classList.toggle('on', tactical);
-  const pil = ui.querySelector('[data-tk=pilot]'); pil.textContent = player && player.inside ? 'Sortir' : 'Piloter';
+  const pil = ui.querySelector('[data-tk=pilot]'); pil.textContent = player && player.inside ? TL('Sortir') : TL('Piloter');
 }
 function relT(t) { const r = cv.getBoundingClientRect(); return { x: t.clientX - r.left, y: t.clientY - r.top }; }
 function stickZone(p) { if (p.y < VH * .45) return null; if (p.x < VW * .33) return 'move'; if (p.x > VW * .67) return 'aim'; return null; }
@@ -97,8 +97,8 @@ function drawTouch(c) {
     if (!st) { c.globalAlpha = .45; c.font = `600 12px ${FONT}`; c.textAlign = 'center'; c.fillText(label, ox, oy + STICK_R + 16); }
     c.globalAlpha = 1;
   };
-  stick(TC.move, Math.max(110, VW * .14), VH - 120, 'Déplacement');
-  stick(TC.aim, VW - Math.max(170, VW * .17), VH - 120, 'Visée et tir');
+  stick(TC.move, Math.max(110, VW * .14), VH - 120, TL('Déplacement'));
+  stick(TC.aim, VW - Math.max(170, VW * .17), VH - 120, TL('Visée et tir'));
 }
 function hideFleetPop() { $('#fleetPop').classList.remove('on'); }
 cv.addEventListener('touchstart', e => { e.preventDefault(); SFX.init(); hideFleetPop(); if (!TOUCH.seen) { TOUCH.seen = true; applyTouch(); } for (const t of e.changedTouches) { if (EXPV.id) expViewTouch('down', t); else touchDown(t); } }, { passive: false });

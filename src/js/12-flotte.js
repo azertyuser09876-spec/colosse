@@ -21,7 +21,7 @@ function rankUp(r, nr) {
   const old = r.rank || 0; let tr = null;
   for (let k = old + 1; k <= nr; k++) if (k === 2 || k === 4) { const av = TRAIT_KEYS.filter(t => !r.traits.includes(t)); if (av.length) { tr = pick(av); r.traits.push(tr); } }
   r.rank = nr; refreshRobot(r); r.hp = Math.min(r.maxhp, r.hp + r.maxhp * .25);
-  msg(r.name + ' passe ' + RANKS[nr] + (tr ? ' · trait : ' + TRAITS[tr].n : '') + ' !', '#f2c14e', 6, tr ? null : { key: 'rang:' + nr, name: r.name, fmt: L => listFr(L) + (L.length > 1 ? ' passent ' : ' passe ') + RANKS[nr] + ' !' });
+  msg(tr ? TL('{name} passe {rank} · trait : {trait} !', { name: r.name, rank: RANKS[nr], trait: TRAITS[tr].n }) : TL('{name} passe {rank} !', { name: r.name, rank: RANKS[nr] }), '#f2c14e', 6, tr ? null : { key: 'rang:' + nr, name: r.name, fmt: L => TLn(L.length, '{names} passe {rank} !', '{names} passent {rank} !', { names: listFr(L), rank: RANKS[nr] }) });
   parts.push({ type: 'ring', x: r.x, y: r.y, vx: 0, vy: 0, life: .7, max: .7, size: r.r * 2.5 + 20, col: '#f2c14e' });
   sparks(r.x, r.y, 12, '#f2c14e'); SFX.play('rankup', .9);
   syncRobotSave(r, false);
@@ -77,7 +77,7 @@ function useSelectedAbilities() {
   let n = 0;
   if (player.inside) { for (const a of player.inside.abil || []) if (useAbility(player.inside, a, mouse.wx, mouse.wy)) n++; }
   else { const sel = selection(); for (const u of sel) for (const a of u.abil || []) if (useAbility(u, a)) n++; }
-  if (!n) { msg('Aucune capacité prête dans la sélection (modules Surcharge, Bouclier d\'urgence, Saut).', '#a59c88', 3); SFX.play('deny', .6); }
+  if (!n) { msg(TL('Aucune capacité prête dans la sélection (modules Surcharge, Bouclier d\'urgence, Saut).'), '#a59c88', 3); SFX.play('deny', .6); }
 }
 
 // ================= FORMATIONS, POINTS DE PASSAGE, PATROUILLES =================
@@ -114,9 +114,9 @@ function togglePatrol() {
     else r.queue.push({ x: r.from.x, y: r.from.y });
     r.patrol = true; on++;
   }
-  if (on) msg('Patrouille : ' + on + ' robot' + (on > 1 ? 's font' : ' fait') + ' des allers-retours.', '#6fe3c8', 3);
-  else if (off) msg('Patrouille arrêtée.', '#a59c88', 3);
-  else msg('Envoyez d\'abord la sélection quelque part (clic droit, Maj+clic droit pour enchaîner), puis P.', '#a59c88', 4);
+  if (on) msg(TLn(on, 'Patrouille : {n} robot fait des allers-retours.', 'Patrouille : {n} robots font des allers-retours.'), '#6fe3c8', 3);
+  else if (off) msg(TL('Patrouille arrêtée.'), '#a59c88', 3);
+  else msg(TL('Envoyez d\'abord la sélection quelque part (clic droit, Maj+clic droit pour enchaîner), puis P.'), '#a59c88', 4);
   SFX.play('ui', 1);
 }
-function cycleFormation() { formation = FORM_KEYS[(FORM_KEYS.indexOf(formation) + 1) % FORM_KEYS.length]; msg('Formation : ' + FORMATIONS[formation] + '.', '#6fe3c8', 3); SFX.play('ui', 1); }
+function cycleFormation() { formation = FORM_KEYS[(FORM_KEYS.indexOf(formation) + 1) % FORM_KEYS.length]; msg(TL('Formation : {f}.', { f: FORMATIONS[formation] }), '#6fe3c8', 3); SFX.play('ui', 1); }

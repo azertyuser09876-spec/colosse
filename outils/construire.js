@@ -12,14 +12,20 @@ const style = fs.readFileSync(path.join(SRC, 'style.css'), 'utf8');
 const fichiers = fs.readdirSync(path.join(SRC, 'js')).filter(f => /^\d\d-.*\.js$/.test(f)).sort();
 if (!fichiers.length) { console.error('Aucun fichier dans src/js.'); process.exit(1); }
 const morceaux = fichiers.map(f => fs.readFileSync(path.join(SRC, 'js', f), 'utf8').replace(/\s+$/, '') + '\n');
-const script = "'use strict';\n" + morceaux.join('\n');
+// catalogues de traduction (src/langues/xx.json : phrase française → traduction), intégrés au jeu
+const DOS_LANG = path.join(SRC, 'langues'), langues = {};
+if (fs.existsSync(DOS_LANG)) for (const f of fs.readdirSync(DOS_LANG).filter(f => /^[a-z]{2}\.json$/.test(f)).sort()) {
+  try { langues[f.slice(0, 2)] = JSON.parse(fs.readFileSync(path.join(DOS_LANG, f), 'utf8')); }
+  catch (e) { console.error('Catalogue illisible : src/langues/' + f + ' : ' + e.message); process.exit(1); }
+}
+const script = "'use strict';\nconst I18N_DATA = " + JSON.stringify(langues) + ";\n" + morceaux.join('\n');
 
 // contrôle de syntaxe, avec le fichier source fautif en cas d'erreur
 try { new vm.Script(script, { filename: 'index.html' }); }
 catch (e) {
   const m = /:(\d+)/.exec(e.stack.split('\n')[0]) || [];
   let ligne = +m[1] || 0, nom = '?';
-  for (let i = 0, l = 2; i < fichiers.length; i++) { const n = morceaux[i].split('\n').length; if (ligne < l + n - 1) { nom = fichiers[i]; ligne -= l - 1; break; } l += n; }
+  for (let i = 0, l = 3; i < fichiers.length; i++) { const n = morceaux[i].split('\n').length; if (ligne < l + n - 1) { nom = fichiers[i]; ligne -= l - 1; break; } l += n; }
   console.error('Erreur de syntaxe dans src/js/' + nom + ' vers la ligne ' + ligne + ' : ' + e.message);
   process.exit(1);
 }
@@ -44,5 +50,5 @@ if (verifier) {
 } else {
   fs.writeFileSync(CIBLE, sortie);
   for (const [p, n] of aJour) fs.writeFileSync(p, n);
-  console.log('index.html construit : version ' + version + ', ' + fichiers.length + ' fichiers, ' + Math.round(sortie.length / 1024) + ' Ko.');
+  console.log('index.html construit : version ' + version + ', ' + fichiers.length + ' fichiers, ' + Object.keys(langues).length + ' langues, ' + Math.round(sortie.length / 1024) + ' Ko.');
 }

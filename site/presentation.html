@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colosse</title>
-<meta name="description" content="Colosse : extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre. Gratuit, sur navigateur, Windows, Android et Linux.">
+<meta name="description" content="Colosse : extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre. Dix langues. Gratuit, sur navigateur, Windows, Android et Linux.">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,6 +95,20 @@ figure.echelle { margin: 0; }
 .liste li { padding: 26px 26px 26px 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .liste li + li { padding-left: 26px; border-left: 1px solid var(--trait); }
 
+/* opérations : cinq objectifs, en tableau de bord */
+.ops { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--trait); }
+.ops li { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 4px 18px; padding-block: 12px; border-bottom: 1px solid var(--trait); }
+.ops b { font-family: var(--f-titre); font-size: 21px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #59d2ff; line-height: 1.3; }
+.ops span { color: var(--cendre); font-size: 15.5px; }
+
+/* dix langues : drapeaux dessinés par le jeu */
+.langues { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.langues li { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; gap: 0 12px; align-items: center; padding: 12px 14px; background: var(--acier); border: 1px solid var(--trait); min-width: 0; }
+.langues .drapeau { grid-row: span 2; line-height: 0; }
+.langues svg { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .55), 0 3px 8px rgba(0, 0, 0, .4); }
+.langues b { font-size: 18px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; text-align: start; justify-self: start; }
+.langues li span:last-child { font-size: 13.5px; color: var(--cendre); }
+
 /* téléchargements */
 .plateformes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--trait); }
 .plateformes li { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) auto; gap: 8px 28px; align-items: center; padding-block: 22px; border-bottom: 1px solid var(--trait); }
@@ -109,6 +123,8 @@ footer a { color: var(--sable); }
   .liste { grid-template-columns: minmax(0, 1fr); }
   .liste li, .liste li + li { padding: 22px 0; border-left: 0; border-bottom: 1px solid var(--trait); }
   .plateformes li { grid-template-columns: minmax(0, 1fr); }
+  .langues { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ops li { grid-template-columns: minmax(0, 1fr); }
   .etiquette.facultatif { display: none; }
 }
 @media (max-width: 560px) {
@@ -130,7 +146,7 @@ footer a { color: var(--sable); }
       <a class="bouton principal" href="./index.html">Jouer dans le navigateur</a>
       <a class="bouton" href="#telecharger">Télécharger</a>
     </div>
-    <p class="note">Gratuit et en français, sur ordinateur, téléphone et navigateur. Version 2.0.0.</p>
+    <p class="note">Gratuit, en dix langues, sur ordinateur, téléphone et navigateur. Version 3.0.0.</p>
   </div></div>
 </header>
 
@@ -146,6 +162,23 @@ footer a { color: var(--sable); }
         </ol>
       </div>
       <img class="cadre" src="captures/raid-jour.jpg" alt="Raid de jour dans le marais d'acide : la flotte avance entre les cristaux et les ruines." width="1600" height="900">
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-ops">
+    <div class="large duo inverse">
+      <div class="texte">
+        <h2 id="t-ops">Des opérations sur le terrain</h2>
+        <p class="doux">Certains contrats placent leur objectif dans le monde, sur la carte et en flèche au bord de l'écran. Ils paient près du double d'une chasse et comptent double pour la réputation de la région.</p>
+        <ul class="ops">
+          <li><b>Convoi</b><span>Un camion blindé n'avance que si vous restez près de lui, et la route est piégée.</span></li>
+          <li><b>Sauvetage</b><span>Retrouvez un pilote abattu près de son épave, puis ramenez-le vivant jusqu'au lift.</span></li>
+          <li><b>Sabotage</b><span>Trois générateurs : dès le premier détruit, l'alarme sonne et le compte à rebours commence.</span></li>
+          <li><b>Forage</b><span>Lancez la foreuse et tenez la position sous les vagues d'assaut jusqu'au minerai.</span></li>
+          <li><b>Traque</b><span>Une cible d'élite nommée, escortée, qui ne reste jamais au même endroit.</span></li>
+        </ul>
+      </div>
+      <img class="cadre" src="captures/operation.jpg" alt="Sabotage d'un avant-poste : la flotte attaque les générateurs pendant que le compte à rebours du verrouillage tourne." width="1600" height="900" loading="lazy">
     </div>
   </section>
 
@@ -181,7 +214,7 @@ footer a { color: var(--sable); }
       <div class="texte">
         <h2 id="t-base">Une base qui tourne sans vous</h2>
         <p class="doux">Collecteurs, fonderies et centres de données produisent pendant que vous êtes en raid. Chaque extraction fait monter la menace : au-delà de 60 %, des pillards viennent frapper à la porte, et vos tourelles comme vos robots stationnés les reçoivent.</p>
-        <p class="doux">Vingt-neuf bâtiments, à améliorer jusqu'au niveau 5, et un Chantier titanesque pour assembler les géants.</p>
+        <p class="doux">Vingt-neuf bâtiments, à améliorer jusqu'au niveau 10, et un Chantier titanesque pour assembler les géants.</p>
       </div>
       <img class="cadre" src="captures/base.jpg" alt="Vue de la base : quartier général, forge, laboratoire, usines et tourelles." width="1040" height="585">
     </div>
@@ -191,9 +224,30 @@ footer a { color: var(--sable); }
     <div class="large duo">
       <div class="texte">
         <h2 id="t-forge">La forge</h2>
-        <p class="doux">Choisissez un châssis, cliquez sur un affût de l'aperçu, montez une arme et comparez avant d'assembler. Chaque robot gagne de l'expérience, monte en grade et reçoit des traits ; un cerveau règle son comportement, de l'escorte au récolteur.</p>
+        <p class="doux">Choisissez un châssis, cliquez sur un affût de l'aperçu, montez une arme et comparez avant d'assembler. Les affûts principaux portent les plus grosses armes, les autres des armes plus légères. Chaque robot gagne de l'expérience, monte en grade et reçoit des traits ; un cerveau règle son comportement, de l'escorte au récolteur.</p>
       </div>
-      <img class="cadre" src="captures/forge.jpg" alt="L'écran de la forge : un Goliath avec ses trois affûts numérotés et l'armurerie." width="1600" height="900">
+      <img class="cadre" src="captures/forge.jpg" alt="L'écran de la forge : un Colosse avec ses six affûts gradués, deux titanesques, deux lourds et deux moyens, et l'armurerie." width="1600" height="900">
+    </div>
+  </section>
+
+  <section class="bloc page" aria-labelledby="t-langues">
+    <div class="large">
+      <div class="tete">
+        <h2 id="t-langues">Dix langues</h2>
+        <p class="doux">Les dix langues les plus parlées au monde, chacune avec son drapeau. On la choisit au premier lancement et on en change à tout moment ; l'arabe se lit de droite à gauche, menus compris.</p>
+      </div>
+      <ul class="langues">
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><clipPath id="fl1a"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="fl1b"><path d="M30,15h30v15zv15H0zH0V0zV0h30z"/></clipPath> <g clip-path="url(#fl1a)"><path d="M0,0v30h60V0z" fill="#012169"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/> <path d="M0,0 60,30M60,0 0,30" clip-path="url(#fl1b)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/> <path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></svg></span><b lang="en">English</b><span>anglais</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#EE1C25"/><path d="M5.00,2.00L5.67,4.07L7.85,4.07L6.09,5.35L6.76,7.43L5.00,6.15L3.24,7.43L3.91,5.35L2.15,4.07L4.33,4.07Z" fill="#FFFF00"/><path d="M9.14,2.51L9.62,1.97L9.25,1.34L9.91,1.63L10.39,1.08L10.33,1.80L11.00,2.09L10.29,2.25L10.22,2.97L9.85,2.35Z" fill="#FFFF00"/><path d="M11.01,4.14L11.66,3.82L11.56,3.10L12.07,3.62L12.72,3.30L12.38,3.95L12.88,4.47L12.17,4.34L11.83,4.99L11.73,4.27Z" fill="#FFFF00"/><path d="M11.04,6.73L11.76,6.70L11.96,6.00L12.21,6.68L12.94,6.66L12.37,7.10L12.62,7.79L12.01,7.38L11.44,7.83L11.64,7.13Z" fill="#FFFF00"/><path d="M9.22,8.38L9.90,8.63L10.35,8.06L10.32,8.79L11.00,9.05L10.30,9.24L10.26,9.96L9.87,9.36L9.16,9.55L9.62,8.98Z" fill="#FFFF00"/></svg></span><b lang="zh">中文</b><span>chinois</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#fff"/><rect width="30" height="6.67" fill="#FF9933"/><rect y="13.33" width="30" height="6.67" fill="#138808"/> <circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" stroke-width=".35"/><circle cx="15" cy="10" r=".5" fill="#000080"/><path d="M15,10L17.50,10.00M15,10L17.41,10.65M15,10L17.17,11.25M15,10L16.77,11.77M15,10L16.25,12.17M15,10L15.65,12.41M15,10L15.00,12.50M15,10L14.35,12.41M15,10L13.75,12.17M15,10L13.23,11.77M15,10L12.83,11.25M15,10L12.59,10.65M15,10L12.50,10.00M15,10L12.59,9.35M15,10L12.83,8.75M15,10L13.23,8.23M15,10L13.75,7.83M15,10L14.35,7.59M15,10L15.00,7.50M15,10L15.65,7.59M15,10L16.25,7.83M15,10L16.77,8.23M15,10L17.17,8.75M15,10L17.41,9.35" stroke="#000080" stroke-width=".18"/></svg></span><b lang="hi">हिन्दी</b><span>hindi</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/></svg></span><b lang="es">Español</b><span>espagnol</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#fff"/><rect width="30" height="6.67" fill="#CE1126"/><rect y="13.33" width="30" height="6.67" fill="#000"/> <path d="M11.8,9.4L13.9,8.6L14.3,7.2L15.7,7.2L16.1,8.6L18.2,9.4L17,11.1L15.8,10.6L15.9,12.6L15,13L14.1,12.6L14.2,10.6L13,11.1Z" fill="#C09300"/></svg></span><b lang="ar" dir="rtl">العربية</b><span>arabe</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#fff"/><rect width="10" height="20" fill="#002395"/><rect x="20" width="10" height="20" fill="#ED2939"/></svg></span><b lang="fr">Français</b><span>français</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#006A4E"/><circle cx="13.5" cy="10" r="6" fill="#F42A41"/></svg></span><b lang="bn">বাংলা</b><span>bengali</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#009C3B"/><path d="M2.6,10L15,1.8L27.4,10L15,18.2Z" fill="#FFDF00"/><circle cx="15" cy="10" r="5" fill="#002776"/> <path d="M10.2,9.1Q15.2,7.9 19.8,10.6" stroke="#fff" stroke-width=".9" fill="none"/><circle cx="13" cy="11.6" r=".32" fill="#fff"/><circle cx="15.5" cy="12.8" r=".32" fill="#fff"/><circle cx="17.2" cy="11.9" r=".32" fill="#fff"/><circle cx="14.2" cy="13.9" r=".32" fill="#fff"/><circle cx="16.4" cy="14.2" r=".32" fill="#fff"/><circle cx="12.2" cy="12.9" r=".32" fill="#fff"/></svg></span><b lang="pt">Português</b><span>portugais</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#fff"/><rect y="6.67" width="30" height="6.67" fill="#0039A6"/><rect y="13.33" width="30" height="6.67" fill="#D52B1E"/></svg></span><b lang="ru">Русский</b><span>russe</span></li>
+          <li><span class="drapeau"><svg class="flag " width="48" height="32" viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="#fff"/><rect width="30" height="10" fill="#FF0000"/></svg></span><b lang="id">Bahasa Indonesia</b><span>indonésien</span></li>
+      </ul>
     </div>
   </section>
 
@@ -201,7 +255,7 @@ footer a { color: var(--sable); }
     <div class="large">
       <div class="tete"><h2 id="t-suite">Et quand la base est solide</h2></div>
       <ul class="liste">
-        <li><h3>Expéditions</h3><p class="doux">Jusqu'à trois escouades fouillent seules pendant que vous jouez, et même jeu fermé. Vous pouvez les regarder en direct depuis la base.</p></li>
+        <li><h3>Expéditions</h3><p class="doux">Jusqu'à cinq escouades fouillent seules pendant que vous jouez, et même jeu fermé. Vous pouvez les regarder en direct depuis la base.</p></li>
         <li><h3>En ligne</h3><p class="doux">Avec un serveur Colosse : raids à plusieurs en coopération ou en affrontement, classement, et pillage des bases des autres joueurs.</p></li>
         <li><h3>Tutoriel jouable</h3><p class="doux">Une dizaine de minutes dans une partie à part, pour tout apprendre en jouant, du premier tir à la défense de la base.</p></li>
       </ul>

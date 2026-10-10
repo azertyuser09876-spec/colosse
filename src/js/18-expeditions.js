@@ -5,21 +5,21 @@
 // à chaque image, son monde est chargé dans les variables du jeu, avance d'un pas, puis le vôtre est remis en place.
 // Personne ne la pilote : un meneur invisible choisit les objectifs, l'escouade le suit, se bat, ramasse puis s'extrait.
 // Jeu fermé ou onglet en arrière-plan : à la reprise, elle rattrape le temps écoulé en accéléré, quelques millisecondes par image.
-const EXP_DUR = [{ n: 'Courte', t: 300 }, { n: 'Moyenne', t: 540 }, { n: 'Longue', t: 840 }];
+const EXP_DUR = [{ n: TL('Courte'), t: 300 }, { n: TL('Moyenne'), t: 540 }, { n: TL('Longue'), t: 840 }];
 const EXP_POST = {
-  prudent: { n: 'Prudente', d: 'Évite les zones gardées, se replie vite et rentre dès les premiers dégâts.', risk: .45, hpRet: .55, loss: .34, flee: .75, avoid: .4 },
-  normal: { n: 'Équilibrée', d: 'Fouille ce qui est à sa mesure et rentre quand l\'escouade faiblit.', risk: .62, hpRet: .45, loss: .4, flee: .95, avoid: .75 },
-  audace: { n: 'Audacieuse', d: 'Force les coffres militaires gardés, tient sous le feu et rentre tard.', risk: 1.25, hpRet: .25, loss: .75, flee: 1.6, avoid: 9 },
+  prudent: { n: TL('Prudente'), d: TL('Évite les zones gardées, se replie vite et rentre dès les premiers dégâts.'), risk: .45, hpRet: .55, loss: .34, flee: .75, avoid: .4 },
+  normal: { n: TL('Équilibrée'), d: TL('Fouille ce qui est à sa mesure et rentre quand l\'escouade faiblit.'), risk: .62, hpRet: .45, loss: .4, flee: .95, avoid: .75 },
+  audace: { n: TL('Audacieuse'), d: TL('Force les coffres militaires gardés, tient sous le feu et rentre tard.'), risk: 1.25, hpRet: .25, loss: .75, flee: 1.6, avoid: 9 },
 };
 const EXP_POST_KEYS = Object.keys(EXP_POST);
-const expSlots = () => Math.min(3, bLevel('expedition'));
+const expSlots = () => Math.min(5, bLevel('expedition'));
 const regShort = i => (REGIONS[i] || REGIONS[0]).n.replace(/^(Les |Le |La |L')/, '');
 
 // ---------- couleurs du sol d'une région, sans reconstruire les textures ----------
 function applyGroundColors(id) {
   GROUND.forEach((g, i) => { g.base = GROUND_DEF[i].base.slice(); g.mm = GROUND_DEF[i].mm; g.n = GROUND_DEF[i].n; });
   const o = REGION_GROUND[id]; if (o) for (const i in o) { GROUND[i].base = o[i][0].slice(); GROUND[i].mm = o[i][1]; }
-  if (id === 'glacier') GROUND[3].n = 'Eau glacée';
+  if (id === 'glacier') GROUND[3].n = TL('Eau glacée');
 }
 
 // ---------- changement de monde : toutes les variables d'une partie ----------
@@ -33,7 +33,7 @@ function ctxGrab() {
     player, diff, raidTime, alertLv, time, frameDt, B, spawnT, actT, fogT, toxT, nextUid, endT, endSuccess, endExtracted,
     raidStats, regionCur, eProg, eTarget, fullWarnT, fleetAliveN, followSlots, flashT, armyPower, formation, deferred,
     crews, raidContracts, radarLv, attack, W, miniCv, miniCtx, fogCv, fogCtx, explored, chunkCache, hgrid,
-    env, cm, mwx: mouse.wx, mwy: mouse.wy, casings: FX.casings, wrecks: FX.wrecks, live: LIVE.game, tut: TUT.on,
+    env, cm, mwx: mouse.wx, mwy: mouse.wy, casings: FX.casings, wrecks: FX.wrecks, frags: FX.frags, live: LIVE.game, tut: TUT.on, mis: MIS,
   };
 }
 function ctxPut(o) {
@@ -47,7 +47,7 @@ function ctxPut(o) {
   fogCtx = o.fogCtx; explored = o.explored; chunkCache = o.chunkCache; hgrid = o.hgrid;
   for (const k of ENV_KEYS) ENV[k] = o.env[k];
   for (const k of CAM_KEYS) cam[k] = o.cm[k];
-  mouse.wx = o.mwx; mouse.wy = o.mwy; FX.casings = o.casings; FX.wrecks = o.wrecks; LIVE.game = o.live; TUT.on = o.tut;
+  mouse.wx = o.mwx; mouse.wy = o.mwy; FX.casings = o.casings; FX.wrecks = o.wrecks; FX.frags = o.frags || []; LIVE.game = o.live; TUT.on = o.tut; MIS = o.mis || [];
 }
 function expFresh() {
   const env = {}; for (const k of ENV_KEYS) env[k] = ENV[k];
@@ -57,7 +57,7 @@ function expFresh() {
     player: null, diff: DIFFS[1], raidTime: 0, alertLv: 0, time: 0, frameDt: 0, B: null, spawnT: 50, actT: 0, fogT: 0, toxT: 0, nextUid: 1, endT: -1, endSuccess: false, endExtracted: null,
     raidStats: null, regionCur: 0, eProg: 0, eTarget: null, fullWarnT: 0, fleetAliveN: 0, followSlots: [], flashT: 0, armyPower: 0, formation: 'free', deferred: [],
     crews: [], raidContracts: [], radarLv: 0, attack: null, W: null, miniCv: null, miniCtx: null, fogCv: null, fogCtx: null, explored: null, chunkCache: new Map(), hgrid: new Map(),
-    env, cm: { x: 0, y: 0, zoom: .85, userZoom: .85, shake: 0, kx: 0, ky: 0, lvx: 0, lvy: 0 }, mwx: 0, mwy: 0, casings: [], wrecks: [], live: null, tut: false,
+    env, cm: { x: 0, y: 0, zoom: .85, userZoom: .85, shake: 0, kx: 0, ky: 0, lvx: 0, lvy: 0 }, mwx: 0, mwy: 0, casings: [], wrecks: [], frags: [], live: null, tut: false, mis: [],
   };
 }
 
@@ -188,7 +188,7 @@ const EXP = {
         });
         cx.err = 0;
       } catch (er) { console.error(er); if (++cx.err > 5) this.abort(cx, 'liaison perdue'); }
-      if (cx.notes.length) { for (const m of cx.notes) msg('Expédition ' + cx.e.id + ' : ' + m.text, m.col || '#a59c88', 7); cx.notes.length = 0; }
+      if (cx.notes.length) { for (const m of cx.notes) msg(TL('Expédition {id} : {text}', { id: cx.e.id, text: m.text }), m.col || '#a59c88', 7); cx.notes.length = 0; }
     }
     for (const cx of [...this.cx.values()]) if (cx.done) this.apply(cx);
     if (now - this.saveT > 15000) { this.saveT = now; writeSave(); }
@@ -217,12 +217,12 @@ const EXP = {
     if (save.expRep.length > 6) save.expRep.length = 6;
     save.exps = save.exps.filter(x => x !== e);
     writeSave();
-    const name = 'Expédition ' + e.id;
-    if (R.aborted) msg(name + ' : liaison perdue, l\'escouade a été rapatriée sans butin.', '#f2c14e', 8);
-    else if (ok) { msg(name + ' rentrée : ' + back.length + ' robot' + (back.length > 1 ? 's' : '') + ', ' + kg.toFixed(0) + ' kg de butin.', '#6fe3c8', 9); SFX.play('success', .6); }
-    else { msg(name + ' perdue : aucun robot n\'a été extrait.', '#ec6b74', 9); SFX.play('fail', .6); }
-    if (lost.length && ok) msg(name + ' : perdus ' + lost.join(', ') + '.', '#ec6b74', 8);
-    if (drawerOpen) toast(R.aborted ? name + ' rapatriée.' : ok ? name + ' rentrée avec ' + kg.toFixed(0) + ' kg de butin.' : name + ' perdue.');
+    const id = e.id;
+    if (R.aborted) msg(TL('Expédition {id} : liaison perdue, l\'escouade a été rapatriée sans butin.', { id }), '#f2c14e', 8);
+    else if (ok) { msg(TLn(back.length, 'Expédition {id} rentrée : {n} robot, {kg} kg de butin.', 'Expédition {id} rentrée : {n} robots, {kg} kg de butin.', { id, kg: kg.toFixed(0) }), '#6fe3c8', 9); SFX.play('success', .6); }
+    else { msg(TL('Expédition {id} perdue : aucun robot n\'a été extrait.', { id }), '#ec6b74', 9); SFX.play('fail', .6); }
+    if (lost.length && ok) msg(TLn(lost.length, 'Expédition {id} : perdus {names}.', 'Expédition {id} : perdus {names}.', { id, names: lost.join(', ') }), '#ec6b74', 8);
+    if (drawerOpen) toast(R.aborted ? TL('Expédition {id} rapatriée.', { id }) : ok ? TL('Expédition {id} rentrée avec {kg} kg de butin.', { id, kg: kg.toFixed(0) }) : TL('Expédition {id} perdue.', { id }));
     if (drawerOpen) renderHub();
   },
 };
@@ -236,14 +236,15 @@ function expStep(cx, dt) {
   update(dt);
   if (!cx.viewing) { parts.length = 0; beams.length = 0; if (decals.length > 40) decals.length = 0; } // personne ne regarde : pas d'effets visuels
 }
-function expNewD() { return { phase: 'insert', st: 0, S: null, goal: null, path: null, pi: 0, planT: 0, openT: 0, waitT: 0, fleeT: 0, fleeP: null, bad: new Set(), zones: [], nav: null, navT: -99, navKey: '', ret: false, why: '', site: null, bch0: 0, trailT: 0, insertT: 4, regT: 1, deadSeen: new Set(), calmT: 99, label: 'Insertion', short: 'insertion', winT: 0 }; }
+function expNewD() { return { phase: 'insert', st: 0, S: null, goal: null, path: null, pi: 0, planT: 0, openT: 0, waitT: 0, fleeT: 0, fleeP: null, bad: new Set(), zones: [], nav: null, navT: -99, navKey: '', ret: false, why: '', site: null, bch0: 0, trailT: 0, insertT: 4, regT: 1, deadSeen: new Set(), calmT: 99, label: TL('Insertion'), short: TL('insertion'), winT: 0 }; }
 function expLog(cx, text, col) { const L = cx.e.log; L.push([Math.round(raidTime), text, col || '#a59c88']); if (L.length > 40) L.splice(0, L.length - 40); }
 function expNote(cx, text, col) { cx.notes.push({ text, col }); }
 // les messages du monde de l'expédition alimentent son journal (sauf les consignes destinées au pilote)
 function expMsgHook(text, col) {
-  if (/\[|pilote|Entrez dans le cercle|Fenêtre manquée|Rejoignez|Soute pleine|Nouvelle balise|Balise reprise|Insertion|Aucun|Sélectionnez|Flotte :|Formation/.test(text)) return;
+  const src = TL_LAST.out === text ? TL_LAST.s : text; // les filtres lisent la phrase française d'origine
+  if (/\[|pilote|Entrez dans le cercle|Fenêtre manquée|Rejoignez|Soute pleine|Nouvelle balise|Balise reprise|Insertion|Aucun|Sélectionnez|Flotte :|Formation/.test(src)) return;
   expLog(EXPSIM, text, col);
-  if (/EST TOMBÉ/.test(text)) expNote(EXPSIM, text.toLowerCase().replace(/^./, s => s.toUpperCase()), '#ff8a5c');
+  if (/EST TOMBÉ/.test(src)) expNote(EXPSIM, text.toLowerCase().replace(/^./, s => s.toUpperCase()), '#ff8a5c');
 }
 
 // ---------- mise en place du monde (départ ou reprise après fermeture du jeu) ----------
@@ -279,7 +280,7 @@ function expSetup(cx) {
   });
   for (const s of e.sq) if (s.dead) D.deadSeen.add(s.sid);
   B = { state: 'carried', unit: null, charge: 0, pulseT: 6, windowT: 0, cd: 0 };
-  crews = []; raidContracts = [];
+  crews = []; raidContracts = []; MIS = [];
   populate(); spawnRivals();
   ENV.start(e.seed, RG.id);
   raidTime = e.simT || 0; time = raidTime; alertLv = Math.min(5, Math.floor(raidTime / (210 / diff.alert))); spawnT = resume ? 25 : 50;
@@ -296,8 +297,8 @@ function expSetup(cx) {
   radarLv = bLevel('radar'); reveal(sp.x, sp.y, 900 + 450 * radarLv); if (radarLv >= 2) for (const p of W.pylons) reveal(p.x, p.y, 220);
   reveal(player.x, player.y, 900);
   cam.x = player.x; cam.y = player.y;
-  if (!resume) expLog(cx, 'Insertion : ' + RG.n + '. ' + fleet.length + ' robot' + (fleet.length > 1 ? 's' : '') + ' au sol.', '#f2c14e');
-  else expLog(cx, 'Liaison rétablie : l\'escouade reprend sa route.', '#a59c88');
+  if (!resume) expLog(cx, TLn(fleet.length, 'Insertion : {region}. {n} robot au sol.', 'Insertion : {region}. {n} robots au sol.', { region: RG.n }), '#f2c14e');
+  else expLog(cx, TL('Liaison rétablie : l\'escouade reprend sa route.'), '#a59c88');
 }
 // photo de l'expédition dans la sauvegarde : de quoi reprendre si le jeu se ferme, et de quoi l'afficher dans les menus
 function expSnap(cx) {
@@ -323,11 +324,11 @@ function expEnd(success) {
 }
 
 // ---------- le meneur : objectifs, regroupement, combat, retour, balise ----------
-function expGoalName(G) { if (!G) return ''; if (G.k === 'crate') return G.o.type === 'militaire' ? 'coffre militaire' : G.o.type === 'donnees' ? 'archive de données' : 'caisse'; if (G.k === 'pylon') return 'pylône relais'; return 'butin au sol'; }
+function expGoalName(G) { if (!G) return ''; if (G.k === 'crate') return G.o.type === 'militaire' ? TL('coffre militaire') : G.o.type === 'donnees' ? TL('archive de données') : TL('caisse'); if (G.k === 'pylon') return TL('pylône relais'); return TL('butin au sol'); }
 function expSquad(cx) {
   const D = cx.D, A = player; let n = 0, nr = 0, hp = 0, mh = 0, cw = 0, cap = 0, spd = 1e9, crush = 9, fly = true, H = 0, Dp = 0, far = 0;
   for (const r of fleet) {
-    if (r.dead) { if (!r.temp && !D.deadSeen.has(r.sid)) { D.deadSeen.add(r.sid); expNote(cx, r.name + ' détruit.', '#ec6b74'); } continue; }
+    if (r.dead) { if (!r.temp && !D.deadSeen.has(r.sid)) { D.deadSeen.add(r.sid); expNote(cx, TL('{name} détruit.', { name: r.name }), '#ec6b74'); } continue; }
     n++; if (!r.temp) nr++; hp += r.hp; mh += r.maxhp; cw += r.cargoW; cap += r.cargoMax; spd = Math.min(spd, r.spd); H += unitHP(r); Dp += unitDPS(r);
     if (!r.fly) { fly = false; crush = Math.min(crush, r.crush || 0); }
     if (!r.reg) far = Math.max(far, Math.hypot(r.x - A.x, r.y - A.y) - r.r);
@@ -343,15 +344,15 @@ function expSquad(cx) {
   }
   D.S = { n, nr, hp, mh, hpF: mh ? hp / mh : 0, cw, cap, free: cap - cw, spd: n ? spd : 100, crush: fly ? 99 : crush, fly, H, Dp, far, tH, tD, q: tH ? forceRatio(tH, tD, H, Dp) : 0, hot, tc: tw ? { x: tx / tw, y: ty / tw } : null, foe, fd };
   // libellés pour l'interface
-  const G = D.goal, foeN = foe ? (foe.kind === 'enemy' ? ENEMIES[foe.etype].n : foe.crew ? foe.crew.name : 'hostiles') : '';
+  const G = D.goal, foeN = foe ? (foe.kind === 'enemy' ? ENEMIES[foe.etype].n : foe.crew ? foe.crew.name : TL('hostiles')) : '';
   const L = {
-    insert: ['Insertion', 'insertion'], wait: ['Regroupement de l\'escouade', 'regroupement'], flee: ['Repli : la menace est trop forte', 'repli'],
-    combat: ['Combat' + (foeN ? ' : ' + foeN : ''), 'combat'], sweep: ['Ramassage du butin', 'ramassage'],
-    move: [G ? 'En route : ' + expGoalName(G) + ' (' + Math.round(Math.hypot(G.x - A.x, G.y - A.y) / 10) + ' m)' : 'Recherche d\'un objectif', 'fouille'],
-    open: [G && G.k === 'pylon' ? 'Activation du pylône relais' : 'Fouille : ' + expGoalName(G), 'fouille'],
-    return: ['Retour vers l\'extraction' + (D.why ? ' (' + D.why + ')' : ''), 'retour'],
-    anchor: [B.state === 'broken' ? 'Balise détruite · réimpression ' + Math.ceil(B.cd) + ' s' : 'Ancrage ' + Math.floor(B.charge * 100) + ' %' + (B.unit && nearPylon(B.unit.x, B.unit.y) ? ' · relais ×2,5' : ''), B.state === 'broken' ? 'balise détruite' : 'ancrage ' + Math.floor(B.charge * 100) + ' %'],
-    window: ['Fenêtre d\'extraction : ' + Math.ceil(B.windowT) + ' s', 'fenêtre'], lift: ['Extraction en cours', 'extraction'], done: ['Terminée', 'terminée'],
+    insert: [TL('Insertion'), TL('insertion')], wait: [TL('Regroupement de l\'escouade'), TL('regroupement')], flee: [TL('Repli : la menace est trop forte'), TL('repli')],
+    combat: [foeN ? TL('Combat : {foe}', { foe: foeN }) : TL('Combat'), TL('combat')], sweep: [TL('Ramassage du butin'), TL('ramassage')],
+    move: [G ? TL('En route : {goal} ({d} m)', { goal: expGoalName(G), d: Math.round(Math.hypot(G.x - A.x, G.y - A.y) / 10) }) : TL('Recherche d\'un objectif'), TL('fouille')],
+    open: [G && G.k === 'pylon' ? TL('Activation du pylône relais') : TL('Fouille : {goal}', { goal: expGoalName(G) }), TL('fouille')],
+    return: [D.why ? TL('Retour vers l\'extraction ({why})', { why: D.why }) : TL('Retour vers l\'extraction'), TL('retour')],
+    anchor: [B.state === 'broken' ? TL('Balise détruite') + ' · ' + TL('réimpression {t} s', { t: Math.ceil(B.cd) }) : TL('Ancrage {p} %', { p: Math.floor(B.charge * 100) }) + (B.unit && nearPylon(B.unit.x, B.unit.y) ? ' · ' + TL('relais ×2,5') : ''), B.state === 'broken' ? TL('balise détruite') : TL('ancrage {p} %', { p: Math.floor(B.charge * 100) })],
+    window: [TL('Fenêtre d\'extraction : {t} s', { t: Math.ceil(B.windowT) }), TL('fenêtre')], lift: [TL('Extraction en cours'), TL('extraction')], done: [TL('Terminée'), TL('terminée')],
   }[D.phase] || ['', ''];
   D.label = L[0]; D.short = L[1];
 }
@@ -435,7 +436,7 @@ function expSendTo(cx, r, T) {
 }
 function expBeginReturn(cx, why) {
   const D = cx.D; D.ret = true; D.why = why; D.goal = null; D.path = null; D.site = null;
-  expLog(cx, 'Retour vers l\'extraction : ' + why + '.', '#f2c14e'); expNote(cx, 'retour vers l\'extraction (' + why + ').', '#f2c14e');
+  expLog(cx, TL('Retour vers l\'extraction : {why}.', { why }), '#f2c14e'); expNote(cx, TL('retour vers l\'extraction ({why}).', { why }), '#f2c14e');
 }
 // site d'extraction : la balise attire tout ce qui rôde à 1 500 px, on cherche donc un coin calme, pas trop loin,
 // de préférence près d'un pylône relais (ancrage ×2,5)
@@ -455,15 +456,15 @@ function expPlaceBeacon(cx) {
   const A = player, D = cx.D;
   const hp = 1300 * diff.beacon * (has('u_beacon') ? 2 : 1) * (1 + .2 * Math.max(0, bLevel('pad') - 1)) * (1 + armyPower / 60);
   const pos = findWalkableNear(A.x, A.y, 0, 50, 20) || { x: A.x, y: A.y };
-  B.unit = baseUnit({ kind: 'beacon', team: 0, x: pos.x, y: pos.y, r: 18, maxhp: hp, hp, static: true, name: 'Balise' });
+  B.unit = baseUnit({ kind: 'beacon', team: 0, x: pos.x, y: pos.y, r: 18, maxhp: hp, hp, static: true, name: TL('Balise') });
   units.push(B.unit); B.state = 'charging'; B.charge = D.bch0 || 0; D.bch0 = 0; B.pulseT = 7;
   SFX.play('beacon', 1, pos.x, pos.y);
-  expLog(cx, 'Balise posée' + (nearPylon(pos.x, pos.y) ? ' près d\'un pylône relais : ancrage ×2,5' : '') + '.', '#f2c14e');
+  expLog(cx, nearPylon(pos.x, pos.y) ? TL('Balise posée près d\'un pylône relais : ancrage ×2,5.') : TL('Balise posée.'), '#f2c14e');
   for (const r of fleet) if (!r.dead) { r.order = { type: 'beacon' }; r.reg = false; r.queue = []; }
 }
 function expActivate(cx, p) {
   p.active = true; reveal(p.x, p.y, 1900); raidStats.pylons++; spawnItem('data', Math.round(4 * diff.loot), p.x, p.y); SFX.play('beacon', 1, p.x, p.y);
-  expLog(cx, 'Pylône relais activé : carte révélée.', '#6fe3c8');
+  expLog(cx, TL('Pylône relais activé : carte révélée.'), '#6fe3c8');
 }
 function expDirect(dt) {
   const cx = EXPSIM, D = cx.D, e = cx.e, A = player, P = EXP_POST[e.post] || EXP_POST.normal;
@@ -471,12 +472,12 @@ function expDirect(dt) {
   if ((D.st -= dt) <= 0) { D.st = .4; expSquad(cx); }
   const S = D.S; if (!S) return;
   if ((D.trailT -= dt) <= 0) { D.trailT = 3; const L = e.trail, l = L[L.length - 1]; if (!l || Math.hypot(l[0] - A.x, l[1] - A.y) > 180) { L.push([A.x | 0, A.y | 0]); if (L.length > 500) L.splice(0, L.length - 500); } }
-  if (!S.nr) { if (endT < 0 && !cx.done) { endT = .6; endSuccess = false; D.phase = 'done'; expLog(cx, 'Plus aucun robot debout : signal perdu.', '#ec6b74'); } return; }
+  if (!S.nr) { if (endT < 0 && !cx.done) { endT = .6; endSuccess = false; D.phase = 'done'; expLog(cx, TL('Plus aucun robot debout : signal perdu.'), '#ec6b74'); } return; }
   if (B.state === 'lift') { D.phase = 'lift'; return; }
   A.spd = Math.max(55, S.spd * .8);
   // faut-il rentrer ?
   if (!D.ret) {
-    const why = e.recall ? 'rappel' : raidTime >= e.dur ? 'temps écoulé' : (S.cap > 0 && S.free < 1.2) ? 'soutes pleines' : S.hpF < P.hpRet ? 'escouade abîmée' : (e.n0 >= 2 && S.nr <= e.n0 * (1 - P.loss)) ? 'pertes trop lourdes' : D.exhausted ? 'zone fouillée' : '';
+    const why = e.recall ? TL('rappel') : raidTime >= e.dur ? TL('temps écoulé') : (S.cap > 0 && S.free < 1.2) ? TL('soutes pleines') : S.hpF < P.hpRet ? TL('escouade abîmée') : (e.n0 >= 2 && S.nr <= e.n0 * (1 - P.loss)) ? TL('pertes trop lourdes') : D.exhausted ? TL('zone fouillée') : '';
     if (why) expBeginReturn(cx, why);
   }
   if (B.state === 'charging' && raidTime > e.dur + 600) B.charge = Math.max(B.charge, .995); // garde-fou : la fenêtre finit par s'ouvrir
@@ -485,7 +486,7 @@ function expDirect(dt) {
   if (B.unit) {
     const U = B.unit, win = B.state === 'window', inZ = r => Math.hypot(r.x - U.x, r.y - U.y) < zoneReach(r) - 8;
     if (win && D.phase !== 'window') {
-      expLog(cx, 'Fenêtre d\'extraction ouverte : l\'escouade se resserre dans le cercle.', '#f2c14e');
+      expLog(cx, TL('Fenêtre d\'extraction ouverte : l\'escouade se resserre dans le cercle.'), '#f2c14e');
       for (const r of fleet) if (!r.dead && Math.hypot(r.x - U.x, r.y - U.y) > ZONE_R * .8) expSendTo(cx, r, U);
     }
     D.phase = win ? 'window' : 'anchor';
@@ -494,7 +495,7 @@ function expDirect(dt) {
       const out = fleet.filter(r => !r.dead && !inZ(r));
       if (out.length && (D.missN || 0) < 2 && out.every(r => Math.hypot(r.x - U.x, r.y - U.y) < 1800)) {
         D.missN = (D.missN || 0) + 1; D.missT = raidTime; A.x = U.x + ZONE_R + 80; A.y = U.y; A.vx = A.vy = 0;
-        expLog(cx, 'Fenêtre laissée passer : ' + out.map(r => r.name).join(', ') + ' hors du cercle.', '#f2c14e');
+        expLog(cx, TLn(out.length, 'Fenêtre laissée passer : {names} hors du cercle.', 'Fenêtre laissée passer : {names} hors du cercle.', { names: out.map(r => r.name).join(', ') }), '#f2c14e');
         for (const r of out) expSendTo(cx, r, U);
         return;
       }
@@ -514,7 +515,7 @@ function expDirect(dt) {
   // combat
   const fight = S.foe && ((S.fd < 650 && (S.hot || S.q < P.avoid)) || (S.hot && S.fd < 1200));
   if (fight) {
-    if (D.calmT > 12) { expLog(cx, 'Contact : ' + (S.foe.kind === 'enemy' ? ENEMIES[S.foe.etype].n : S.foe.crew ? S.foe.crew.name : 'hostiles') + '.', '#ff9a7a'); D.hp0 = S.hpF; D.cmbT = 0; D.k0 = raidStats.kills; D.kT = raidTime; }
+    if (D.calmT > 12) { expLog(cx, TL('Contact : {foe}.', { foe: S.foe.kind === 'enemy' ? ENEMIES[S.foe.etype].n : S.foe.crew ? S.foe.crew.name : TL('hostiles') }), '#ff9a7a'); D.hp0 = S.hpF; D.cmbT = 0; D.k0 = raidStats.kills; D.kT = raidTime; }
     D.calmT = 0; D.cmbT = (D.cmbT || 0) + dt;
     if (raidStats.kills !== D.k0) { D.k0 = raidStats.kills; D.kT = raidTime; }
     // combat qui s'éternise sans victoire (tourelle hors d'atteinte, tireurs embusqués) : on passe son chemin
@@ -523,7 +524,7 @@ function expDirect(dt) {
     const bleed = S.hpF < (D.hp0 || 1) - .3 && S.q > .5;
     if (D.fleeT <= 0 && (S.q > P.flee || bleed || stale) && S.tc) {
       const ax = A.x - S.tc.x, ay = A.y - S.tc.y, l = Math.hypot(ax, ay) || 1, p = findWalkableNear(A.x + ax / l * 700, A.y + ay / l * 700, 0, 220, 25);
-      if (p) { D.fleeP = p; D.fleeT = 8; D.path = null; if (D.goal) D.bad.add(D.goal.o); D.goal = null; D.hp0 = S.hpF; D.cmbT = 0; D.kT = raidTime; D.zones.push({ x: S.tc.x, y: S.tc.y, r: 950, t: raidTime + 150 }); expLog(cx, 'Repli : ' + (bleed ? 'l\'escouade saigne' : stale ? 'le combat s\'enlise' : 'l\'adversaire est trop fort') + '.', '#f2c14e'); }
+      if (p) { D.fleeP = p; D.fleeT = 8; D.path = null; if (D.goal) D.bad.add(D.goal.o); D.goal = null; D.hp0 = S.hpF; D.cmbT = 0; D.kT = raidTime; D.zones.push({ x: S.tc.x, y: S.tc.y, r: 950, t: raidTime + 150 }); expLog(cx, bleed ? TL('Repli : l\'escouade saigne.') : stale ? TL('Repli : le combat s\'enlise.') : TL('Repli : l\'adversaire est trop fort.'), '#f2c14e'); }
     }
     // les transporteurs se mettent à l'abri au centre de l'escouade, les récolteurs restent groupés
     let ci = 0;
@@ -543,7 +544,7 @@ function expDirect(dt) {
   if (D.calmT > 3) for (const r of fleet) if (r.cmb) { r.cmb = false; if (r.order && (r.order.type === 'follow' || r.order.type === 'hold')) r.order = null; }
   if (S.foe && !S.hot && S.fd < 700 && S.q >= P.avoid && D.fleeT <= 0 && S.tc) {
     const ax = A.x - S.tc.x, ay = A.y - S.tc.y, l = Math.hypot(ax, ay) || 1, p = findWalkableNear(A.x + ax / l * 500, A.y + ay / l * 500, 0, 200, 20);
-    if (p) { D.fleeP = p; D.fleeT = 5; D.path = null; if (D.goal) D.bad.add(D.goal.o); D.goal = null; D.zones.push({ x: S.tc.x, y: S.tc.y, r: 800, t: raidTime + 120 }); expLog(cx, 'Contournement : ' + (S.foe.kind === 'enemy' ? ENEMIES[S.foe.etype].n : 'hostiles') + ' trop forts pour l\'escouade.', '#a59c88'); }
+    if (p) { D.fleeP = p; D.fleeT = 5; D.path = null; if (D.goal) D.bad.add(D.goal.o); D.goal = null; D.zones.push({ x: S.tc.x, y: S.tc.y, r: 800, t: raidTime + 120 }); expLog(cx, TL('Contournement : {foe} trop forts pour l\'escouade.', { foe: S.foe.kind === 'enemy' ? ENEMIES[S.foe.etype].n : TL('hostiles') }), '#a59c88'); }
   }
   if (D.fleeT > 0) { D.fleeT -= dt; D.phase = 'flee'; if (steer(A, D.fleeP.x, D.fleeP.y, dt, 1, 30)) D.fleeT = 0; return; }
   // on attend les traînards
@@ -567,7 +568,7 @@ function expDirect(dt) {
     D.goal = null; if ((D.planT -= dt) > 0) return; D.planT = 1.5;
     D.goal = expPlan(cx); if (!D.goal) return;
     D.path = D.goal.path; D.pi = 0;
-    if (D.goal.k !== 'loot') expLog(cx, 'Objectif : ' + expGoalName(D.goal) + ' à ' + Math.round(D.goal.d / 10) + ' m.', '#a59c88');
+    if (D.goal.k !== 'loot') expLog(cx, TL('Objectif : {goal} à {d} m.', { goal: expGoalName(D.goal), d: Math.round(D.goal.d / 10) }), '#a59c88');
   }
   const G = D.goal;
   if (!G.mine && ((G.k === 'crate' && G.o.open) || (G.k === 'pylon' && G.o.active))) { G.done = true; return; } // quelqu'un est passé avant nous
@@ -589,7 +590,7 @@ function expDirect(dt) {
   if (G.k === 'crate') {
     G.o.open = true; dropTable(CRATE_LOOT[G.o.type], G.o.x, G.o.y); SFX.play('open', 1, G.o.x, G.o.y);
     if (G.o.type === 'donnees') raidStats.archives++;
-    expLog(cx, (G.o.type === 'militaire' ? 'Coffre militaire forcé' : G.o.type === 'donnees' ? 'Archive de données extraite' : 'Caisse ouverte') + '.', '#e8dcc4');
+    expLog(cx, G.o.type === 'militaire' ? TL('Coffre militaire forcé.') : G.o.type === 'donnees' ? TL('Archive de données extraite.') : TL('Caisse ouverte.'), '#e8dcc4');
   } else expActivate(cx, G.o);
   G.stage = 'sweep'; G.sx = G.o.x; G.sy = G.o.y; G.sweepT = 12;
 }
@@ -598,23 +599,23 @@ function expDirect(dt) {
 let expForm = { region: null, diff: null, dur: 1, post: 'normal', sel: [] };
 function expCheck() {
   const f = expForm, L = save.exps || [];
-  if (TUT.on) return 'Pas d\'expédition pendant le tutoriel.';
-  if (!bLevel('expedition')) return 'Construisez un poste d\'expédition.';
-  if (L.length >= expSlots()) return 'Tous les postes sont occupés.';
-  if (state !== 'base') return 'Lancez l\'expédition depuis la base.';
-  if (attack) return 'Repoussez d\'abord l\'attaque.';
-  if (!regionUnlocked(f.region)) return 'Région verrouillée.';
+  if (TUT.on) return TL('Pas d\'expédition pendant le tutoriel.');
+  if (!bLevel('expedition')) return TL('Construisez un poste d\'expédition.');
+  if (L.length >= expSlots()) return TL('Tous les postes sont occupés.');
+  if (state !== 'base') return TL('Lancez l\'expédition depuis la base.');
+  if (attack) return TL('Repoussez d\'abord l\'attaque.');
+  if (!regionUnlocked(f.region)) return TL('Région verrouillée.');
   const sel = f.sel.map(id => save.robots.find(r => r.id === id)).filter(r => r && !r.exp);
-  if (!sel.length) return 'Choisissez au moins un robot.';
-  if (sel.reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0) > cmdCap() + 1e-6) return 'Commandement dépassé.';
-  if (!sel.some(r => robotStats(r).cargo > 0)) return 'Aucune soute dans l\'escouade : elle ne rapporterait rien.';
+  if (!sel.length) return TL('Choisissez au moins un robot.');
+  if (sel.reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0) > cmdCap() + 1e-6) return TL('Commandement dépassé.');
+  if (!sel.some(r => robotStats(r).cargo > 0)) return TL('Aucune soute dans l\'escouade : elle ne rapporterait rien.');
   return '';
 }
 function expLaunch() {
   const why = expCheck(); if (why) { toast(why); SFX.play('deny', 1); return; }
   const f = expForm, sel = f.sel.map(id => save.robots.find(r => r.id === id)).filter(r => r && !r.exp);
   save.exps = save.exps || []; const id = save.expN = Math.max(save.expN || 1, 1); save.expN++;
-  const e = { id, region: f.region, diff: f.diff, dur: EXP_DUR[f.dur].t, durI: f.dur, post: f.post, seed: (Math.random() * 1e9) | 0, t0: Date.now(), simT: 0, n0: sel.length, kills: 0, kills0: 0, trail: [], log: [], ph: 'Insertion', phs: 'insertion',
+  const e = { id, region: f.region, diff: f.diff, dur: EXP_DUR[f.dur].t, durI: f.dur, post: f.post, seed: (Math.random() * 1e9) | 0, t0: Date.now(), simT: 0, n0: sel.length, kills: 0, kills0: 0, trail: [], log: [], ph: TL('Insertion'), phs: TL('insertion'),
     sq: sel.map(r => ({ sid: r.id, name: r.name, ch: r.chassis, hp: r.hp, cargo: {}, cw: 0, cap: robotStats(r).cargo, xp: r.xp || 0, kills: r.kills || 0, traits: (r.traits || []).slice() })) };
   for (const r of sel) { r.exp = e.id; r.deploy = false; }
   save.exps.push(e);
@@ -622,16 +623,16 @@ function expLaunch() {
   for (const r of sel) { const u = fleet.find(x => x.sid === r.id); if (!u) continue; if (player && player.inside === u) ejectPlayer(false); u.dead = true; parts.push({ type: 'ring', x: u.x, y: u.y, vx: 0, vy: 0, life: .8, max: .8, size: u.r * 2.5 + 30, col: '#f2c14e' }); parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .25, max: .25, size: u.r * 3, col: '#fff', a: 0 }); }
   fleet = fleet.filter(u => !u.dead);
   f.sel = []; writeSave(); SFX.play('uplink', .9);
-  toast('Expédition ' + e.id + ' en route : ' + REGIONS[e.region].n + '.');
+  toast(TL('Expédition {id} en route : {region}.', { id: e.id, region: REGIONS[e.region].n }));
   EXP.owner = save; EXP.build(e);
   renderHub();
 }
 
 // ---------- observation en plein écran ----------
 function expViewOpen(id) {
-  const cx = EXP.cx.get(id); if (!cx || cx.done) { toast('Liaison en cours d\'établissement…'); return; }
-  if (state !== 'base') { toast('Observez vos expéditions depuis la base.'); return; }
-  if (attack && attack.phase === 'fight') { toast('Impossible pendant l\'attaque de la base.'); SFX.play('deny', 1); return; }
+  const cx = EXP.cx.get(id); if (!cx || cx.done) { toast(TL('Liaison en cours d\'établissement…')); return; }
+  if (state !== 'base') { toast(TL('Observez vos expéditions depuis la base.')); return; }
+  if (attack && attack.phase === 'fight') { toast(TL('Impossible pendant l\'attaque de la base.')); SFX.play('deny', 1); return; }
   closeDrawer(true); placing = null; baseSel = null; updateBPanel(); showBaseBar(false); $('#fleetPop').classList.remove('on');
   for (const k in keys) keys[k] = false; mouse.l = false; mouse.ldown = false; mouse.drag = null; fireLatch = false; tactical = false;
   EXPV.id = id; EXPV.follow = null; EXPV.free = false; EXPV.drag = null; EXPV.kp = {}; EXPV.tf.clear(); EXPV.pinch = null; cx.viewing = true;
@@ -641,7 +642,7 @@ function expViewOpen(id) {
 function expViewClose(silent) {
   if (!EXPV.id) return;
   const cx = EXP.cx.get(EXPV.id); EXPV.id = null; EXPV.drag = null; EXPV.tf.clear();
-  if (cx) { cx.viewing = false; EXP.run(cx, () => { chunkCache.clear(); FX.wrecks.length = 0; FX.casings.length = 0; parts.length = 0; }); }
+  if (cx) { cx.viewing = false; EXP.run(cx, () => { chunkCache.clear(); FX.wrecks.length = 0; FX.casings.length = 0; FX.frags.length = 0; parts.length = 0; }); }
   setRegionPalette(state === 'base' || regionCur === null ? null : REGIONS[regionCur].id);
   if (state === 'base') { showBaseBar(true); updateBPanel(); }
   if (!silent) SFX.play('uiclose', 1);
@@ -650,15 +651,15 @@ function expViewClose(silent) {
 function expViewFrame(rdt) {
   const cx = EXP.cx.get(EXPV.id);
   if (!cx || cx.done || state !== 'base') { expViewClose(true); return false; }
-  if (attack && attack.phase === 'fight') { expViewClose(true); toast('Attaque de la base !'); return false; }
+  if (attack && attack.phase === 'fight') { expViewClose(true); toast(TL('Attaque de la base !')); return false; }
   EXP.run(cx, () => {
     const tg = EXPV.follow ? fleet.find(r => r.sid === EXPV.follow && !r.dead) : null;
     if (EXPV.follow && !tg) EXPV.follow = null;
     const pk = EXPV.kp, px = (pk.KeyD || pk.ArrowRight ? 1 : 0) - (pk.KeyA || pk.ArrowLeft ? 1 : 0), py = (pk.KeyS || pk.ArrowDown ? 1 : 0) - (pk.KeyW || pk.ArrowUp ? 1 : 0);
     if (px || py) { EXPV.free = true; EXPV.x += px * 760 * rdt / EXPV.z; EXPV.y += py * 760 * rdt / EXPV.z; }
     if (!EXPV.free) { const T = tg || player, k = 1 - Math.exp(-rdt * 4); EXPV.x = lerp(EXPV.x, T.x, k); EXPV.y = lerp(EXPV.y, T.y, k); }
-    EXPV.x = clamp(EXPV.x, 0, WPX); EXPV.y = clamp(EXPV.y, 0, WPX);
-    EXPV.z = lerp(EXPV.z, EXPV.uz, 1 - Math.exp(-rdt * 5));
+    EXPV.z = lerp(EXPV.z, Math.max(EXPV.uz, zoomFloor()), 1 - Math.exp(-rdt * 5));
+    EXPV.x = camBound(EXPV.x, EXPV.z, VW); EXPV.y = camBound(EXPV.y, EXPV.z, VH);
     cam.x = EXPV.x; cam.y = EXPV.y; cam.zoom = EXPV.z; cam.userZoom = EXPV.uz;
     cam.shake = Math.max(0, cam.shake - rdt * 36); const kk = Math.exp(-rdt * 11); cam.kx = (cam.kx || 0) * kk; cam.ky = (cam.ky || 0) * kk;
     mouse.wx = (mouse.x - VW / 2) / cam.zoom + cam.x; mouse.wy = (mouse.y - VH / 2) / cam.zoom + cam.y;
@@ -675,7 +676,7 @@ function expViewAct(act, arg) {
   if (act === 'recall') {
     if (cx.e.recall) return;
     if (performance.now() - EXPV.armT > 3000) { EXPV.armT = performance.now(); SFX.play('ui', 1); return; }
-    cx.e.recall = true; EXPV.armT = 0; SFX.play('uplink', .7); toast('Rappel transmis : l\'escouade rentre.'); return;
+    cx.e.recall = true; EXPV.armT = 0; SFX.play('uplink', .7); toast(TL('Rappel transmis : l\'escouade rentre.')); return;
   }
   if (act === 'zin') EXPV.uz = clamp(EXPV.uz * 1.2, expMinZ(), 1.6);
   if (act === 'zout') EXPV.uz = clamp(EXPV.uz / 1.2, expMinZ(), 1.6);
@@ -734,11 +735,11 @@ function expViewHUD(c) {
   // --- haut gauche : identité, phase, temps
   const pw = Math.min(340, VW * .44);
   panel(c, 14, 14, pw, 90);
-  c.fillStyle = '#f2c14e'; c.font = `700 14px ${FONT}`; c.fillText(fitText(c, 'Expédition ' + e.id + ' · ' + REGIONS[e.region].n, pw - 20), 24, 33);
+  c.fillStyle = '#f2c14e'; c.font = `700 14px ${FONT}`; c.fillText(fitText(c, TL('Expédition {id}', { id: e.id }) + ' · ' + REGIONS[e.region].n, pw - 20), 24, 33);
   c.fillStyle = '#e8dcc4'; c.font = `600 13px ${FONT}`; c.fillText(fitText(c, D.label || '', pw - 20), 24, 53);
   c.font = `500 11.5px ${FONT}`; c.fillStyle = '#a59c88';
-  c.fillText(fitText(c, mmss(raidTime) + ' / ' + mmss(e.dur) + ' de fouille · ' + DIFFS[e.diff].n + ' · ' + (EXP_POST[e.post] || EXP_POST.normal).n, pw - 20), 24, 71);
-  c.fillText('Alerte', 24, 90); for (let i = 0; i < 5; i++) { c.fillStyle = i < alertLv ? (alertLv >= 4 ? '#ff4d5e' : '#f2c14e') : 'rgba(255,255,255,.1)'; c.fillRect(64 + i * 15, 82, 12, 8); }
+  c.fillText(fitText(c, TL('{t} / {dur} de fouille', { t: mmss(raidTime), dur: mmss(e.dur) }) + ' · ' + DIFFS[e.diff].n + ' · ' + (EXP_POST[e.post] || EXP_POST.normal).n, pw - 20), 24, 71);
+  c.fillText(TL('Alerte'), 24, 90); for (let i = 0; i < 5; i++) { c.fillStyle = i < alertLv ? (alertLv >= 4 ? '#ff4d5e' : '#f2c14e') : 'rgba(255,255,255,.1)'; c.fillRect(64 + i * 15, 82, 12, 8); }
   c.textAlign = 'right'; c.fillStyle = ENV.night > .5 ? '#9fb4e0' : ENV.dusk > .4 ? '#f2b06e' : '#a59c88'; c.fillText(ENV.label(), 14 + pw - 10, 90); c.textAlign = 'left';
   // --- journal
   const lines = e.log.slice(-(T ? 3 : 6)).reverse(); let ly = 124;
@@ -753,10 +754,10 @@ function expViewHUD(c) {
   let cy = 16;
   if (B.state === 'charging' || B.state === 'window') {
     const w = Math.min(380, VW - pw - MS - 70), x = VW / 2 - w / 2, win = B.state === 'window';
-    if (w > 160) { panel(c, x, cy, w, 40); c.fillStyle = win ? '#f2c14e' : '#e8dcc4'; c.font = `700 12.5px ${FONT}`; c.fillText(win ? 'Fenêtre d\'extraction : ' + Math.ceil(B.windowT) + ' s' : 'Ancrage ' + Math.floor(B.charge * 100) + ' %', x + 10, cy + 16); bar(c, x + 10, cy + 24, w - 20, 7, win ? B.windowT / 16 : B.charge, win ? '#f2c14e' : '#c99a2e'); if (B.unit) bar(c, x + 10, cy + 33, w - 20, 3, B.unit.hp / B.unit.maxhp, '#6fe3c8'); cy += 48; }
+    if (w > 160) { panel(c, x, cy, w, 40); c.fillStyle = win ? '#f2c14e' : '#e8dcc4'; c.font = `700 12.5px ${FONT}`; c.fillText(win ? TL('Fenêtre d\'extraction : {t} s', { t: Math.ceil(B.windowT) }) : TL('Ancrage {p} %', { p: Math.floor(B.charge * 100) }), x + 10, cy + 16); bar(c, x + 10, cy + 24, w - 20, 7, win ? B.windowT / 16 : B.charge, win ? '#f2c14e' : '#c99a2e'); if (B.unit) bar(c, x + 10, cy + 33, w - 20, 3, B.unit.hp / B.unit.maxhp, '#6fe3c8'); cy += 48; }
   }
   if (cx.behind > 3) {
-    c.font = `600 12px ${FONT}`; const t = 'Rattrapage en accéléré · encore ' + mmss(cx.behind), tw = c.measureText(t).width + 20, x = VW / 2 - tw / 2;
+    c.font = `600 12px ${FONT}`; const t = TL('Rattrapage en accéléré') + ' · ' + TL('encore {t}', { t: mmss(cx.behind) }), tw = c.measureText(t).width + 20, x = VW / 2 - tw / 2;
     c.fillStyle = 'rgba(242,193,78,.9)'; c.fillRect(x, cy, tw, 22); c.fillStyle = '#14191b'; c.textAlign = 'center'; c.fillText(t, VW / 2, cy + 15); c.textAlign = 'left'; cy += 28;
   }
   // --- bas : escouade
@@ -769,11 +770,11 @@ function expViewHUD(c) {
     c.fillStyle = on ? 'rgba(111,227,200,.16)' : 'rgba(20,24,26,.82)'; c.fillRect(x, yb, cw, chh);
     c.strokeStyle = on ? '#6fe3c8' : 'rgba(232,220,196,.15)'; c.lineWidth = on ? 2 : 1; c.strokeRect(x + .5, yb + .5, cw - 1, chh - 1);
     c.globalAlpha = r.dead ? .45 : 1;
-    const kgT = r.dead || !r.cargoMax ? '' : r.cargoW.toFixed(0) + '/' + r.cargoMax + ' kg';
+    const kgT = r.dead || !r.cargoMax ? '' : TL('{a}/{b} kg', { a: r.cargoW.toFixed(0), b: r.cargoMax });
     c.font = `500 10.5px ${FONT}`; const kw = kgT ? c.measureText(kgT).width + 6 : 0;
     c.fillStyle = r.dead ? '#ec6b74' : '#e8dcc4'; c.font = `600 12px ${FONT}`; c.fillText(fitText(c, r.name, cw - 12 - (cw > 110 ? kw : 0)), x + 6, yb + 16);
     if (kgT && cw > 110) { c.font = `500 10.5px ${FONT}`; c.fillStyle = '#a59c88'; c.textAlign = 'right'; c.fillText(kgT, x + cw - 6, yb + 16); c.textAlign = 'left'; }
-    if (r.dead) { c.font = `500 11px ${FONT}`; c.fillText('détruit', x + 6, yb + 31); }
+    if (r.dead) { c.font = `500 11px ${FONT}`; c.fillText(TL('détruit'), x + 6, yb + 31); }
     else { bar(c, x + 6, yb + 22, cw - 12, 6, r.hp / r.maxhp, r.hp < r.maxhp * .3 ? COL.enemy : COL.ally); if (r.cargoMax > 0) bar(c, x + 6, yb + 31, cw - 12, 4, r.cargoW / r.cargoMax, r.cargoW >= r.cargoMax - .2 ? '#f2c14e' : '#c4a77a'); }
     c.globalAlpha = 1;
     if (!r.dead) btns.push({ x, y: yb, w: cw, h: chh, act: 'follow', arg: r.sid });
@@ -781,14 +782,14 @@ function expViewHUD(c) {
   // --- boutons
   const bh = T ? 36 : 28, by = yb - bh - 10, gap = 6;
   const tg = EXPV.follow ? fleet.find(r => r.sid === EXPV.follow) : null, arm = performance.now() - EXPV.armT < 3000;
-  const items2 = [['◂ Base' + (T ? '' : ' · Échap'), 'close', null, false, false, T ? 92 : 118], [tg ? 'Suivi : ' + tg.name : 'Suivi : escouade', tg ? 'squad' : 'next', null, !!tg || !EXPV.free, false, T ? 150 : 170], [e.recall ? 'Rappel en cours' : arm ? 'Confirmer le rappel' : 'Rappeler', 'recall', null, false, arm, T ? 130 : 140]];
+  const items2 = [[TL('◂ Base') + (T ? '' : ' · ' + TL('Échap')), 'close', null, false, false, T ? 92 : 118], [tg ? TL('Suivi : {name}', { name: tg.name }) : TL('Suivi : escouade'), tg ? 'squad' : 'next', null, !!tg || !EXPV.free, false, T ? 150 : 170], [e.recall ? TL('Rappel en cours') : arm ? TL('Confirmer le rappel') : TL('Rappeler'), 'recall', null, false, arm, T ? 130 : 140]];
   if (T) items2.push(['−', 'zout', null, false, false, 40], ['+', 'zin', null, false, false, 40]);
   let bx = 14; for (const [lb, act, arg, on, hot, w] of items2) { btn(bx, by, w, bh, lb, act, arg, on, hot); bx += w + gap; }
   // --- état de l'escouade
   c.font = `500 12px ${FONT}`; c.fillStyle = '#a59c88'; c.textAlign = 'right';
   const kg = fleet.reduce((s, r) => s + (r.dead ? 0 : r.cargoW), 0), cap = fleet.reduce((s, r) => s + (r.dead ? 0 : r.cargoMax), 0);
-  c.fillText((S.nr || 0) + ' / ' + e.n0 + ' robots' + (S.n > S.nr ? ' + ' + (S.n - S.nr) + ' renforts' : '') + ' · ' + kg.toFixed(0) + ' / ' + cap + ' kg · ' + raidStats.kills + ' hostiles abattus', VW - 16, by + bh - 8);
-  if (!T && VW > 900) { c.fillStyle = 'rgba(232,220,196,.5)'; c.fillText('Glisser : déplacer la vue · molette : zoom · Tab ou 1 à 9 : suivre un robot · Espace : escouade · R : rappeler', VW - 16, by - 8); }
+  c.fillText(TLn(e.n0, '{a} / {n} robots', '{a} / {n} robots', { a: S.nr || 0 }) + (S.n > S.nr ? ' + ' + TLn(S.n - S.nr, '{n} renforts', '{n} renforts') : '') + ' · ' + TL('{a} / {b} kg', { a: kg.toFixed(0), b: cap }) + ' · ' + TLn(raidStats.kills, '{n} hostiles abattus', '{n} hostiles abattus'), VW - 16, by + bh - 8);
+  if (!T && VW > 900) { c.fillStyle = 'rgba(232,220,196,.5)'; c.fillText(TL('Glisser : déplacer la vue') + ' · ' + TL('molette : zoom') + ' · ' + TL('Tab ou 1 à 9 : suivre un robot') + ' · ' + TL('Espace : escouade') + ' · ' + TL('R : rappeler'), VW - 16, by - 8); }
   c.textAlign = 'left';
 }
 
@@ -798,13 +799,13 @@ function expTracker(c, x, y, w, click) {
   expTrackRows = [];
   const L = TUT.on ? [] : save.exps || []; if (!L.length) return 0;
   const h = 22 + L.length * 32; panel(c, x, y, w, h);
-  c.textAlign = 'left'; c.fillStyle = '#f2c14e'; c.font = `700 12px ${FONT}`; c.fillText('Expéditions' + (click ? ' · cliquer pour observer' : ''), x + 8, y + 15);
+  c.textAlign = 'left'; c.fillStyle = '#f2c14e'; c.font = `700 12px ${FONT}`; c.fillText(TL('Expéditions') + (click ? ' · ' + TL('cliquer pour observer') : ''), x + 8, y + 15);
   L.forEach((e, i) => {
     const yy = y + 22 + i * 32, cx = EXP.cx.get(e.id), al = e.sq.filter(s => !s.dead).length, kg = e.sq.reduce((s, q) => s + (q.dead ? 0 : q.cw || 0), 0);
     if (i) { c.fillStyle = 'rgba(232,220,196,.08)'; c.fillRect(x + 6, yy - 1, w - 12, 1); }
-    c.fillStyle = '#e8dcc4'; c.font = `600 12px ${FONT}`; c.fillText(fitText(c, e.id + ' · ' + regShort(e.region) + ' · ' + (cx ? cx.D.short : e.phs || 'liaison…'), w - 20), x + 8, yy + 13);
+    c.fillStyle = '#e8dcc4'; c.font = `600 12px ${FONT}`; c.fillText(fitText(c, e.id + ' · ' + regShort(e.region) + ' · ' + (cx ? cx.D.short : e.phs || TL('liaison…')), w - 20), x + 8, yy + 13);
     c.fillStyle = '#a59c88'; c.font = `500 11px ${FONT}`;
-    c.fillText(fitText(c, al + ' / ' + e.n0 + ' robots · ' + kg.toFixed(0) + ' kg · ' + mmss(e.simT || 0) + (cx && cx.behind > 3 ? ' · rattrapage' : ''), w - 20), x + 8, yy + 27);
+    c.fillText(fitText(c, TLn(e.n0, '{a} / {n} robots', '{a} / {n} robots', { a: al }) + ' · ' + TLn(kg, '{n} kg', '{n} kg', { n: kg.toFixed(0) }) + ' · ' + mmss(e.simT || 0) + (cx && cx.behind > 3 ? ' · ' + TL('rattrapage') : ''), w - 20), x + 8, yy + 27);
     if (click) expTrackRows.push({ x, y: yy, w, h: 32, id: e.id });
   });
   return h + 8;
@@ -812,30 +813,30 @@ function expTracker(c, x, y, w, click) {
 function expTrackHit(ux, uy) { for (const r of expTrackRows) if (ux >= r.x && ux <= r.x + r.w && uy >= r.y && uy <= r.y + r.h) { expViewOpen(r.id); return true; } return false; }
 
 // ---------- onglet Expéditions ----------
-function agoTxt(ms) { const s = Math.max(0, (Date.now() - ms) / 1000); return s < 90 ? 'à l\'instant' : s < 3600 ? 'il y a ' + Math.round(s / 60) + ' min' : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h' : 'il y a ' + Math.round(s / 86400) + ' j'; }
+function agoTxt(ms) { const s = Math.max(0, (Date.now() - ms) / 1000); return s < 90 ? TL('à l\'instant') : s < 3600 ? TLn(Math.round(s / 60), 'il y a {n} min', 'il y a {n} min') : s < 86400 ? TLn(Math.round(s / 3600), 'il y a {n} h', 'il y a {n} h') : TLn(Math.round(s / 86400), 'il y a {n} j', 'il y a {n} j'); }
 function expLiveHTML(e) {
   const cx = EXP.cx.get(e.id), al = e.sq.filter(s => !s.dead), kg = al.reduce((s, q) => s + (q.cw || 0), 0), cap = al.reduce((s, q) => s + (q.cap || 0), 0);
-  const ph = cx ? cx.D.label : e.ph || 'Liaison…', beh = cx && cx.behind > 3 ? `<br><span style="color:var(--signal)">Rattrapage en accéléré : encore ${mmss(cx.behind)} de jeu à simuler.</span>` : '';
-  return `<div class="exl"><b>${esc(ph)}</b><br>${mmss(e.simT || 0)} / ${mmss(e.dur)} de fouille · alerte ${e.alert || 0} · ${e.kills || 0} hostiles abattus${e.boss ? ' · boss abattu' : ''}${beh}</div>
-    <div class="exsq">${e.sq.map(s => `<span${s.dead ? ' class="lost"' : ''}>${esc(s.name || '?')}${s.dead ? ' · détruit' : ' · ' + (s.cw || 0).toFixed(0) + '/' + (s.cap || 0) + ' kg'}</span><div class="hpbar"><i style="width:${Math.round((s.dead ? 0 : s.hp === undefined ? 1 : s.hp) * 100)}%${s.hp < .3 ? ';background:var(--bad)' : ''}"></i></div>`).join('')}</div>
-    <div class="exl">${al.length} / ${e.n0} robots · soutes ${kg.toFixed(0)} / ${cap} kg</div>
+  const ph = cx ? cx.D.label : e.ph || TL('Liaison…'), beh = cx && cx.behind > 3 ? `<br><span style="color:var(--signal)">${TL('Rattrapage en accéléré : encore {t} de jeu à simuler.', { t: mmss(cx.behind) })}</span>` : '';
+  return `<div class="exl"><b>${esc(ph)}</b><br>${TL('{t} / {dur} de fouille', { t: mmss(e.simT || 0), dur: mmss(e.dur) })} · ${TL('alerte {n}', { n: e.alert || 0 })} · ${TLn(e.kills || 0, '{n} hostiles abattus', '{n} hostiles abattus')}${e.boss ? ' · ' + TL('boss abattu') : ''}${beh}</div>
+    <div class="exsq">${e.sq.map(s => `<span${s.dead ? ' class="lost"' : ''}>${esc(s.name || '?')}${s.dead ? ' · ' + TL('détruit') : ' · ' + TL('{a}/{b} kg', { a: (s.cw || 0).toFixed(0), b: s.cap || 0 })}</span><div class="hpbar"><i style="width:${Math.round((s.dead ? 0 : s.hp === undefined ? 1 : s.hp) * 100)}%${s.hp < .3 ? ';background:var(--bad)' : ''}"></i></div>`).join('')}</div>
+    <div class="exl">${TLn(e.n0, '{a} / {n} robots', '{a} / {n} robots', { a: al.length })} · ${TL('soutes {a} / {b} kg', { a: kg.toFixed(0), b: cap })}</div>
     <div class="exlog">${e.log.slice(-4).reverse().map(([t, tx]) => `<div>${mmss(t)} · ${esc(tx)}</div>`).join('') || '—'}</div>`;
 }
 function expCardHTML(e) {
   return `<div class="card expc">
-    <div class="nm">Expédition ${e.id} · ${REGIONS[e.region].n}</div>
-    <div class="sub">${DIFFS[e.diff].n} · ${(EXP_POST[e.post] || EXP_POST.normal).n} · fouille ${(EXP_DUR[e.durI] || EXP_DUR[1]).n.toLowerCase()}</div>
+    <div class="nm">${TL('Expédition {id}', { id: e.id })} · ${REGIONS[e.region].n}</div>
+    <div class="sub">${DIFFS[e.diff].n} · ${(EXP_POST[e.post] || EXP_POST.normal).n} · ${TL('fouille {dur}', { dur: (EXP_DUR[e.durI] || EXP_DUR[1]).n.toLowerCase() })}</div>
     <canvas class="expmap" width="240" height="240" data-emap="${e.id}"></canvas>
     <div data-elive="${e.id}">${expLiveHTML(e)}</div>
-    <div class="acts"><button class="btn hot sm" data-act="expview" data-id="${e.id}">Observer</button><button class="btn sm" data-act="exprecall" data-id="${e.id}" ${e.recall ? 'disabled' : ''}>${e.recall ? 'Rappel en cours' : 'Rappeler'}</button></div>
+    <div class="acts"><button class="btn hot sm" data-act="expview" data-id="${e.id}">${TL('Observer')}</button><button class="btn sm" data-act="exprecall" data-id="${e.id}" ${e.recall ? 'disabled' : ''}>${e.recall ? TL('Rappel en cours') : TL('Rappeler')}</button></div>
   </div>`;
 }
 function expRepHTML(r) {
   const g = r.gained || {}, ks = RES_KEYS.filter(k => g[k] > 0);
-  return `<div class="card ${r.ok ? 'dep' : ''}"><div class="nm">Expédition ${r.id} · ${r.aborted ? 'rapatriée' : r.ok ? 'réussie' : 'perdue'}</div>
-    <div class="sub">${REGIONS[r.region].n} · ${DIFFS[r.diff] ? DIFFS[r.diff].n : ''} · ${mmss(r.t)} · ${r.kills} hostiles abattus${r.boss ? ' · boss abattu' : ''} · ${agoTxt(r.at)}</div>
-    ${ks.length ? `<div class="res-list">${ks.map(k => `<div><span>${RES[k].n}</span><b class="good">+${fmt(g[k])}</b></div>`).join('')}</div>` : `<div class="sub">${r.aborted ? 'Liaison perdue : retour sans butin.' : 'Aucun butin rapporté.'}</div>`}
-    ${r.back.length ? `<div class="sub good">Rentrés : ${r.back.map(esc).join(', ')}</div>` : ''}${(r.rec || []).length ? `<div class="sub good">Rappel automatique : ${r.rec.map(esc).join(', ')}</div>` : ''}${r.lost.length ? `<div class="sub lost">Perdus : ${r.lost.map(esc).join(', ')}</div>` : ''}
+  return `<div class="card ${r.ok ? 'dep' : ''}"><div class="nm">${TL('Expédition {id}', { id: r.id })} · ${r.aborted ? TL('rapatriée') : r.ok ? TL('réussie') : TL('perdue')}</div>
+    <div class="sub">${REGIONS[r.region].n} · ${DIFFS[r.diff] ? DIFFS[r.diff].n : ''} · ${mmss(r.t)} · ${TLn(r.kills, '{n} hostiles abattus', '{n} hostiles abattus')}${r.boss ? ' · ' + TL('boss abattu') : ''} · ${agoTxt(r.at)}</div>
+    ${ks.length ? `<div class="res-list">${ks.map(k => `<div><span>${RES[k].n}</span><b class="good">+${fmt(g[k])}</b></div>`).join('')}</div>` : `<div class="sub">${r.aborted ? TL('Liaison perdue : retour sans butin.') : TL('Aucun butin rapporté.')}</div>`}
+    ${r.back.length ? `<div class="sub good">${TLn(r.back.length, 'Rentrés : {names}', 'Rentrés : {names}', { names: r.back.map(esc).join(', ') })}</div>` : ''}${(r.rec || []).length ? `<div class="sub good">${TL('Rappel automatique : {names}', { names: r.rec.map(esc).join(', ') })}</div>` : ''}${r.lost.length ? `<div class="sub lost">${TLn(r.lost.length, 'Perdus : {names}', 'Perdus : {names}', { names: r.lost.map(esc).join(', ') })}</div>` : ''}
     ${(r.log || []).length ? `<div class="exlog">${r.log.slice().reverse().map(([t, x]) => `<div>${mmss(t)} · ${esc(x)}</div>`).join('')}</div>` : ''}</div>`;
 }
 function expFormHTML() {
@@ -846,37 +847,37 @@ function expFormHTML() {
   const avail = save.robots.filter(r => !r.exp), sel = f.sel.map(id => save.robots.find(r => r.id === id));
   const used = sel.reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0), cap = cmdCap(), cargo = sel.reduce((s, r) => s + robotStats(r).cargo, 0);
   const dep = sel.filter(r => r.deploy).length, why = expCheck(), P = EXP_POST[f.post];
-  return `<div class="rs-cat">Nouvelle expédition</div>
-  <div class="slot-h">Région</div><div class="chips">${REGIONS.map((R, i) => `<button class="chip ${f.region === i ? 'on' : ''}" data-act="expreg" data-id="${i}" ${regionUnlocked(i) ? '' : 'disabled'}>${R.n}${regionUnlocked(i) ? '' : ' · verrouillée'}</button>`).join('')}</div>
-  <div class="slot-h" style="margin-top:12px">Difficulté</div><div class="chips">${DIFFS.map((D, i) => `<button class="chip ${f.diff === i ? 'on' : ''}" data-act="expdiff" data-id="${i}">${D.n} · butin ×${String(D.loot).replace('.', ',')}</button>`).join('')}</div>
-  <div class="slot-h" style="margin-top:12px">Durée de fouille</div><div class="chips">${EXP_DUR.map((d, i) => `<button class="chip ${f.dur === i ? 'on' : ''}" data-act="expdur" data-id="${i}">${d.n} · ${d.t / 60} min</button>`).join('')}</div>
-  <p class="desc" style="margin-top:6px">Puis l'escouade pose sa balise et tient jusqu'au lift. Elle rentre plus tôt si ses soutes sont pleines ou si elle est trop abîmée.</p>
-  <div class="slot-h" style="margin-top:12px">Consigne</div><div class="chips">${EXP_POST_KEYS.map(k => `<button class="chip ${f.post === k ? 'on' : ''}" data-act="exppost" data-id="${k}">${EXP_POST[k].n}</button>`).join('')}</div>
+  return `<div class="rs-cat">${TL('Nouvelle expédition')}</div>
+  <div class="slot-h">${TL('Région')}</div><div class="chips">${REGIONS.map((R, i) => `<button class="chip ${f.region === i ? 'on' : ''}" data-act="expreg" data-id="${i}" ${regionUnlocked(i) ? '' : 'disabled'}>${R.n}${regionUnlocked(i) ? '' : ' · ' + TL('verrouillée')}</button>`).join('')}</div>
+  <div class="slot-h" style="margin-top:12px">${TL('Difficulté')}</div><div class="chips">${DIFFS.map((D, i) => !diffOwn(i) ? '' : `<button class="chip ${f.diff === i ? 'on' : ''}" data-act="expdiff" data-id="${i}">${D.n} · ${TLn(D.loot, 'butin ×{n}', 'butin ×{n}')}</button>`).join('')}</div>
+  <div class="slot-h" style="margin-top:12px">${TL('Durée de fouille')}</div><div class="chips">${EXP_DUR.map((d, i) => `<button class="chip ${f.dur === i ? 'on' : ''}" data-act="expdur" data-id="${i}">${d.n} · ${TLn(d.t / 60, '{n} min', '{n} min')}</button>`).join('')}</div>
+  <p class="desc" style="margin-top:6px">${TL('Puis l\'escouade pose sa balise et tient jusqu\'au lift. Elle rentre plus tôt si ses soutes sont pleines ou si elle est trop abîmée.')}</p>
+  <div class="slot-h" style="margin-top:12px">${TL('Consigne')}</div><div class="chips">${EXP_POST_KEYS.map(k => `<button class="chip ${f.post === k ? 'on' : ''}" data-act="exppost" data-id="${k}">${EXP_POST[k].n}</button>`).join('')}</div>
   <p class="desc" style="margin-top:6px">${P.d}</p>
-  <div class="slot-h" style="margin-top:12px">Escouade</div>
-  <div class="meter"><span>Commandement ${fmtCmd(used)} / ${cap}</span><div class="bar ${used > cap ? 'over' : ''}"><i style="width:${Math.min(100, used / cap * 100)}%"></i></div></div>
-  <div class="chips">${avail.length ? avail.map(r => { const on = f.sel.includes(r.id); return `<button class="chip ${on ? 'on' : ''}" data-act="expbot" data-id="${r.id}" title="${esc(CHASSIS[r.chassis].n + ' · ' + r.weapons.map(w => WEAPONS[w].n).join(', '))}">${esc(r.name)} · ${CHASSIS[r.chassis].n} · ${Math.round(r.hp * 100)} %${r.deploy ? ' · déployé' : ''}</button>`; }).join('') : '<span class="sub">Aucun robot disponible au hangar.</span>'}</div>
-  <div class="launch" style="margin-top:8px"><button class="btn sm" data-act="expauto">Choisir pour moi (hors armée de raid)</button><button class="btn sm" data-act="expnone">Vider</button></div>
-  <p class="desc" style="margin-top:8px">Soutes de l'escouade : <b>${cargo} kg</b>. Sans pilote, seules les soutes des robots ramènent le butin : une Mule ou un Vautour change tout.${dep ? ` ${dep} robot${dep > 1 ? 's' : ''} de votre armée de raid ${dep > 1 ? 'partiront' : 'partira'} avec l'escouade.` : ''}</p>
-  <div class="launch"><button class="btn hot big" data-act="explaunch" ${why ? 'disabled' : ''}>Lancer l'expédition · ${REGIONS[f.region].n}</button>${why ? `<span class="lost">${esc(why)}</span>` : ''}</div>`;
+  <div class="slot-h" style="margin-top:12px">${TL('Escouade')}</div>
+  <div class="meter"><span>${TL('Commandement {a} / {b}', { a: fmtCmd(used), b: cap })}</span><div class="bar ${used > cap ? 'over' : ''}"><i style="width:${Math.min(100, used / cap * 100)}%"></i></div></div>
+  <div class="chips">${avail.length ? avail.map(r => { const on = f.sel.includes(r.id); return `<button class="chip ${on ? 'on' : ''}" data-act="expbot" data-id="${r.id}" title="${esc(CHASSIS[r.chassis].n + ' · ' + r.weapons.map(w => WEAPONS[w].n).join(', '))}">${esc(r.name)} · ${CHASSIS[r.chassis].n} · ${Math.round(r.hp * 100)} %${r.deploy ? ' · ' + TL('déployé') : ''}</button>`; }).join('') : '<span class="sub">' + TL('Aucun robot disponible au hangar.') + '</span>'}</div>
+  <div class="launch" style="margin-top:8px"><button class="btn sm" data-act="expauto">${TL('Choisir pour moi (hors armée de raid)')}</button><button class="btn sm" data-act="expnone">${TL('Vider')}</button></div>
+  <p class="desc" style="margin-top:8px">${TL('Soutes de l\'escouade : {kg}. Sans pilote, seules les soutes des robots ramènent le butin : une Mule ou un Vautour change tout.', { kg: '<b>' + TLn(cargo, '{n} kg', '{n} kg', { n: cargo }) + '</b>' })}${dep ? ' ' + TLn(dep, '{n} robot de votre armée de raid partira avec l\'escouade.', '{n} robots de votre armée de raid partiront avec l\'escouade.') : ''}</p>
+  <div class="launch"><button class="btn hot big" data-act="explaunch" ${why ? 'disabled' : ''}>${TL('Lancer l\'expédition')} · ${REGIONS[f.region].n}</button>${why ? `<span class="lost">${esc(why)}</span>` : ''}</div>`;
 }
 function renderExpTab() {
   const L = save.exps || [], lvl = bLevel('expedition'), slots = expSlots();
-  let h = `<h2 class="h2">Expéditions</h2>
-  <p class="lead">Envoyez une escouade fouiller une région sans vous. Elle reste groupée, ouvre les caisses, ramasse le butin, puis pose sa balise et s'extrait seule. C'est une vraie partie qui tourne en même temps que la vôtre : observez-la quand vous voulez depuis la base. Jeu fermé, elle rattrape le temps écoulé en accéléré à votre retour. Comme en raid, un robot détruit ou resté hors du cercle est perdu.</p>`;
-  if (TUT.on) return h + '<p class="lead">Les expéditions ne sont pas disponibles pendant le tutoriel.</p>';
-  if (!lvl) h += `<div class="card"><div class="nm">Aucun poste d'expédition</div><div class="sub">Construisez un poste d'expédition à la base. Chaque niveau permet une expédition de plus en même temps, jusqu'à trois.</div><div class="acts"><button class="btn hot sm" data-tab="construire">Construire</button></div></div>`;
-  h += `<div class="rs-cat">En cours · ${L.length} / ${slots}</div>`;
-  h += L.length ? `<div class="grid-cards exp-grid">${L.map(expCardHTML).join('')}</div>` : '<p class="lead">Aucune expédition en cours.</p>';
+  let h = `<h2 class="h2">${TL('Expéditions')}</h2>
+  <p class="lead">${TL('Envoyez une escouade fouiller une région sans vous. Elle reste groupée, ouvre les caisses, ramasse le butin, puis pose sa balise et s\'extrait seule. C\'est une vraie partie qui tourne en même temps que la vôtre : observez-la quand vous voulez depuis la base. Jeu fermé, elle rattrape le temps écoulé en accéléré à votre retour. Comme en raid, un robot détruit ou resté hors du cercle est perdu.')}</p>`;
+  if (TUT.on) return h + '<p class="lead">' + TL('Les expéditions ne sont pas disponibles pendant le tutoriel.') + '</p>';
+  if (!lvl) h += `<div class="card"><div class="nm">${TL('Aucun poste d\'expédition')}</div><div class="sub">${TL('Construisez un poste d\'expédition à la base. Chaque niveau permet une expédition de plus en même temps, jusqu\'à cinq.')}</div><div class="acts"><button class="btn hot sm" data-tab="construire">${TL('Construire')}</button></div></div>`;
+  h += `<div class="rs-cat">${TL('En cours')} · ${L.length} / ${slots}</div>`;
+  h += L.length ? `<div class="grid-cards exp-grid">${L.map(expCardHTML).join('')}</div>` : '<p class="lead">' + TL('Aucune expédition en cours.') + '</p>';
   if (lvl && L.length < slots) h += expFormHTML();
-  else if (lvl) h += `<p class="lead">Tous les postes sont occupés.${lvl < 3 ? ' Améliorez le poste d\'expédition pour en lancer une de plus.' : ''}</p>`;
-  if ((save.expRep || []).length) h += `<div class="rs-cat">Rapports</div><div class="grid-cards">${save.expRep.map(expRepHTML).join('')}</div>`;
+  else if (lvl) h += `<p class="lead">${TL('Tous les postes sont occupés.')}${lvl < BUILD.expedition.max ? ' ' + TL('Améliorez le poste d\'expédition pour en lancer une de plus.') : ''}</p>`;
+  if ((save.expRep || []).length) h += `<div class="rs-cat">${TL('Rapports')}</div><div class="grid-cards">${save.expRep.map(expRepHTML).join('')}</div>`;
   return h;
 }
 function drawExpMap(cv2, cx, e) {
   const c = cv2.getContext('2d'), S = cv2.width, g = cx && cx.g;
   c.fillStyle = '#0c0f10'; c.fillRect(0, 0, S, S);
-  if (!g || !g.miniCv) { c.fillStyle = '#a59c88'; c.font = `500 13px ${FONT}`; c.textAlign = 'center'; c.fillText('Liaison en cours…', S / 2, S / 2); c.textAlign = 'left'; return; }
+  if (!g || !g.miniCv) { c.fillStyle = '#a59c88'; c.font = `500 13px ${FONT}`; c.textAlign = 'center'; c.fillText(TL('Liaison en cours…'), S / 2, S / 2); c.textAlign = 'left'; return; }
   c.imageSmoothingEnabled = false; c.drawImage(g.miniCv, 0, 0, S, S); c.imageSmoothingEnabled = true; c.drawImage(g.fogCv, 0, 0, S, S);
   const k = S / WPX;
   c.strokeStyle = 'rgba(255,42,58,.5)'; c.lineWidth = 1; circ(c, WPX / 2 * k, WPX / 2 * k, 27 * TILE * k); c.stroke();
@@ -897,9 +898,9 @@ function expTabLive(now) {
 }
 function expHangarCard(r) {
   const e = (save.exps || []).find(x => x.id === r.exp), s = e ? e.sq.find(q => q.sid === r.id) : null, ch = CHASSIS[r.chassis];
-  return `<div class="card exr"><div class="row"><canvas data-rid="${r.id}"></canvas><div><div class="nm">${esc(r.name)}</div><div class="sub">${ch.n} · T${ch.tier} · ${fmtCmd(ch.cmd)} cmd<br><b style="color:var(--signal)">En expédition ${r.exp}</b>${e ? ' · ' + regShort(e.region) + ' · ' + esc((EXP.cx.get(e.id) || { D: { short: e.phs || '' } }).D.short) : ''}${s && s.dead ? ' · <span class="lost">détruit</span>' : ''}</div></div></div>
-    <div class="hpbar" title="Points de vie"><i style="width:${Math.round((s ? (s.dead ? 0 : s.hp === undefined ? r.hp : s.hp) : r.hp) * 100)}%"></i></div>
-    <div class="acts"><button class="btn sm" data-act="expview" data-id="${r.exp}">Observer</button><span class="sub">Revient avec l'escouade.</span></div></div>`;
+  return `<div class="card exr"><div class="row"><canvas data-rid="${r.id}"></canvas><div><div class="nm">${esc(r.name)}</div><div class="sub">${ch.n} · ${TL('T{n}', { n: ch.tier })} · ${TL('{n} cmd', { n: fmtCmd(ch.cmd) })}<br><b style="color:var(--signal)">${TL('En expédition {id}', { id: r.exp })}</b>${e ? ' · ' + regShort(e.region) + ' · ' + esc((EXP.cx.get(e.id) || { D: { short: e.phs || '' } }).D.short) : ''}${s && s.dead ? ' · <span class="lost">' + TL('détruit') + '</span>' : ''}</div></div></div>
+    <div class="hpbar" title="${esc(TL('Points de vie'))}"><i style="width:${Math.round((s ? (s.dead ? 0 : s.hp === undefined ? r.hp : s.hp) : r.hp) * 100)}%"></i></div>
+    <div class="acts"><button class="btn sm" data-act="expview" data-id="${r.exp}">${TL('Observer')}</button><span class="sub">${TL('Revient avec l\'escouade.')}</span></div></div>`;
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -915,11 +916,11 @@ document.addEventListener('click', e => {
       f.sel = []; let used = 0; const cap = cmdCap();
       const pool = save.robots.filter(r => !r.exp && !r.deploy && r.hp > .3).sort((a, b) => (robotStats(b).cargo > 15) - (robotStats(a).cargo > 15) || CHASSIS[b.chassis].tier - CHASSIS[a.chassis].tier || b.hp - a.hp);
       for (const r of pool) { const c2 = CHASSIS[r.chassis].cmd; if (used + c2 <= cap + 1e-6) { f.sel.push(r.id); used += c2; } }
-      if (!f.sel.length) toast('Aucun robot libre hors de l\'armée de raid : choisissez-les vous-même.');
+      if (!f.sel.length) toast(TL('Aucun robot libre hors de l\'armée de raid : choisissez-les vous-même.'));
       SFX.play('ui', 1); renderHub(); break;
     }
     case 'explaunch': expLaunch(); break;
     case 'expview': expViewOpen(+id); break;
-    case 'exprecall': { const ex = (save.exps || []).find(x => x.id === +id); if (ex && !ex.recall) askConfirm({ t: 'Rappeler', ok: 'Rappeler', x: 'Rappeler l\'expédition ' + ex.id + ' ? L\'escouade va poser sa balise et rentrer.' }).then(ok => { if (ok && !ex.recall) { ex.recall = true; writeSave(); toast('Rappel transmis.'); renderHub(); } }); break; }
+    case 'exprecall': { const ex = (save.exps || []).find(x => x.id === +id); if (ex && !ex.recall) askConfirm({ t: TL('Rappeler'), ok: TL('Rappeler'), x: TL('Rappeler l\'expédition {id} ? L\'escouade va poser sa balise et rentrer.', { id: ex.id }) }).then(ok => { if (ok && !ex.recall) { ex.recall = true; writeSave(); toast(TL('Rappel transmis.')); renderHub(); } }); break; }
   }
 });

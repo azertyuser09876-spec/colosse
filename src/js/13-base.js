@@ -9,21 +9,34 @@ const bLimit = type => (BLIMIT[type] || [1])[hqLevel() - 1] || 0;
 function bRect(b) { const D = BUILD[b.type]; return { x: b.tx * TILE, y: b.ty * TILE, w: D.w * TILE, h: D.h * TILE }; }
 function bAt(wx, wy, pad = 0) { for (const b of save.base.b) { const r = bRect(b); if (wx >= r.x - pad && wx <= r.x + r.w + pad && wy >= r.y - pad && wy <= r.y + r.h + pad) return b; } return null; }
 let parked = [];
+// places de stationnement : en spirale autour de la porte du hangar ; une grille évite de comparer chaque place à toute la base
+// (jusqu'à 300 robots et plusieurs centaines de constructions). Quand l'enceinte est pleine, on se gare dans la friche au-dehors.
+let parkGrid = new Map();
+const PG = 128, pgKey = (x, y) => ((x / PG) | 0) * 4096 + ((y / PG) | 0);
+function parkFree(x, y, r, inside) {
+  if (inside ? (x - r < (BX0 + 2) * TILE || x + r > (BX1 - 1) * TILE || y - r < (BY0 + 2) * TILE || y + r > (BY1 - 1) * TILE) : (x - r < 8 * TILE || y - r < 8 * TILE || x + r > (WT - 8) * TILE || y + r > (WT - 8) * TILE)) return false;
+  const m = r + 14, t0x = Math.floor((x - m) / TILE), t1x = Math.floor((x + m) / TILE), t0y = Math.floor((y - m) / TILE), t1y = Math.floor((y + m) / TILE);
+  for (let ty = t0y; ty <= t1y; ty++) for (let tx = t0x; tx <= t1x; tx++) { const i = ty * WT + tx; if (bTileMap[i] || (!inside && W.obs[i])) return false; }
+  const R = (r + 150) * 1.3 + 10;
+  for (let gy = ((y - R) / PG) | 0; gy <= ((y + R) / PG) | 0; gy++) for (let gx = ((x - R) / PG) | 0; gx <= ((x + R) / PG) | 0; gx++) {
+    const L = parkGrid.get(gx * 4096 + gy); if (L) for (const p of L) if (d2(p.x, p.y, x, y) < ((p.r + r) * 1.3 + 10) ** 2) return false;
+  }
+  for (const p of parked) if (p.r > 150 && d2(p.x, p.y, x, y) < ((p.r + r) * 1.05 + 50) ** 2) return false;
+  return true;
+}
+function parkAdd(p) { parked.push(p); if (p.r > 150) return; const k = pgKey(p.x, p.y); let L = parkGrid.get(k); if (!L) parkGrid.set(k, L = []); L.push(p); }
 function parkPoint(r) {
   if (r > 150) return giantPark(r);
   const hg = save.base.b.find(b => b.type === 'hangar');
   const px = hg ? (hg.tx + BUILD.hangar.w / 2) * TILE : 150 * TILE, py = hg ? (hg.ty + BUILD.hangar.h) * TILE + 120 : 165 * TILE;
-  for (let i = 0; i < 1500; i++) {
-    const a = i * 2.39996, rad = Math.sqrt(i) * 20, x = px + Math.cos(a) * rad, y = py + Math.sin(a) * rad * .85;
-    if (x - r < (BX0 + 2) * TILE || x + r > (BX1 - 1) * TILE || y - r < (BY0 + 2) * TILE || y + r > (BY1 - 1) * TILE) continue;
-    if (parked.some(p => d2(p.x, p.y, x, y) < ((p.r + r) * 1.3 + 10) ** 2)) continue;
-    let bad = false; for (const b of save.base.b) { const R = bRect(b); if (x + r > R.x - 14 && x - r < R.x + R.w + 14 && y + r > R.y - 14 && y - r < R.y + R.h + 14) { bad = true; break; } }
-    if (bad) continue;
-    parked.push({ x, y, r }); return { x, y };
+  for (const inside of [true, false]) for (let i = 0, n = inside ? 1500 : 6000; i < n; i++) {
+    const a = i * 2.39996, rad = Math.sqrt(i) * 20 + (inside ? 0 : 1300), x = px + Math.cos(a) * rad, y = py + Math.sin(a) * rad * .85;
+    if (!parkFree(x, y, r, inside)) continue;
+    const p = { x, y, r }; parkAdd(p); return { x, y };
   }
   return { x: px, y: py };
 }
-function reparkAll() { parked = []; for (const u of fleet.slice().sort((a, b) => b.r - a.r)) { u.home = parkPoint(u.r); u.wp = null; } }
+function reparkAll() { parked = []; parkGrid = new Map(); for (const u of fleet.slice().sort((a, b) => b.r - a.r)) { u.home = parkPoint(u.r); u.wp = null; } }
 function spawnBaseRobot(sr, x, y) {
   const home = parkPoint(CHASSIS[sr.chassis].r);
   const p = (x !== undefined) ? { x, y } : (findWalkableNear(home.x, home.y, 0, 60, 20) || home);
@@ -32,20 +45,20 @@ function spawnBaseRobot(sr, x, y) {
 function spawnDummies() {
   for (const u of units) if (u.etype === 'cible') u.dead = true;
   const rg = save.base.b.find(b => b.type === 'range' && b.lvl > 0); if (!rg) return;
-  const n = 2 + rg.lvl, r = bRect(rg);
+  const n = 2 + rg.lvl, r = bRect(rg), per = 6; // rangées de six cibles au plus
   for (let i = 0; i < n; i++) {
-    const x = r.x + r.w / 2 + (i - (n - 1) / 2) * 56, y = r.y - 70;
+    const row = (i / per) | 0, inRow = Math.min(per, n - row * per), x = r.x + r.w / 2 + (i % per - (inRow - 1) / 2) * 56, y = r.y - 70 - row * 56;
     const d = makeEnemy('cible', x, y, { active: true }); d.maxhp = d.hp = 600 * rg.lvl;
   }
 }
 function enterBase() {
   if (EXPV.id) expViewClose(true);
-  applyPendingSave();
+  applyPendingSave(); loadoutCheck();
   state = 'base'; paused = false; tactical = false; mapOpen = false; drawerOpen = false; placing = null; baseSel = null;
   showScreen(null); showOverlay('result', false); showOverlay('loading', false);
   units = []; bullets = []; parts = []; items = []; crates = []; beams = []; decals = []; msgs = []; fleet = []; pings = []; fires = [];
-  nextUid = 1; time = 0; B = null; raidStats = null; endT = -1; eProg = 0; eTarget = null; flashT = 0; parked = [];
-  diff = DIFFS[1]; crews = []; regionCur = null; raidContracts = []; fireLatch = false;
+  nextUid = 1; time = 0; B = null; raidStats = null; endT = -1; eProg = 0; eTarget = null; flashT = 0; parked = []; parkGrid = new Map();
+  diff = DIFFS[1]; crews = []; regionCur = null; raidContracts = []; MIS = []; fireLatch = false;
   setRegionPalette(null); refillOffers(); refreshKeyHints();
   genBase(); chunkCache.clear(); FX.clear(); ENV.startBase();
   player = makePlayer(W.spawn.x, W.spawn.y); units.push(player);
@@ -54,11 +67,11 @@ function enterBase() {
   { const R = fleetMaxR(fleet); if (R > 160) cam.userZoom = Math.min(cam.userZoom, Math.max(minZoom(), .55 * Math.pow(160 / R, .55))); }
   cam.x = player.x; cam.y = player.y; cam.zoom = cam.userZoom;
   baseTimers(true);
-  if ((save.base.threat || 0) >= 60) setTimeout(() => { if (state === 'base') scheduleAttack(55, 'Des pillards ont suivi votre signal jusqu\'à la base !'); }, 1500);
+  if ((save.base.threat || 0) >= 60) setTimeout(() => { if (state === 'base') scheduleAttack(55, TL('Des pillards ont suivi votre signal jusqu\'à la base !')); }, 1500);
   showBaseBar(true); updateBPanel();
-  if (TOUCH.on) msg('Touchez un bâtiment pour le sélectionner, retouchez-le pour l\'ouvrir. « Base » ouvre construction, forge et raids.', '#e8dcc4', 8);
-  else msg('Bienvenue à la base. Approchez-vous d\'un bâtiment et appuyez sur ' + keyLabel('interact') + ' pour l\'utiliser.', '#e8dcc4', 7);
-  if (!TOUCH.on) msg(keyLabel('defend') + ' : construire · clic sur un bâtiment : améliorer ou déplacer · ' + keyLabel('help') + ' : aide.', '#a59c88', 7);
+  if (TOUCH.on) msg(TL('Touchez un bâtiment pour le sélectionner, retouchez-le pour l\'ouvrir. « Base » ouvre construction, forge et raids.'), '#e8dcc4', 8);
+  else msg(TL('Bienvenue à la base. Approchez-vous d\'un bâtiment et appuyez sur {key} pour l\'utiliser.', { key: keyLabel('interact') }), '#e8dcc4', 7);
+  if (!TOUCH.on) msg(TL('{key} : construire', { key: keyLabel('defend') }) + ' · ' + TL('clic sur un bâtiment : améliorer ou déplacer') + ' · ' + TL('{key} : aide.', { key: keyLabel('help') }), '#a59c88', 7);
   writeSave();
 }
 function leaveBase() { if (EXPV.id) expViewClose(true); showBaseBar(false); closeDrawer(true); placing = null; baseSel = null; updateBPanel(); }
@@ -71,7 +84,7 @@ function baseTimers(force) {
       b.lvl = b.up || (b.lvl + 1); b.busy = 0; b.up = 0; b.lastT = now;
       if (state === 'base') {
         const r = bRect(b); for (let k = 0; k < 14; k++) sparks(r.x + Math.random() * r.w, r.y + Math.random() * r.h, 2, '#f2c14e');
-        msg(BUILD[b.type].n + ' : niveau ' + b.lvl + ' terminé.', '#f2c14e', 5); SFX.play('build', 1);
+        msg(TL('{b} : niveau {n} terminé.', { b: BUILD[b.type].n, n: b.lvl }), '#f2c14e', 5); SFX.play('build', 1);
         if (b.type === 'range') spawnDummies();
         syncProxy(b);
         if (b === baseSel) updateBPanel();
@@ -90,7 +103,7 @@ function collect(b, silent) {
   const D = BUILD[b.type]; if (!D.prod) return 0;
   const n = Math.floor(b.stored || 0); if (n <= 0) return 0;
   b.stored -= n; save.res[D.prod] += n; if (TUT.on) TUT.collected += n;
-  if (!silent) { const r = bRect(b); floatText(r.x + r.w / 2, r.y - 10, '+' + n + ' ' + RES[D.prod].n, RES[D.prod].c); SFX.play('collect', .8); }
+  if (!silent) { const r = bRect(b); floatText(r.x + r.w / 2, r.y - 10, TL('+{n} {res}', { n, res: RES[D.prod].n }), RES[D.prod].c); SFX.play('collect', .8); }
   return n;
 }
 function baseRepair(dt) {
@@ -126,14 +139,14 @@ function baseTick(dt) {
 
 // ---------- actions sur les bâtiments ----------
 function startPlacing(type, moveId) {
-  if (attack && attack.phase === 'fight') { toast('Impossible pendant l\'attaque.'); SFX.play('deny', 1); return; }
+  if (attack && attack.phase === 'fight') { toast(TL('Impossible pendant l\'attaque.')); SFX.play('deny', 1); return; }
   if (!moveId) {
-    if (countType(type) >= bLimit(type)) { toast('Limite atteinte pour ce bâtiment. Améliorez le QG.'); SFX.play('deny', 1); return; }
-    if (!canAfford(bCost(type, 1))) { toast('Ressources insuffisantes.'); SFX.play('deny', 1); return; }
-    if (!instantB(type) && busyCount() >= builderCap()) { toast('Tous les ouvriers sont occupés.'); SFX.play('deny', 1); return; }
+    if (countType(type) >= bLimit(type)) { toast(TL('Limite atteinte pour ce bâtiment. Améliorez le QG.')); SFX.play('deny', 1); return; }
+    if (!canAfford(bCost(type, 1))) { toast(TL('Ressources insuffisantes.')); SFX.play('deny', 1); return; }
+    if (!instantB(type) && busyCount() >= builderCap()) { toast(TL('Tous les ouvriers sont occupés.')); SFX.play('deny', 1); return; }
   }
   closeDrawer(); placing = { type, id: moveId || null, tx: 0, ty: 0, ok: false, drag: !moveId && instantB(type) };
-  msg(placing.drag ? 'Maintenez le clic et glissez pour poser une rangée · clic droit ou Échap pour terminer.' : 'Clic gauche pour poser · clic droit ou Échap pour annuler.', '#f2c14e', 4);
+  msg(placing.drag ? TL('Maintenez le clic et glissez pour poser une rangée') + ' · ' + TL('clic droit ou Échap pour terminer.') : TL('Clic gauche pour poser') + ' · ' + TL('clic droit ou Échap pour annuler.'), '#f2c14e', 4);
 }
 function confirmPlace() {
   const p = placing; if (!p || !p.ok) { SFX.play('deny', 1); return; }
@@ -144,7 +157,7 @@ function confirmPlace() {
     if (b.type === 'range') spawnDummies(); reparkAll(); syncProxy(b);
   } else {
     const cost = bCost(p.type, 1), inst = instantB(p.type);
-    if (!canAfford(cost) || (!inst && busyCount() >= builderCap()) || countType(p.type) >= bLimit(p.type)) { SFX.play('deny', 1); if (!inst || countType(p.type) >= bLimit(p.type) || !canAfford(cost)) { placing = null; if (inst) toast(countType(p.type) >= bLimit(p.type) ? 'Limite atteinte. Améliorez le QG.' : 'Ressources insuffisantes.'); } return; }
+    if (!canAfford(cost) || (!inst && busyCount() >= builderCap()) || countType(p.type) >= bLimit(p.type)) { SFX.play('deny', 1); if (!inst || countType(p.type) >= bLimit(p.type) || !canAfford(cost)) { placing = null; if (inst) toast(countType(p.type) >= bLimit(p.type) ? TL('Limite atteinte. Améliorez le QG.') : TL('Ressources insuffisantes.')); } return; }
     pay(cost);
     const b = inst ? { id: save.base.nextId++, type: p.type, tx: p.tx, ty: p.ty, lvl: 1, up: 0, busy: 0, stored: 0, lastT: now, armed: true }
       : { id: save.base.nextId++, type: p.type, tx: p.tx, ty: p.ty, lvl: 0, up: 1, start: now, busy: now + bTime(p.type, 1) * 1000, stored: 0, lastT: now };
@@ -159,16 +172,16 @@ function confirmPlace() {
 }
 function upgradeCheck(b) {
   const D = BUILD[b.type], nl = b.lvl + 1;
-  if (b.busy) return 'Travaux en cours';
-  if (nl > D.max) return 'Niveau maximal';
-  if (b.type !== 'hq' && nl > hqLevel()) return 'QG niveau ' + nl + ' requis';
-  if (attack && attack.phase === 'fight') return 'Attaque en cours';
-  if (!instantB(b.type) && busyCount() >= builderCap()) return 'Aucun ouvrier libre';
-  if (!canAfford(bCost(b.type, nl))) return 'Ressources insuffisantes';
+  if (b.busy) return TL('Travaux en cours');
+  if (nl > D.max) return TL('Niveau maximal');
+  if (b.type !== 'hq' && nl > hqLevel()) return TL('QG niveau {n} requis', { n: nl });
+  if (attack && attack.phase === 'fight') return TL('Attaque en cours');
+  if (!instantB(b.type) && busyCount() >= builderCap()) return TL('Aucun ouvrier libre');
+  if (!canAfford(bCost(b.type, nl))) return TL('Ressources insuffisantes');
   return '';
 }
 function upgradeBuilding(b) {
-  const why = upgradeCheck(b); if (why) { toast(why + '.'); SFX.play('deny', 1); return; }
+  const why = upgradeCheck(b); if (why) { toast(TL('{why}.', { why })); SFX.play('deny', 1); return; }
   const nl = b.lvl + 1, now = Date.now(); pay(bCost(b.type, nl));
   if (instantB(b.type)) { b.lvl = nl; syncProxy(b); SFX.play('build', .7); writeSave(); updateBPanel(); return; }
   b.up = nl; b.start = now; b.busy = now + bTime(b.type, nl) * 1000;
@@ -178,34 +191,36 @@ function openBuilding(b) {
   if (!b) return; baseSel = b;
   const D = BUILD[b.type];
   if (D.prod) collect(b);
-  if (b.lvl <= 0) { updateBPanel(); toast(D.n + ' en construction.'); return; }
+  if (b.lvl <= 0) { updateBPanel(); toast(TL('{b} en construction.', { b: D.n })); return; }
   const ui = D.ui;
   if (ui === 'build') openDrawer('construire');
   else if (ui) openDrawer(ui);
   else updateBPanel();
 }
 function bEffect(b, L) {
-  L = L === undefined ? b.lvl : L; if (L <= 0) return 'Pas encore opérationnel.';
+  L = L === undefined ? b.lvl : L; if (L <= 0) return TL('Pas encore opérationnel.');
   switch (b.type) {
-    case 'hq': return `Plafond des bâtiments : niveau ${L} · ${2 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0)} ouvriers` + (L > 1 ? ` · +${2 * (L - 1)} commandement.` : '.');
-    case 'forge': return `Châssis jusqu'au rang ${L + 1}` + (L > 1 ? ` · assemblage −${4 * (L - 1)} %.` : '.');
-    case 'lab': return `Recherches jusqu'au niveau ${L}.`;
-    case 'hangar': return `${[12, 24, 40, 64, 100][L - 1]} robots stockés.`;
-    case 'pad': return L > 1 ? `Balise +${20 * (L - 1)} % · ancrage −${6 * (L - 1)} %.` : 'Lance les raids. Les niveaux suivants renforcent la balise.';
-    case 'uplink': return `+${4 * L} points de commandement.`;
-    case 'repairbay': return `Réparation gratuite : ${5 * L} % par minute.`;
-    case 'shipyard': return 'Géants jusqu\'au rang ' + (6 + Math.min(3, L)) + '.';
-    case 'warehouse': return `Stock des producteurs +${40 * L} % · ${Math.round(Math.min(.7, .15 + .1 * L) * 100)} % de vos stocks à l'abri des pillages de joueurs · pertes face aux pillards −${12 * L} %.`;
-    case 'expedition': return `${Math.min(3, L)} expédition${L > 1 ? 's' : ''} en même temps.`;
-    case 'range': return `${2 + L} cibles d'entraînement de ${600 * L} PV.`;
-    case 'wall': return `${bHP({ type: 'wall', lvl: L })} points de structure.`;
-    case 'mine': return `${Math.round(170 * (1 + .45 * (L - 1)))} dégâts dans un rayon de 105 px.` + (b.armed === false ? ' Désarmée.' : '');
-    case 'shieldgen': return `Bouclier de ${150 * L} sur les bâtiments à moins de 320 px pendant les attaques.`;
-    case 'turret_mg': case 'turret_cannon': case 'turret_tesla': case 'turret_missile': case 'mortar_pit': {
-      const d = turretDef({ type: b.type, lvl: L }), dps = (d.dmg || 0) * (d.salvo || 1) * (d.pellets || 1) * d.rate;
-      return `${Math.round(dps)} dps · portée ${Math.round(d.range)} px · ${bHP({ type: b.type, lvl: L })} PV.`;
+    case 'hq': return TL('Plafond des bâtiments : niveau {n}', { n: L }) + ' · ' + TLn(2 + [3, 5, 7, 9].filter(l => L >= l).length, '{n} ouvrier', '{n} ouvriers') + (L > 1 ? ' · ' + TL('+{n} commandement', { n: 2 * (L - 1) }) : '') + '.';
+    case 'forge': return TL('Châssis jusqu\'au rang {n}', { n: Math.min(6, L + 1) }) + (L > 1 ? ' · ' + TL('assemblage −{n} %', { n: 4 * (L - 1) }) : '') + '.';
+    case 'lab': return TL('Recherches jusqu\'au niveau {n}', { n: Math.min(5, L) }) + (L > 5 ? ' · ' + TL('recherches −{n} %', { n: 5 * (L - 5) }) : '') + '.';
+    case 'hangar': return TLn(HANGAR_CAP[L - 1], '{n} robot stocké.', '{n} robots stockés.');
+    case 'pad': return L > 1 ? TL('Balise +{n} %', { n: 20 * (L - 1) }) + ' · ' + TL('ancrage −{n} %', { n: Math.round(padAnchor(L) * 100) }) + '.' : TL('Lance les raids. Les niveaux suivants renforcent la balise.');
+    case 'uplink': return TLn(uplinkCmd(L), '+{n} point de commandement.', '+{n} points de commandement.');
+    case 'repairbay': return TL('Réparation gratuite : {n} % par minute.', { n: 5 * L });
+    case 'shipyard': return TL('Géants jusqu\'au rang {n}', { n: 6 + Math.min(3, L) }) + (L > 3 ? ' · ' + TL('géants −{n} %', { n: 10 * (L - 3) }) : '') + '.';
+    case 'warehouse': return TL('Stock des producteurs +{n} %', { n: 40 * L }) + ' · ' + TL('{n} % de vos stocks à l\'abri des pillages de joueurs', { n: Math.round(whProtect(L) * 100) }) + ' · ' + TL('pertes face aux pillards −{n} %', { n: Math.round(whKeep(L) * 100) }) + '.';
+    case 'radar': return TL('Révèle {n} px autour de l\'insertion', { n: fmt(900 + 450 * L) }) + (L >= 2 ? ' · ' + TL('localise les pylônes') : '') + (L >= 3 ? ' · ' + TL('suit les équipes rivales') : '') + '.';
+    case 'contracts': return TLn(2 + L, '{n} contrat proposé par région', '{n} contrats proposés par région') + (L > 1 ? ' · ' + TL('récompenses +{n} %', { n: 15 * (L - 1) }) : '') + '.';
+    case 'expedition': return TLn(Math.min(5, L), '{n} expédition en même temps.', '{n} expéditions en même temps.');
+    case 'range': return TLn(2 + L, '{n} cible d\'entraînement de {hp} PV.', '{n} cibles d\'entraînement de {hp} PV.', { hp: 600 * L });
+    case 'wall': return TLn(bHP({ type: 'wall', lvl: L }), '{n} point de structure.', '{n} points de structure.');
+    case 'mine': return TLn(Math.round(170 * (1 + .45 * (L - 1))), '{n} dégât dans un rayon de 105 px.', '{n} dégâts dans un rayon de 105 px.') + (b.armed === false ? ' ' + TL('Désarmée.') : '');
+    case 'shieldgen': return TL('Bouclier de {n} sur les bâtiments à moins de 320 px pendant les attaques.', { n: 150 * L });
+    case 'turret_mg': case 'turret_cannon': case 'turret_tesla': case 'turret_missile': case 'mortar_pit': case 'turret_beam': case 'turret_flak': {
+      const d = turretDef({ type: b.type, lvl: L }), dps = d.dps || (d.dmg || 0) * (d.salvo || 1) * (d.pellets || 1) * d.rate;
+      return TL('{n} dps', { n: Math.round(dps) }) + ' · ' + TL('portée {n} px', { n: Math.round(d.range) }) + ' · ' + TL('{n} PV', { n: bHP({ type: b.type, lvl: L }) }) + '.';
     }
-    default: { const D = BUILD[b.type]; if (D.prod) { const r = prodRate({ type: b.type, lvl: L }); return `${r < 1 ? r.toFixed(2).replace('.', ',') : fmt(r)} ${RES[D.prod].n} par minute · stock ${fmt(prodCap({ type: b.type, lvl: L }))}.`; } return ''; }
+    default: { const D = BUILD[b.type]; if (D.prod) { const r = prodRate({ type: b.type, lvl: L }); return TL('{n} {res} par minute', { n: r < 10 ? r.toFixed(r < 1 ? 2 : 1).replace('.', TL_DEC) : fmt(r), res: RES[D.prod].n }) + ' · ' + TL('stock {n}', { n: fmt(prodCap({ type: b.type, lvl: L })) }) + '.'; } return ''; }
   }
 }
 function prodPerMin(res) { return save.base.b.reduce((s, b) => s + (BUILD[b.type].prod === res && b.lvl > 0 && !b.busy ? prodRate(b) : 0), 0); }
@@ -245,7 +260,7 @@ function buildingDestroyed(u) {
   boom(u.x, u.y, Math.max(40, u.r * 1.8)); addShakeNear(u.x, u.y, 4);
   if (b.type === 'wall') markBuilding(b, false);
   if (state === 'assault') { assaultBuildingDown(b); return; }
-  if (b.type !== 'wall') msg(D.n + ' détruit !', '#ec6b74', 3);
+  if (b.type !== 'wall') msg(TL('{b} détruit !', { b: D.n }), '#ec6b74', 3);
   if (b.type === 'hq' && attack) deferred.push(() => endAttack(false));
 }
 function hqProxy() { for (const u of bProxies.values()) if (u.bref.type === 'hq' && !u.dead) return u; return null; }
@@ -270,14 +285,17 @@ function minesTick() {
     if (hit) { b.armed = false; explode(x, y, 105, 170 * (1 + .45 * (b.lvl - 1)), 0, null); }
   }
 }
-const ATK_COST = { rodeur: 1, pillard: 1.5, essaim: .7, traqueur: 2, belier: 3, faucon: 2.5, char: 4, artilleur: 3, mastodonte: 12 };
+const ATK_COST = { rodeur: 1, pillard: 1.5, essaim: .7, traqueur: 2, belier: 3, faucon: 2.5, char: 4, artilleur: 3, mastodonte: 12, sapeur: .8, spectre: 2.5, egide: 3, mecano: 2, ravageur: 4, obusier: 4, nid: 6, broyeur: 14 };
 function buildWaves() {
   const hq = hqLevel(), th = save.base.threat || 0, D = DIFFS[save.diff];
   const budget = (10 + 9 * hq + th * .25) * D.spawn;
-  const pool = ['rodeur', 'pillard', 'essaim', 'traqueur', 'belier']; if (hq >= 2) pool.push('faucon', 'char'); if (hq >= 3) pool.push('artilleur');
+  const pool = ['rodeur', 'pillard', 'essaim', 'traqueur', 'belier']; if (hq >= 2) pool.push('faucon', 'char', 'sapeur'); if (hq >= 3) pool.push('artilleur'); if (hq >= 4) pool.push('spectre', 'egide', 'mecano'); if (hq >= 5) pool.push('ravageur', 'obusier'); if (hq >= 7) pool.push('nid');
   return [.25, .35, .4].map((part, w) => {
     let b = budget * part; const list = [];
     if (w === 2 && hq >= 3 && b >= 16) { list.push('mastodonte'); b -= 12; }
+    // QG 6 et plus : un Mastodonte de plus par vague à partir de la deuxième (dès la première au niveau 8)
+    if (hq >= 6 && (w >= 1 || hq >= 8) && b >= 16) { list.push('mastodonte'); b -= 12; }
+    if (w === 2 && hq >= 8 && b >= 18) { list.push('broyeur'); b -= 14; }
     if (b >= 4) { list.push('belier'); b -= 3; }
     let guard = 0;
     while (b > .6 && guard++ < 300) { const t = pick(pool), c = ATK_COST[t] * (t === 'essaim' ? 4 : 1); if (c > b) continue; list.push(t); if (t === 'essaim') list.push('essaim', 'essaim', 'essaim'); b -= c; }
@@ -290,23 +308,23 @@ function scheduleAttack(delay, why) {
   attack = { phase: 'warn', t: delay, wave: 0, waves: buildWaves(), next: 0, loot: {}, kills: 0, alive: 0, total: 0 };
   if (TUT.on) { attack.t = Math.min(delay, 15); attack.waves = TUT.waves(); } // attaque d'entraînement, courte et sans surprise
   attack.total = attack.waves.reduce((s, w) => s + w.length, 0);
-  msg(why || 'Des pillards approchent de la base !', '#ff6b74', 8);
-  msg('Préparez la défense : tourelles, murs, mines. Vos robots stationnés défendront.', '#f2c14e', 8);
+  msg(why || TL('Des pillards approchent de la base !'), '#ff6b74', 8);
+  msg(TL('Préparez la défense : tourelles, murs, mines. Vos robots stationnés défendront.'), '#f2c14e', 8);
   SFX.play('wave', 1); SFX.play('alarm', .7); buzz([80, 80, 80]); closeDrawer(true); updateBPanel();
 }
 function spawnWave(list) {
-  const side = pick(['n', 's', 'e', 'w']), nm = { n: 'nord', s: 'sud', e: 'est', w: 'ouest' }[side];
+  const side = pick(['n', 's', 'e', 'w']), nm = { n: TL('nord'), s: TL('sud'), e: TL('est'), w: TL('ouest') }[side];
   for (const type of list) {
     let x = 150 * TILE + rnd(-160, 160), y = 150 * TILE + rnd(-160, 160);
     if (side === 'n') y = (BY0 - 3) * TILE; else if (side === 's') y = (BY1 + 3) * TILE; else if (side === 'w') x = (BX0 - 3) * TILE; else x = (BX1 + 3) * TILE;
     const p = findWalkableNear(x, y, 0, 120, 30) || { x, y };
     makeEnemy(type, p.x, p.y, { active: true, baseRaid: true, alerted: true });
   }
-  msg('Vague ' + attack.wave + ' / ' + attack.waves.length + ' : ' + list.length + ' assaillants par le ' + nm + '.', '#ff6b74', 5); SFX.play('wave', .9);
+  msg(TLn(list.length, 'Vague {w} / {t} : {n} assaillants par le {side}.', 'Vague {w} / {t} : {n} assaillants par le {side}.', { w: attack.wave, t: attack.waves.length, side: nm }), '#ff6b74', 5); SFX.play('wave', .9);
 }
 function updateAttack(dt) {
   if (!attack) return;
-  if (attack.phase === 'warn') { attack.t -= dt; if (attack.t <= 0) { attack.phase = 'fight'; attack.next = 0; msg('L\'attaque commence !', '#ff6b74', 4); placing = null; closeDrawer(true); } return; }
+  if (attack.phase === 'warn') { attack.t -= dt; if (attack.t <= 0) { attack.phase = 'fight'; attack.next = 0; msg(TL('L\'attaque commence !'), '#ff6b74', 4); placing = null; closeDrawer(true); } return; }
   let alive = 0; for (const u of units) if (u.baseRaid && !u.dead) alive++; attack.alive = alive;
   attack.next -= dt;
   if (attack.wave < attack.waves.length && (attack.next <= 0 || alive === 0)) { attack.wave++; spawnWave(attack.waves[attack.wave - 1]); attack.next = 30; }
@@ -326,7 +344,7 @@ function endAttack(win) {
     for (const k in a.loot) { const n = Math.round(a.loot[k]); if (n > 0) { save.res[k] += n; rows[k] = n; } }
     save.base.threat = 0; save.stats.defenses = (save.stats.defenses || 0) + 1;
   } else {
-    const keep = 1 - .12 * bLevel('warehouse');
+    const keep = 1 - whKeep(bLevel('warehouse'));
     for (const k of ['scrap', 'alloy', 'circuits', 'crystals', 'data']) { const n = Math.floor(save.res[k] * .15 * keep); if (n > 0) { save.res[k] -= n; rows[k] = n; } }
     for (const b of save.base.b) if (BUILD[b.type].prod) b.stored = (b.stored || 0) * .5;
     save.base.threat = 10;
@@ -338,11 +356,11 @@ function endAttack(win) {
   if (player.hp <= 0 || player.dead) { player.dead = false; player.hp = player.maxhp; }
   writeSave();
   const list = RES_KEYS.filter(k => rows[k]).map(k => `<div><span>${RES[k].n}</span><b class="${win ? 'good' : 'lost'}">${win ? '+' : '−'}${fmt(rows[k])}</b></div>`).join('');
-  $('#resultBox').innerHTML = `<h3>${win ? 'Attaque repoussée' : 'Base pillée'}</h3>
-    <p>${win ? 'Les pillards ont été anéantis : vos ouvriers récupèrent leurs carcasses.' : 'Le QG est tombé. Les pillards repartent avec une partie de vos stocks. Les bâtiments sont remis en état.'} ${a.kills} assaillants abattus.</p>
-    <div class="slot-h">${win ? 'Butin récupéré' : 'Ressources volées'}</div><div class="res-list">${list || '<div><span>Rien</span><b>—</b></div>'}</div>
-    ${ko.length ? `<p class="lost">Robots hors service, réparés en urgence : ${ko.map(esc).join(', ')}</p>` : ''}
-    <div class="btns"><button class="btn hot" data-act="closeattack">Continuer</button></div>`;
+  $('#resultBox').innerHTML = `<h3>${win ? TL('Attaque repoussée') : TL('Base pillée')}</h3>
+    <p>${win ? TL('Les pillards ont été anéantis : vos ouvriers récupèrent leurs carcasses.') : TL('Le QG est tombé. Les pillards repartent avec une partie de vos stocks. Les bâtiments sont remis en état.')} ${TLn(a.kills, '{n} assaillants abattus.', '{n} assaillants abattus.')}</p>
+    <div class="slot-h">${win ? TL('Butin récupéré') : TL('Ressources volées')}</div><div class="res-list">${list || '<div><span>' + TL('Rien') + '</span><b>—</b></div>'}</div>
+    ${ko.length ? `<p class="lost">${TL('Robots hors service, réparés en urgence : {list}', { list: ko.map(esc).join(', ') })}</p>` : ''}
+    <div class="btns"><button class="btn hot" data-act="closeattack">${TL('Continuer')}</button></div>`;
   paused = true; showOverlay('result', true);
 }
 function pickBaseTarget(e) {

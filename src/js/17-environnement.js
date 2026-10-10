@@ -4,16 +4,25 @@
 // Tout est visuel, sauf deux effets légers : de nuit et par mauvais temps, ennemis et pilote voient un peu moins loin.
 // En raid partagé, l'heure et la météo découlent de la graine commune : tous les joueurs voient le même ciel.
 const fxQ = () => settings.fx === 'low' || settings.fx === 'mid' || settings.fx === 'high' ? settings.fx : fxAuto || (TOUCH.on ? 'mid' : 'high');
-// qualité automatique : si l'appareil peine, on baisse d'un cran (sans remonter ensuite, pour éviter les va-et-vient)
-let fxAuto = null, fxAcc = 0, fxN = 0;
+// qualité automatique : si l'appareil peine, on baisse d'un cran ; quand il retrouve de l'aisance (moins de monde à l'écran,
+// zoom plus proche), on remonte, sans dépasser le réglage d'origine. Une remontée qui ne tient pas deux fois de suite n'est plus retentée.
+let fxAuto = null, fxAcc = 0, fxN = 0, fxGood = 0, fxUpT = -1e9, fxFails = 0;
 function fxAutoTick(rdt) {
   if (settings.fx !== 'auto' || !inGame() || paused || drawerOpen) { fxAcc = 0; fxN = 0; return; }
   fxAcc += rdt; fxN++;
   if (fxAcc < 5) return;
-  const fps = fxN / fxAcc * (settings.fps30 ? 2 : 1); fxAcc = 0; fxN = 0;
-  const lv = ['low', 'mid', 'high'], i = lv.indexOf(fxQ());
-  if (fps < 38 && i > 0) fxAuto = lv[i - 1];
-  else if (fps < 32 && i === 0 && resScale > .7) { resScale = Math.max(.7, resScale - .15); resize(); }
+  const fps = fxN / fxAcc * (settings.fps30 ? 2 : 1), now = performance.now(); fxAcc = 0; fxN = 0;
+  const lv = ['low', 'mid', 'high'], i = lv.indexOf(fxQ()), top = TOUCH.on ? 1 : 2;
+  if (fps < 38 && (i > 0 || (fps < 32 && resScale > .7))) {
+    fxGood = 0; if (now - fxUpT < 20000) fxFails++;
+    if (i > 0) fxAuto = lv[i - 1]; else { resScale = Math.max(.7, resScale - .15); resize(); }
+    return;
+  }
+  if (fps > 54 && fxFails < 2 && ++fxGood >= 2) {
+    fxGood = 0;
+    if (resScale < 1) { resScale = Math.min(1, resScale + .15); resize(); fxUpT = now; }
+    else if (fxAuto && i < top) { fxAuto = i + 1 >= top ? null : lv[i + 1]; fxUpT = now; }
+  } else if (fps <= 54) fxGood = 0;
 }
 const fxK = () => ({ high: 1, mid: .55, low: .2 })[fxQ()];
 const WX = { // temps possibles par région, avec leur poids
@@ -36,6 +45,8 @@ const WXK = {
   neige: { p: 'snow', n: 230, fog: .07, cloud: .7, dark: .03, wind: .6, col: [205, 214, 228] },
   blizzard: { p: 'snow', n: 520, dust: 1, fog: .28, cloud: 1, dark: .1, wind: 2.1, col: [218, 226, 236] },
 };
+// noms affichés des temps (les clés de WXK restent en français : elles servent à la logique)
+const WX_TXT = { clair: TL('clair'), couvert: TL('couvert'), cendres: TL('cendres'), 'tempête de cendres': TL('tempête de cendres'), brume: TL('brume'), 'pluie acide': TL('pluie acide'), orage: TL('orage'), smog: TL('smog'), pluie: TL('pluie'), neige: TL('neige'), blizzard: TL('blizzard') };
 const ENV = {
   h0: 13, rate: 0, hour: 13, dark: 0, night: 0, dusk: 0, sun: 1, tint: [8, 14, 32], kind: 'clair', P: Object.assign({}, WXK.clair),
   sched: [], region: 'base', wind: { a0: 0, a: 0, s: 30, x: 20, y: 10 }, flash: 0, thunder: [], clouds: [], drops: [], fogs: [],
@@ -60,7 +71,7 @@ const ENV = {
   clock() { if (this.base && !(settings.daynight === false || TUT.on)) { const d = new Date(); return d.getHours() + d.getMinutes() / 60; } return (this.h0 + (state === 'raid' ? raidTime : 0) * this.rate) % 24; },
   hhmm() { const h = this.clock(); return String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0'); },
   isNight() { return this.night > .5; },
-  label(long) { const k = { 'tempête de cendres': 'tempête', 'pluie acide': 'pluie acide' }[this.kind] || this.kind; return (this.night > .5 ? '☾ ' : '') + this.hhmm() + ' · ' + (long ? this.kind : k); },
+  label(long) { const n = WX_TXT[this.kind] || this.kind, k = { 'tempête de cendres': TL('tempête'), 'pluie acide': WX_TXT['pluie acide'] }[this.kind] || n; return (this.night > .5 ? '☾ ' : '') + this.hhmm() + ' · ' + (long ? n : k); },
   tick(dt) {
     const t = state === 'raid' ? raidTime : time;
     // météo : segment courant et fondu de 20 s avec le précédent
@@ -156,10 +167,11 @@ const ENV = {
   // nuages et brume dessinés dans la couche d'atmosphère en basse résolution (L), en coordonnées écran réduites
   skyLow(L, s, ox, oy, z, vx0, vy0, vx1, vy1) {
     const P = this.P, q = fxQ(); if (q === 'low') return;
-    const sh = P.cloud * clamp(this.sun + .3, 0, 1) * .22;
+    // de très haut, nuages et bancs de brume deviennent des taches qui brouillent la carte : on les estompe
+    const fz = clamp(.35 + (z - .08) * 2.2, .35, 1), sh = P.cloud * clamp(this.sun + .3, 0, 1) * .22 * fz;
     const tr = (x, y, sz, ky, spr, a) => { L.globalAlpha = a; const X = (x * z + ox) * s, Y = (y * z + oy) * s, S = sz * z * s; L.drawImage(spr, X - S, Y - S * ky, S * 2, S * 2 * ky); };
     if (sh > .01) { const spr = FX.cloudSpr(); this.sky(null, vx0, vy0, vx1, vy1, 1500, this.cox || 0, this.coy || 0, .25 + P.cloud * .5, (x, y, sz, r) => tr(x, y, sz, .7, spr, sh * (.6 + r * .4))); }
-    if (P.fog > .03) { const spr = FX.fogSpr(), a = Math.min(.5, P.fog * 2.1) * (1 - this.dark * .6); this.sky(null, vx0, vy0, vx1, vy1, 760, this.fox || 0, this.foy || 0, clamp(P.fog * 3.2, .2, .85), (x, y, sz, r) => tr(x, y, sz, .6, spr, a * (.5 + r * .5))); }
+    if (P.fog > .03) { const spr = FX.fogSpr(), a = Math.min(.5, P.fog * 2.1) * (1 - this.dark * .6) * fz; this.sky(null, vx0, vy0, vx1, vy1, 760, this.fox || 0, this.foy || 0, clamp(P.fog * 3.2, .2, .85), (x, y, sz, r) => tr(x, y, sz, .6, spr, a * (.5 + r * .5))); }
     L.globalAlpha = 1;
   },
   // voile uniforme : obscurité, brume et lumière du crépuscule mêlées en une seule couleur
@@ -312,19 +324,54 @@ const FX = {
     if (!W || (EXPSIM && !EXPSIM.viewing) || u.r < 10 || u.human || u.kind === 'player' || u.kind === 'beacon' || u.kind === 'beacon2' || u.kind === 'minion' || u.kind === 'building') return;
     if (fxQ() === 'low' && u.r < 40) return;
     const R = Math.ceil(u.r * 1.6 + 8), q = Math.min(1, 300 / R), s = cvs(Math.ceil(R * 2 * q), Math.ceil(R * 2 * q)), c = s.getContext('2d'); c.scale(q, q); c.translate(R, R); c.rotate(u.ang + rnd(-.3, .3));
-    const sv = parts.length;
+    const sv = parts.length, kick = u.kick; u.kick = 0;
     try {
       if (u.kind === 'enemy') paintEnemy(c, u.etype, u.r, PAL_WRECK, 0, 0, u);
+      else if (u.kind === 'npc') paintNpc(c, u, PAL_WRECK, 0, 0);
       else paintChassis(c, u.chassis || 'crawler', u.r, PAL_WRECK, 0, 0, u);
-    } catch (e) { } parts.length = sv;
+    } catch (e) { } parts.length = sv; u.kick = kick;
     c.setTransform(q, 0, 0, q, 0, 0); c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(14,12,10,.45)'; c.fillRect(0, 0, R * 2, R * 2);
     for (let k = 0; k < 6; k++) { c.fillStyle = `rgba(0,0,0,${rnd(.2, .45)})`; circ(c, R + rnd(-u.r, u.r) * .7, R + rnd(-u.r, u.r) * .7, rnd(3, u.r * .35)); c.fill(); }
     c.globalCompositeOperation = 'source-over';
     this.wrecks.push({ x: u.x, y: u.y, r: u.r, R, img: s, burn: rnd(7, 13) * (u.r > 40 ? 1.4 : 1), t: 0 });
+    // la machine vole en éclats : des morceaux de sa carcasse retombent autour, fumants, puis restent au sol
+    if (fxQ() !== 'low' && this.frags.length < 90) {
+      const S = s.width, nf = Math.min(9, 2 + (u.r / 14 | 0)), up = u.r > 120 ? .6 : 1;
+      for (let k = 0; k < nf; k++) {
+        const fw = S * rnd(.16, .28), fh = S * rnd(.16, .28), a = Math.random() * TAU, sp = rnd(50, 150) * up * (1 + Math.min(1, u.r / 200));
+        const pn = 5 + (Math.random() * 3 | 0), poly = []; for (let j = 0; j < pn; j++) { const pa = j / pn * TAU + rnd(-.3, .3), pr = rnd(.28, .5); poly.push([Math.cos(pa) * pr, Math.sin(pa) * pr]); } // éclat déchiqueté
+        this.frags.push({ img: s, sx: rnd(S * .15, S * .85 - fw), sy: rnd(S * .15, S * .85 - fh), sw: fw, sh: fh, w: fw / q, h: fh / q, poly, x: u.x + rnd(-u.r, u.r) * .3, y: u.y + rnd(-u.r, u.r) * .3,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, z: u.r * .3, vz: rnd(110, 240) * up, a: rnd(0, TAU), va: rnd(-9, 9), smoke: Math.random() < .55, bounce: 1 });
+      }
+    }
     if (this.wrecks.length > 40) this.stamp(this.wrecks.shift());
   },
-  stamp(w) { stampGround(w.x - w.R, w.y - w.R, w.R * 2, w.R * 2, c => { c.globalAlpha = .9; c.drawImage(w.img, w.x - w.R, w.y - w.R, w.R * 2, w.R * 2); }); },
+  stamp(w) {
+    // l'épave reste au sol, réduite (sa copie sert à redessiner le terrain s'il est préparé à nouveau)
+    const n = Math.max(16, Math.min(160, Math.round(w.R * 2 * .6))), k = cvs(n, n); k.getContext('2d').drawImage(w.img, 0, 0, n, n);
+    stampGround(w.x - w.R, w.y - w.R, w.R * 2, w.R * 2, c => { c.globalAlpha = .9; c.drawImage(k, w.x - w.R, w.y - w.R, w.R * 2, w.R * 2); c.globalAlpha = 1; }, 'wreck');
+  },
+  frags: [],
+  fragTick(dt) {
+    for (let i = this.frags.length - 1; i >= 0; i--) {
+      const f = this.frags[i]; f.vz -= 620 * dt; f.z += f.vz * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.a += f.va * dt;
+      if (f.smoke && f.z > 2 && Math.random() < dt * 16 && parts.length < 760) parts.push({ type: 'smoke', x: f.x, y: f.y - f.z * .6, vx: 0, vy: -8, life: .8, max: .8, size: 3 + f.w * .25, col: '' });
+      if (f.z <= 0) {
+        if (f.bounce-- > 0 && f.vz < -60) { f.z = 0; f.vz = -f.vz * .3; f.vx *= .45; f.vy *= .45; f.va *= .5; FX.dust(f.x, f.y, 1, 6, 25); continue; }
+        const fr = f; this.frags.splice(i, 1);
+        stampGround(fr.x - fr.w, fr.y - fr.w, fr.w * 2, fr.w * 2, c => { c.save(); c.translate(fr.x, fr.y); c.rotate(fr.a); c.globalAlpha = .9; fragDraw(c, fr, 1); c.restore(); }, 'wreck');
+      }
+    }
+  },
+  drawFrags(c, vx0, vy0, vx1, vy1) {
+    for (const f of this.frags) {
+      if (f.x < vx0 || f.x > vx1 || f.y < vy0 || f.y > vy1) continue;
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(f.x + f.z * .3, f.y + f.z * .4, f.w * .45, f.h * .35, 0, 0, TAU); c.fill();
+      c.save(); c.translate(f.x, f.y - f.z * .6); c.rotate(f.a); fragDraw(c, f, 1 + Math.min(.4, f.z / 300)); c.restore();
+    }
+  },
   tick(dt) {
+    this.fragTick(dt);
     for (let i = this.casings.length - 1; i >= 0; i--) {
       const k = this.casings[i]; k.t += dt;
       if (k.z > 0 || k.vz > 0) { k.vz -= 420 * dt; k.z += k.vz * dt; if (k.z <= 0) { k.z = 0; if (Math.abs(k.vz) > 40) { k.vz = -k.vz * .35; k.vx *= .55; k.vy *= .55; } else k.vz = 0; } }
@@ -387,16 +434,90 @@ const FX = {
     stampGround(u.x - ext, u.y - ext, ext * 2, ext * 2, c => {
       c.fillStyle = snow ? `rgba(70,84,104,${al})` : `rgba(10,8,6,${al})`;
       for (const [x, y, l, w, oval] of marks) { c.save(); c.translate(x, y); c.rotate(a); if (oval) { c.beginPath(); c.ellipse(0, 0, l, w, 0, 0, TAU); c.fill(); } else c.fillRect(-l / 2, -w / 2, l, w); c.restore(); }
-    });
+    }, 'track');
   },
-  clear() { this.casings = []; this.wrecks = []; },
+  clear() { this.casings = []; this.wrecks = []; this.frags = []; },
 };
-// dessine dans les morceaux de sol déjà en cache (la trace reste tant que le morceau est gardé)
-function stampGround(x, y, w, h, fn) {
-  if (typeof chunkCache === 'undefined') return;
+// un éclat de carcasse : un morceau de l'image de l'épave, découpé en polygone déchiqueté
+function fragDraw(c, f, k) {
+  const w = f.w * k, h = f.h * k; c.beginPath(); f.poly.forEach(([px, py], j) => j ? c.lineTo(px * w, py * h) : c.moveTo(px * w, py * h)); c.closePath();
+  c.save(); c.clip(); c.fillStyle = '#1d1b19'; c.fill(); c.drawImage(f.img, f.sx, f.sy, f.sw, f.sh, -w / 2, -h / 2, w, h); c.restore();
+  c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1; c.stroke();
+}
+// ---------- mémoire du sol ----------
+// Tout ce qui marque le sol (traces, cratères, brûlures, gravats, épaves) est retenu morceau par morceau et redessiné quand
+// un morceau de terrain est préparé à nouveau : le décor garde la trace des combats jusqu'à la fin du raid.
+const SCAR_MAX = 360;
+function stampGround(x, y, w, h, fn, kind) {
+  if (typeof chunkCache === 'undefined' || !W) return;
   const cx0 = Math.max(0, Math.floor(x / CPX)), cx1 = Math.min(NCH - 1, Math.floor((x + w) / CPX)), cy0 = Math.max(0, Math.floor(y / CPX)), cy1 = Math.min(NCH - 1, Math.floor((y + h) / CPX));
-  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) for (let half = 0; half < LOD_N; half++) {
-    const e = chunkCache.get((cy * NCH + cx) * LOD_N + half); if (!e) continue;
-    const s = LOD_S[half], c = e.cv.getContext('2d'); c.save(); c.setTransform(s, 0, 0, s, -cx * CPX * s, -cy * CPX * s); try { fn(c); } catch (er) { } c.restore();
+  const S = W.scars || (W.scars = new Map());
+  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+    const idx = cy * NCH + cx; let L = S.get(idx); if (!L) S.set(idx, L = []);
+    L.push({ fn, k: kind || 'm' });
+    if (L.length > SCAR_MAX) { const i = L.findIndex(o => o.k === 'track'); L.splice(i >= 0 ? i : 0, 1); } // les traces s'effacent les premières
+    for (let half = 0; half < LOD_N; half++) {
+      const e = chunkCache.get(idx * LOD_N + half); if (!e) continue;
+      const s = LOD_S[half], c = e.cv.getContext('2d'); c.save(); c.setTransform(s, 0, 0, s, -cx * CPX * s, -cy * CPX * s); try { fn(c); } catch (er) { } c.restore();
+    }
   }
+}
+// redessine les marques retenues dans un morceau qu'on vient de préparer
+function scarReplay(c, cx, cy, s) {
+  const L = W && W.scars && W.scars.get(cy * NCH + cx); if (!L || !L.length) return;
+  c.save(); c.setTransform(s, 0, 0, s, -cx * CPX * s, -cy * CPX * s); for (const o of L) { try { o.fn(c); } catch (er) { } } c.restore();
+}
+// ---------- marques de combat ----------
+const SCAR_SPR = {};
+function scarSpr(k) {
+  if (SCAR_SPR[k]) return SCAR_SPR[k];
+  const S = 128, s = cvs(S, S), c = s.getContext('2d'), R = mulberry32(k.length * 31 + 7), m = S / 2;
+  if (k === 'scorch') {
+    const g = c.createRadialGradient(m, m, 0, m, m, m); g.addColorStop(0, 'rgba(8,6,5,.62)'); g.addColorStop(.55, 'rgba(14,11,9,.38)'); g.addColorStop(1, 'rgba(20,16,12,0)'); c.fillStyle = g; c.fillRect(0, 0, S, S);
+    for (let i = 0; i < 10; i++) { const a = R() * TAU, l = m * (.55 + R() * .4); c.strokeStyle = 'rgba(6,5,4,.25)'; c.lineWidth = 2 + R() * 3; c.beginPath(); c.moveTo(m + Math.cos(a) * m * .25, m + Math.sin(a) * m * .25); c.lineTo(m + Math.cos(a) * l, m + Math.sin(a) * l); c.stroke(); }
+  } else if (k === 'crater') {
+    const g = c.createRadialGradient(m, m, 0, m, m, m); g.addColorStop(0, 'rgba(6,5,4,.6)'); g.addColorStop(.42, 'rgba(12,10,8,.5)'); g.addColorStop(.6, 'rgba(120,110,96,.22)'); g.addColorStop(.72, 'rgba(18,14,11,.35)'); g.addColorStop(1, 'rgba(20,16,12,0)'); c.fillStyle = g; c.fillRect(0, 0, S, S);
+    for (let i = 0; i < 16; i++) { const a = R() * TAU, l = m * (.7 + R() * .3); c.strokeStyle = 'rgba(8,6,5,.3)'; c.lineWidth = 1.5 + R() * 2.5; c.beginPath(); c.moveTo(m + Math.cos(a) * m * .5, m + Math.sin(a) * m * .5); c.lineTo(m + Math.cos(a) * l, m + Math.sin(a) * l); c.stroke(); }
+    for (let i = 0; i < 26; i++) { const a = R() * TAU, d = m * (.5 + R() * .45); c.fillStyle = R() < .5 ? 'rgba(150,140,124,.35)' : 'rgba(10,8,7,.5)'; c.fillRect(m + Math.cos(a) * d, m + Math.sin(a) * d, 2 + R() * 4, 2 + R() * 3); }
+    c.strokeStyle = 'rgba(160,150,132,.18)'; c.lineWidth = 3; circ(c, m - 2, m - 2, m * .5); c.stroke();
+  } else if (k === 'burn') {
+    for (let i = 0; i < 9; i++) { const x = m + (R() - .5) * m, y = m + (R() - .5) * m, r = m * (.3 + R() * .35), g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(10,8,6,.4)'); g.addColorStop(1, 'rgba(10,8,6,0)'); c.fillStyle = g; c.fillRect(0, 0, S, S); }
+    for (let i = 0; i < 30; i++) { c.fillStyle = 'rgba(40,34,28,.4)'; circ(c, m + (R() - .5) * m * 1.3, m + (R() - .5) * m * 1.3, 1 + R() * 2.5); c.fill(); }
+  } else if (k === 'crack') {
+    c.strokeStyle = 'rgba(6,5,4,.42)'; c.lineCap = 'round';
+    for (let i = 0; i < 7; i++) { let x = m, y = m, a = R() * TAU; c.lineWidth = 3; c.beginPath(); c.moveTo(x, y); for (let j = 0; j < 5; j++) { a += (R() - .5) * 1.1; const l = m * (.12 + R() * .1); x += Math.cos(a) * l; y += Math.sin(a) * l; c.lineTo(x, y); c.lineWidth = Math.max(.8, 3 - j * .5); } c.stroke(); }
+    const g = c.createRadialGradient(m, m, 0, m, m, m * .4); g.addColorStop(0, 'rgba(8,6,5,.4)'); g.addColorStop(1, 'rgba(8,6,5,0)'); c.fillStyle = g; c.fillRect(0, 0, S, S);
+  }
+  return SCAR_SPR[k] = s;
+}
+function scarSprite(k, x, y, R, a) {
+  if (!W || (EXPSIM && !EXPSIM.viewing && k !== 'glass')) return;
+  stampGround(x - R, y - R, R * 2, R * 2, c => { c.save(); c.translate(x, y); c.rotate(a); c.drawImage(scarSpr(k), -R, -R, R * 2, R * 2); c.restore(); }, k);
+}
+// gravats laissés par un obstacle détruit, selon sa nature
+function scarRubble(tx, ty, o, burnt) {
+  if (!W || (EXPSIM && !EXPSIM.viewing)) return;
+  const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2, h = (k, j) => hash2(tx * 7 + k, ty * 13 + j, 41), mm = (OBS[o] && OBS[o].mm) || '#6a6862';
+  stampGround(x - TILE, y - TILE, TILE * 2, TILE * 2, c => {
+    if (o === 1) { // souche et feuilles (ou cendres si l'arbre a brûlé)
+      if (!burnt) for (let k = 0; k < 9; k++) { c.fillStyle = k % 2 ? 'rgba(52,70,38,.55)' : 'rgba(70,88,46,.5)'; circ(c, x + (h(k, 1) - .5) * 34, y + (h(k, 2) - .5) * 34, 2 + h(k, 3) * 3); c.fill(); }
+      else { c.fillStyle = 'rgba(12,10,8,.35)'; circ(c, x, y, 16); c.fill(); }
+      c.fillStyle = burnt ? '#1c1814' : '#4a3a28'; circ(c, x, y, 6); c.fill(); c.strokeStyle = burnt ? '#0c0a08' : '#2e2418'; c.lineWidth = 1.5; circ(c, x, y, 3.5); c.stroke();
+    } else if (o === 3 || o === 6) { // tas de gravats et blocs
+      c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(x + 3, y + 4, 22, 16, h(9, 9) * 3, 0, TAU); c.fill();
+      for (let k = 0; k < (o === 6 ? 13 : 9); k++) { const bx = x + (h(k, 4) - .5) * 34, by = y + (h(k, 5) - .5) * 30, bw = 4 + h(k, 6) * 9, bh = 3 + h(k, 7) * 6; c.save(); c.translate(bx, by); c.rotate(h(k, 8) * 3); c.fillStyle = k % 3 ? mm : '#5f574b'; c.fillRect(-bw / 2, -bh / 2, bw, bh); c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(-bw / 2, bh / 2 - 1.5, bw, 1.5); c.restore(); }
+    } else if (o === 2) { for (let k = 0; k < 14; k++) { c.fillStyle = k % 2 ? '#5a5853' : '#7a7770'; circ(c, x + (h(k, 4) - .5) * 30, y + (h(k, 5) - .5) * 30, 1.2 + h(k, 6) * 3); c.fill(); } }
+    else if (o === 4) { for (let k = 0; k < 8; k++) { c.save(); c.translate(x + (h(k, 4) - .5) * 30, y + (h(k, 5) - .5) * 30); c.rotate(h(k, 6) * 6); c.fillStyle = k % 2 ? 'rgba(176,124,255,.55)' : 'rgba(120,80,190,.6)'; c.beginPath(); c.moveTo(0, -4); c.lineTo(2.5, 2); c.lineTo(-2.5, 2); c.closePath(); c.fill(); c.restore(); } }
+    else if (o === 5) { for (let k = 0; k < 10; k++) { c.fillStyle = k % 2 ? '#5a3a24' : '#3a3632'; c.fillRect(x + (h(k, 4) - .5) * 32, y + (h(k, 5) - .5) * 28, 2 + h(k, 6) * 6, 2 + h(k, 7) * 3); } }
+  }, 'rubble');
+}
+// très grosses explosions : le sol fond et devient du verre de cratère
+function glassify(x, y, R) {
+  if (!W || W.isBase || NETVIS) return;
+  const t0x = Math.max(1, Math.floor((x - R) / TILE)), t1x = Math.min(WT - 2, Math.floor((x + R) / TILE)), t0y = Math.max(1, Math.floor((y - R) / TILE)), t1y = Math.min(WT - 2, Math.floor((y + R) / TILE)), ch = new Set();
+  for (let ty = t0y; ty <= t1y; ty++) for (let tx = t0x; tx <= t1x; tx++) {
+    const dx = tx * TILE + 20 - x, dy = ty * TILE + 20 - y, d = Math.hypot(dx, dy) / R; if (d > 1 - hash2(tx, ty, 5) * .25) continue;
+    const i = ty * WT + tx; if (W.ground[i] === 5 || W.ground[i] === 7) continue; W.ground[i] = 5; miniSetTile(tx, ty); ch.add(((ty / CHT) | 0) * NCH + ((tx / CHT) | 0));
+  }
+  for (const k of ch) for (let lv = 0; lv < LOD_N; lv++) chunkCache.delete(k * LOD_N + lv);
 }

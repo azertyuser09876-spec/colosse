@@ -20,7 +20,7 @@ function msg(text, col = '#e8dcc4', life = 5, grp) {
   if (grp) { const m = msgs.find(m => m.key === grp.key && m.max - m.t < 2.5); if (m) { m.names.push(grp.name); m.text = grp.fmt(m.names); m.t = m.max = life; return; } }
   msgs.push({ text, col, t: life, max: life, key: grp && grp.key, names: grp ? [grp.name] : null }); if (msgs.length > 7) msgs.shift();
 }
-const listFr = a => a.length < 2 ? a.join('') : a.length > 4 ? a.slice(0, 3).join(', ') + ' et ' + (a.length - 3) + ' autres' : a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1];
+const listFr = a => tlList(a); // liste « a, b et c » dans la langue du joueur
 function focus() { return player.inside || player; }
 function addShake(v) { cam.shake = Math.min(28, cam.shake + v); }
 
@@ -49,8 +49,9 @@ function makeRobot(sr, x, y) {
   u.abil = u.modules.filter(m => MODULES[m] && MODULES[m].active).map(m => ({ id: m, cd: 2 }));
   if (ch.perk === 'leap' && !u.abil.some(a => a.id === 'jump')) u.abil.push({ id: 'jump', cd: 2 });
   u.fortify = ch.perk === 'fortify'; u.spikes = ch.perk === 'spikes'; u.fabC = ch.fab || null;
-  u.wm = Array.isArray(sr.wm) ? sr.wm.slice() : null; u.split = !!sr.split;
-  u.mounts = sr.weapons.map((w, i) => { const m = MOUNTS[sr.chassis][i]; return makeMount(w, scaledWeapon(w, st), m[0] * ch.r, m[1] * ch.r); });
+  const fit = fitLoadout(sr.chassis, sr.weapons);
+  u.wm = Array.isArray(sr.wm) && !fit.moved ? sr.wm.slice() : null; u.split = !!sr.split;
+  u.mounts = fit.weapons.map((w, i) => { const m = MOUNTS[sr.chassis][i], mm = makeMount(w, scaledWeapon(w, st), m[0] * ch.r, m[1] * ch.r); mm.slot = slotSize(sr.chassis, i); mm.ds = mountScale(sr.chassis, i, w); mm.main = mm.slot >= ch.wsize; return mm; });
   u.engRange = calcEngRange(u); u.ang = Math.random() * TAU; u.mounts.forEach(m => m.aim = u.ang);
   return u;
 }
@@ -63,7 +64,7 @@ function refreshRobot(u) {
 }
 function makeEnemy(type, x, y, opts) {
   const E = ENEMIES[type];
-  const u = baseUnit({ kind: 'enemy', team: 1, etype: type, x, y, r: E.r, maxhp: E.hp * diff.hp, hp: E.hp * diff.hp, armor: E.armor || 0, spd: E.spd * (type === 'souverain' ? 1 : rnd(.92, 1.08)), fly: !!E.fly, crush: E.crush || 0, sight: E.sight, static: !!E.static, boss: !!E.boss, elite: !!E.elite, giant: !!E.giant, human: !!E.human, home: { x, y }, active: false, mscale: E.mscale || 1, spikes: type === 'mastodonte' });
+  const u = baseUnit({ kind: 'enemy', team: 1, etype: type, x, y, r: E.r, maxhp: E.hp * diff.hp, hp: E.hp * diff.hp, armor: E.armor || 0, spd: E.spd * (type === 'souverain' ? 1 : rnd(.92, 1.08)), fly: !!E.fly, crush: E.crush || 0, sight: E.sight, static: !!E.static, boss: !!E.boss, elite: !!E.elite, giant: !!E.giant, human: !!E.human, home: { x, y }, active: false, mscale: E.mscale || 1, spikes: type === 'mastodonte', cloak: !!E.cloak, suicide: E.suicide || null, support: !!E.support });
   const rdm = W && !W.isBase && REGIONS[regionCur] && REGIONS[regionCur].tier <= 1 && !E.boss ? .85 : 1; // première région : tirs ennemis un peu moins durs
   u.mounts = E.ws.map(([wid, ox, oy]) => { const def = Object.assign({}, WEAPONS[wid]); def.dmg = (def.dmg || 0) * diff.dmg * rdm; return makeMount(wid, def, ox * E.r, oy * E.r); });
   u.engRange = calcEngRange(u); u.ang = Math.random() * TAU; u.mounts.forEach(m => m.aim = u.ang);
@@ -99,7 +100,7 @@ function cellAt(x, y) { if (x < 0 || y < 0) return null; return hgrid.get(((y / 
 function findTarget(u, range, weakest) {
   let best = null, bs = Infinity; const r2 = range * range;
   query(u.x - range, u.y - range, u.x + range, u.y + range, v => {
-    if (v.team === u.team || v.dead || v.hidden || v.etype === 'cible') return;
+    if (v.team === u.team || v.dead || v.hidden || v.etype === 'cible' || v.invul) return;
     const dd = d2(u.x, u.y, v.x, v.y); if (dd > r2 + v.r * v.r * 2) return;
     if (v.cloak && time - v.lastFire > 1.5 && dd > r2 * .16) return;
     const sc = weakest ? (v.hp / v.maxhp) * 4e6 + dd : dd - (v.kind === 'beacon' ? 0 : 0);
@@ -140,5 +141,6 @@ function destroyTile(tx, ty, o, crusher) {
   for (let k = 0; k < n; k++) parts.push({ type: 'debris', x: x + rnd(-14, 14), y: y + rnd(-14, 14), vx: rnd(-90, 90), vy: rnd(-90, 90), life: rnd(.4, .9), max: .9, size: rnd(2, 5), col: D.mm, rot: rnd(0, 6) });
   if (o !== 1 || Math.random() < .3) parts.push({ type: 'smoke', x, y, vx: rnd(-10, 10), vy: rnd(-20, -5), life: 1.2, max: 1.2, size: 14, col: 'rgba(120,110,95,' });
   if (D.drop) dropTable(D.drop, x, y, crusher ? .7 : 1);
+  scarRubble(tx, ty, o, o === 1 && fires.some(f => !f.vortex && d2(f.x, f.y, x, y) < (f.r + 20) ** 2));
   if (o === 3 || o === 6 || o === 2 || o === 5) { SFX.play('crush', crusher ? .5 : .35, x, y); if (crusher && crusher.r > 50) addShake(.6); }
 }

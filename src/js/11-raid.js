@@ -16,15 +16,24 @@ const CRATE_LOOT = {
 };
 function populate() {
   const sp = W.spawn;
-  for (let k = 0; k < 88; k++) {
+  for (let k = 0; k < 104; k++) {
     const p = findWalkableNear(WPX / 2, WPX / 2, 1300, WPX * .48, 20); if (!p) continue;
     if (d2(p.x, p.y, sp.x, sp.y) < 1750 * 1750 || (LIVE.game && LIVE.nearSpawn(p.x, p.y, 1750))) continue;
     const bi = W.biome[tileAt(p.x, p.y)], RX = REGIONS[regionCur].extra; const comp = (CAMPS[bi] || CAMPS[0]).concat(RX[bi] || [], RX.all || []);
     for (const [type, a, b, ch] of comp) { if (ch && Math.random() > ch) continue; const n = Math.round(rndi(a, b) * armyScale(.3)); for (let i = 0; i < n; i++) { const q = findWalkableNear(p.x, p.y, 0, 110, 15) || p; makeEnemy(type, q.x, q.y); } }
     if ((bi === 2 || bi === 4) && Math.random() < .05 + (LIVE.game ? LIVE.game.diff : save.diff) * .03) makeEnemy('mastodonte', p.x, p.y);
   }
+  // nouveaux adversaires de la 3.0, selon le rang de la région ; les réparateurs suivent souvent un groupe
+  { const tier = REGIONS[regionCur].tier;
+    for (let k = 0; k < 14 + tier * 6; k++) {
+      const p = findWalkableNear(WPX / 2, WPX / 2, 1300, WPX * .48, 20); if (!p || d2(p.x, p.y, sp.x, sp.y) < 1900 * 1900 || (LIVE.game && LIVE.nearSpawn(p.x, p.y, 1900))) continue;
+      const type = pickFoe(tier, ['mecano']); if (!type) break; const n = type === 'broyeur' ? 1 : type === 'sapeur' ? rndi(2, 4) : rndi(1, 2);
+      for (let i = 0; i < n; i++) { const q = findWalkableNear(p.x, p.y, 0, 120, 15) || p; makeEnemy(type, q.x, q.y); }
+      if (tier >= 2 && Math.random() < .35) { const q = findWalkableNear(p.x, p.y, 40, 160, 15) || p; makeEnemy('mecano', q.x, q.y); }
+    } }
   for (const bs of W.bases) {
     const x0 = bs.x0 * TILE, y0 = bs.y0 * TILE, w = bs.sw * TILE, h = bs.sh * TILE;
+    if (REGIONS[regionCur].tier >= 3 && Math.random() < .2 + (LIVE.game ? LIVE.game.diff : save.diff) * .07) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 0, 140, 30); if (q) makeEnemy('executeur', q.x, q.y); }
     for (const [fx, fy] of [[.2, .2], [.8, .8], [.8, .2]]) { const q = findWalkableNear(x0 + w * fx, y0 + h * fy, 0, 60, 20); if (q) makeEnemy('bastion', q.x, q.y); }
     for (let i = 0; i < 4; i++) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 30, 220, 20); if (q) makeEnemy('pillard', q.x, q.y); }
     if (Math.random() < (.35 + (LIVE.game ? LIVE.game.diff : save.diff) * .15) * (REGIONS[regionCur].tier <= 1 ? .4 : 1)) { const q = findWalkableNear(bs.cx * TILE, bs.cy * TILE, 0, 120, 30); if (q) makeEnemy('mastodonte', q.x, q.y); } // les Cendres ménagent les premières flottes
@@ -51,7 +60,7 @@ function populate() {
 function startRaid(opt) {
   SFX.init(); if (EXPV.id) expViewClose(true);
   const NG = opt && opt.net; // raid partagé : graine, région et difficulté communes
-  showOverlay('loading', true); $('#loadTxt').textContent = NG ? 'Le monde partagé se forme…' : 'Le monde se forme…';
+  showOverlay('loading', true); $('#loadTxt').textContent = NG ? TL('Le monde partagé se forme…') : TL('Le monde se forme…');
   setTimeout(() => {
     const TU = TUT.on && !NG; // raid d'entraînement : les Cendres en Recrue, encore adoucies
     regionCur = NG ? NG.region : TU ? 0 : (save.region || 0); const RG = REGIONS[regionCur], tr = RG.tier - 1, D0 = DIFFS[NG ? NG.diff : TU ? 0 : save.diff];
@@ -90,9 +99,10 @@ function startRaid(opt) {
     if (radarLv >= 2) for (const p of W.pylons) reveal(p.x, p.y, 220);
     state = 'raid';
     showScreen(null); showOverlay('loading', false);
-    if (!TU) msg('Insertion : ' + RG.n + '. Fouillez, puis posez la balise [' + keyLabel('beacon') + '] pour lancer l\'extraction.', '#f2c14e', 9);
-    if (crews.length) msg(crews.length + ' équipe' + (crews.length > 1 ? 's rivales fouillent' : ' rivale fouille') + ' aussi la zone.', COL.rival, 9);
-    if (!TU) msg('Les pylônes relais [' + keyLabel('interact') + '] révèlent la carte et accélèrent l\'ancrage.', '#a59c88', 9);
+    if (!TU) msg(TL('Insertion : {region}. Fouillez, puis posez la balise [{key}] pour lancer l\'extraction.', { region: RG.n, key: keyLabel('beacon') }), '#f2c14e', 9);
+    if (crews.length) msg(TLn(crews.length, '{n} équipe rivale fouille aussi la zone.', '{n} équipes rivales fouillent aussi la zone.'), COL.rival, 9);
+    if (!TU) msg(TL('Les pylônes relais [{key}] révèlent la carte et accélèrent l\'ancrage.', { key: keyLabel('interact') }), '#a59c88', 9);
+    MIS = []; if (!TU && !NG) misSetup(); // opérations : convoi, sauvetage, sabotage, forage, traque
     save.stats.raids++; writeSave();
     $('#cv').focus && $('#cv').focus();
     if (NG && LIVE.game === NG) LIVE.ready();
@@ -102,7 +112,7 @@ function startRaid(opt) {
 // ================= BALISE D'ANCRAGE =================
 const ZONE_R = 280, BEACON_FIELD = 280; // cercle d'extraction, qui est aussi le champ de réparation de la balise
 function fleetWeight() { let w = player.cargoW; for (const r of fleet) if (!r.dead) w += r.cargoW; return w; }
-function chargeTime() { return (55 + fleetWeight() * .3) * (has('u_anchor') ? .75 : 1) * (1 - .06 * Math.max(0, bLevel('pad') - 1)) * (TUT.on ? .5 : 1); }
+function chargeTime() { return (55 + fleetWeight() * .3) * (has('u_anchor') ? .75 : 1) * (1 - padAnchor(bLevel('pad'))) * (TUT.on ? .5 : 1); }
 let armyPower = 0;
 function armyScale(k) { return 1 + Math.min(2.5, armyPower / 16) * k; }
 function nearPylon(x, y) { return W.pylons.some(p => p.active && d2(p.x, p.y, x, y) < 340 * 340); }
@@ -112,18 +122,18 @@ function toggleBeacon() {
     if (F === player && player.hidden) return;
     const hp = 1300 * diff.beacon * (has('u_beacon') ? 2 : 1) * (1 + .2 * Math.max(0, bLevel('pad') - 1)) * (1 + armyPower / 60);
     const pos = F === player ? { x: player.x, y: player.y } : (findWalkableNear(F.x, F.y, F.r + 30, F.r + 80, 30) || { x: F.x, y: F.y });
-    B.unit = baseUnit({ kind: 'beacon', team: 0, x: pos.x, y: pos.y, r: 18, maxhp: hp, hp, static: true, name: 'Balise' });
+    B.unit = baseUnit({ kind: 'beacon', team: 0, x: pos.x, y: pos.y, r: 18, maxhp: hp, hp, static: true, name: TL('Balise') });
     units.push(B.unit); B.state = 'charging'; B.charge = B.keep || 0; B.keep = 0; B.pulseT = 7;
-    msg('Balise posée. L\'ancrage émet un signal : les hostiles vont converger. Les robots dans son cercle se réparent lentement.', '#f2c14e', 6);
-    if (nearPylon(pos.x, pos.y)) msg('Pylône relais à portée : ancrage ×2,5.', '#6fe3c8', 5);
+    msg(TL('Balise posée. L\'ancrage émet un signal : les hostiles vont converger. Les robots dans son cercle se réparent lentement.'), '#f2c14e', 6);
+    if (nearPylon(pos.x, pos.y)) msg(TL('Pylône relais à portée : ancrage ×2,5.'), '#6fe3c8', 5);
     SFX.play('beacon', 1);
   } else if ((B.state === 'charging') && B.unit && d2(B.unit.x, B.unit.y, F.x, F.y) < (F.r + 90) ** 2) {
-    B.unit.dead = true; B.unit = null; B.state = 'carried'; B.charge = 0; B.keep = 0; msg('Balise reprise. La charge est perdue.', '#a59c88', 4); SFX.play('ui', 1);
-  } else if (B.state === 'broken') msg('Balise en réimpression : ' + Math.ceil(B.cd) + ' s.', '#ec6b74', 3);
-  else if (B.state === 'charging') msg('Rejoignez la balise pour la reprendre.', '#a59c88', 3);
+    B.unit.dead = true; B.unit = null; B.state = 'carried'; B.charge = 0; B.keep = 0; msg(TL('Balise reprise. La charge est perdue.'), '#a59c88', 4); SFX.play('ui', 1);
+  } else if (B.state === 'broken') msg(TL('Balise en réimpression : {n} s.', { n: Math.ceil(B.cd) }), '#ec6b74', 3);
+  else if (B.state === 'charging') msg(TL('Rejoignez la balise pour la reprendre.'), '#a59c88', 3);
 }
 function updateBeacon(dt) {
-  if (B.state === 'broken') { B.cd -= dt; if (B.cd <= 0) { B.state = 'carried'; msg('Nouvelle balise prête. [V] pour la poser.', '#f2c14e', 5); SFX.play('beacon', .6); } return; }
+  if (B.state === 'broken') { B.cd -= dt; if (B.cd <= 0) { B.state = 'carried'; msg(TL('Nouvelle balise prête. [V] pour la poser.'), '#f2c14e', 5); SFX.play('beacon', .6); } return; }
   if (!B.unit) return;
   const u = B.unit;
   // champ de l'ancrage : les robots qui défendent la balise se réparent lentement
@@ -137,7 +147,7 @@ function updateBeacon(dt) {
     B.charge += dt / chargeTime() * mult;
     B.pulseT -= dt;
     if (B.pulseT <= 0) { B.pulseT = 14; signalPulse(); }
-    if (B.charge >= 1) { B.charge = 1; B.state = 'window'; B.windowT = 16; msg('FENÊTRE D\'EXTRACTION OUVERTE : 16 s. Entrez dans le cercle.', '#f2c14e', 8); msg('La flotte rejoint le cercle d\'elle-même, sauf les robots qui tiennent une position.', COL.ally, 8); SFX.play('alarm', 1); SFX.play('uplink', .8); buzz([60, 60, 60]); }
+    if (B.charge >= 1) { B.charge = 1; B.state = 'window'; B.windowT = 16; msg(TL('FENÊTRE D\'EXTRACTION OUVERTE : 16 s. Entrez dans le cercle.'), '#f2c14e', 8); msg(TL('La flotte rejoint le cercle d\'elle-même, sauf les robots qui tiennent une position.'), COL.ally, 8); SFX.play('alarm', 1); SFX.play('uplink', .8); buzz([60, 60, 60]); }
   } else if (B.state === 'window') {
     B.windowT -= dt;
     if (Math.random() < dt * 20) parts.push({ type: 'spark', x: u.x + rnd(-ZONE_R, ZONE_R) * .7, y: u.y + rnd(-ZONE_R, ZONE_R) * .7, vx: 0, vy: -rnd(80, 200), life: .6, max: .6, size: 2, col: '#f2c14e' });
@@ -145,9 +155,9 @@ function updateBeacon(dt) {
       const F = focus();
       if (Math.hypot(F.x - u.x, F.y - u.y) < (F.r > 150 ? zoneReach(F) : ZONE_R)) {
         endExtracted = fleet.filter(r => !r.dead && Math.hypot(r.x - u.x, r.y - u.y) < zoneReach(r));
-        endSuccess = true; endT = 1.6; B.state = 'lift'; SFX.play('extract', 1); buzz([40, 40, 120]); addShake(10);
-        msg('Extraction en cours…', '#f2c14e', 4);
-      } else { B.state = 'charging'; B.charge = .55; msg('Fenêtre manquée : le pilote n\'était pas dans le cercle. Recharge partielle.', '#ec6b74', 6); }
+        endSuccess = true; endT = 1.6; B.state = 'lift'; B.last = { x: u.x, y: u.y }; SFX.play('extract', 1); buzz([40, 40, 120]); addShake(10);
+        msg(TL('Extraction en cours…'), '#f2c14e', 4);
+      } else { B.state = 'charging'; B.charge = .55; msg(TL('Fenêtre manquée : le pilote n\'était pas dans le cercle. Recharge partielle.'), '#ec6b74', 6); }
     }
   }
 }
@@ -165,11 +175,15 @@ function signalPulse() {
 function spawnGroup(cx, cy, minR, maxR, count, opts) {
   const p = findWalkableNear(cx, cy, minR, maxR, 40); if (!p) return;
   const pool = alertLv >= 3 ? ['pillard', 'traqueur', 'essaim', 'pillard', 'traqueur', 'faucon', 'char', 'artilleur'] : alertLv >= 1 ? ['rodeur', 'pillard', 'essaim', 'traqueur', 'faucon'] : ['rodeur', 'rodeur', 'essaim', 'pillard'];
+  // renforts de la 3.0 : sapeurs dès la première alerte, puis spectres, égides et réparateurs, puis l'artillerie et les nids
+  { const NF = newFoes(regionCur !== null && REGIONS[regionCur] ? REGIONS[regionCur].tier : 1), add = k => { if (NF.includes(k)) pool.push(k); };
+    if (alertLv >= 1) add('sapeur'); if (alertLv >= 2) { add('spectre'); add('mecano'); add('egide'); } if (alertLv >= 3) { add('ravageur'); add('obusier'); add('nid'); } }
   const activeE = units.reduce((s, e) => s + (e.kind === 'enemy' && e.active && !e.dead ? 1 : 0), 0);
-  count = Math.min(count, Math.max(0, 240 - activeE));
+  count = Math.min(Math.round(count * 1.15), Math.max(0, 240 - activeE));
   for (let i = 0; i < count; i++) { const q = findWalkableNear(p.x, p.y, 0, 120, 10) || p; makeEnemy(pick(pool), q.x, q.y, Object.assign({ active: true }, opts)); }
   const nm = (alertLv >= 3 && Math.random() < .25 * diff.spawn ? 1 : 0) + (armyPower > 20 && Math.random() < armyPower / 80 ? 1 : 0);
-  for (let i = 0; i < nm; i++) makeEnemy('mastodonte', p.x + rnd(-60, 60), p.y + rnd(-60, 60), Object.assign({ active: true }, opts));
+  for (let i = 0; i < nm; i++) makeEnemy(alertLv >= 4 && REGIONS[regionCur] && REGIONS[regionCur].tier >= 4 && Math.random() < .4 ? 'broyeur' : 'mastodonte', p.x + rnd(-60, 60), p.y + rnd(-60, 60), Object.assign({ active: true }, opts));
+  if (alertLv >= 5 && armyPower > 30 && Math.random() < .2 * diff.spawn) makeEnemy('executeur', p.x + rnd(-80, 80), p.y + rnd(-80, 80), Object.assign({ active: true }, opts));
   giantWave(p, opts);
 }
 function updateAlert(dt) {
@@ -177,7 +191,7 @@ function updateAlert(dt) {
   const lv = Math.min(5, Math.floor(raidTime / step));
   if (lv > alertLv) {
     alertLv = lv; SFX.play('alarm', .8);
-    msg(lv >= 5 ? 'ALERTE MAXIMALE : purge en cours, des traqueurs vous cherchent.' : 'Niveau d\'alerte ' + lv + ' : les patrouilles se renforcent.', '#ec6b74', 6);
+    msg(lv >= 5 ? TL('ALERTE MAXIMALE : purge en cours, des traqueurs vous cherchent.') : TL('Niveau d\'alerte {n} : les patrouilles se renforcent.', { n: lv }), '#ec6b74', 6);
   }
   spawnT -= dt;
   if (spawnT <= 0) {
@@ -193,6 +207,7 @@ function nearestInteract() {
   const F = focus(); const reach = F === player ? 52 : F.r + 50; let best = null, bd = Infinity;
   for (const c of crates) { if (c.open) continue; const q = d2(c.x, c.y, F.x, F.y); if (q < (reach + 14) ** 2 && q < bd) { bd = q; best = { kind: 'crate', o: c, dur: .9 }; } }
   for (const p of W.pylons) { if (p.active) continue; const q = d2(p.x, p.y, F.x, F.y); if (q < (reach + 40) ** 2 && q < bd) { bd = q; best = { kind: 'pylon', o: p, dur: 2.5 }; } }
+  if (MIS.length) { const mi = misNearest(F, reach); if (mi && mi.q < bd) best = mi; }
   return best;
 }
 let eLatch = false; // réglage « appui simple » : un appui lance l'action, qui continue tant qu'on reste à portée
@@ -209,11 +224,12 @@ function updateInteract(dt) {
       if (it.kind === 'crate' && LIVE.guest()) LIVE.openCrate(it.o); // l'hôte ouvre la caisse et répartit le butin
       else if (it.kind === 'crate') {
         it.o.open = true; dropTable(CRATE_LOOT[it.o.type], it.o.x, it.o.y); SFX.play('open', 1);
-        if (it.o.type === 'donnees') { floatText(it.o.x, it.o.y - 20, 'Archive de données', '#7fa9ff'); raidStats.archives++; }
+        if (it.o.type === 'donnees') { floatText(it.o.x, it.o.y - 20, TL('Archive de données'), '#7fa9ff'); raidStats.archives++; }
         if (it.o.claimed) it.o.claimed = null;
-      } else {
+      } else if (it.kind === 'mis') misActivate(it);
+      else {
         it.o.active = true; reveal(it.o.x, it.o.y, 1900); raidStats.pylons++; spawnItem('data', Math.round(4 * diff.loot), it.o.x, it.o.y); if (LIVE.guest()) LIVE.pylon(it.o);
-        msg('Pylône relais activé : carte révélée, ancrage ×2,5 dans son rayon.', '#6fe3c8', 6); SFX.play('beacon', 1);
+        msg(TL('Pylône relais activé : carte révélée, ancrage ×2,5 dans son rayon.'), '#6fe3c8', 6); SFX.play('beacon', 1);
       }
     }
   } else eProg = Math.max(0, eProg - dt * 2);
@@ -288,25 +304,25 @@ function togglePilot() {
   if (player.inside) { ejectPlayer(false); SFX.play('board', .8); return; }
   let cand = fleet.find(r => r.sel && !r.dead && d2(r.x, r.y, player.x, player.y) < (r.r + 260) ** 2);
   if (!cand) { let bd = Infinity; for (const r of fleet) { if (r.dead) continue; const q = Math.max(0, Math.hypot(r.x - player.x, r.y - player.y) - r.r) ** 2; if (q < bd && q < 220 * 220) { bd = q; cand = r; } } }
-  if (!cand) { msg('Aucun robot assez proche pour monter à bord.', '#a59c88', 3); SFX.play('deny', .8); return; }
+  if (!cand) { msg(TL('Aucun robot assez proche pour monter à bord.'), '#a59c88', 3); SFX.play('deny', .8); return; }
   player.inside = cand; cand.piloted = true; cand.order = null; cand.sel = false; player.hidden = true; player.vx = player.vy = 0;
-  msg('Aux commandes de ' + cand.name + '. [' + keyLabel('pilot') + '] pour ressortir' + (cand.mounts.filter(m => !SUPPORT_W[m.w.kind]).length > 1 ? ', [' + keyLabel('wmode') + '] armes manuelles ou auto.' : '.'), '#6fe3c8', 5); SFX.play('board', 1);
+  msg(cand.mounts.filter(m => !SUPPORT_W[m.w.kind]).length > 1 ? TL('Aux commandes de {name}. [{key}] pour ressortir, [{key2}] armes manuelles ou auto.', { name: cand.name, key: keyLabel('pilot'), key2: keyLabel('wmode') }) : TL('Aux commandes de {name}. [{key}] pour ressortir.', { name: cand.name, key: keyLabel('pilot') }), '#6fe3c8', 5); SFX.play('board', 1);
 }
 
 // ================= ORDRES DE FLOTTE =================
 function selection() { const s = fleet.filter(r => r.sel && !r.dead && !r.piloted); return s.length ? s : fleet.filter(r => !r.dead && !r.piloted); }
 function orderAll(type) {
   const sel = selection(); if (!sel.length) return;
-  if (type === 'beacon' && !B.unit) { msg('Aucune balise posée.', '#a59c88', 3); return; }
+  if (type === 'beacon' && !B.unit) { msg(TL('Aucune balise posée.'), '#a59c88', 3); return; }
   for (const r of sel) { r.order = type === 'hold' ? { type: 'hold', x: r.x, y: r.y } : type === 'auto' ? null : { type }; r.queue = []; r.patrol = false; }
-  const L = { follow: 'Flotte : suivez-moi.', hold: 'Flotte : tenez la position.', beacon: 'Flotte : défendez la balise.', auto: 'Flotte : autonomie rendue.' };
-  msg(L[type] + (fleet.some(r => r.sel) ? ' (sélection)' : ''), '#6fe3c8', 3); SFX.play('ui', 1);
+  const L = { follow: TL('Flotte : suivez-moi.'), hold: TL('Flotte : tenez la position.'), beacon: TL('Flotte : défendez la balise.'), auto: TL('Flotte : autonomie rendue.') };
+  msg(fleet.some(r => r.sel) ? TL('{order} (sélection)', { order: L[type] }) : L[type], '#6fe3c8', 3); SFX.play('ui', 1);
 }
 function cycleBrain() {
-  const sel = fleet.filter(r => r.sel && !r.dead); if (!sel.length) { msg('Sélectionnez des robots pour changer leur cerveau (Tab).', '#a59c88', 3); return; }
+  const sel = fleet.filter(r => r.sel && !r.dead); if (!sel.length) { msg(TL('Sélectionnez des robots pour changer leur cerveau (Tab).'), '#a59c88', 3); return; }
   const avail = BRAIN_KEYS.filter(k => brainUnlocked(k) && k !== 'tactical');
   for (const r of sel) { if (r.brain === 'tactical') continue; const i = avail.indexOf(r.brain); r.brain = avail[(i + 1) % avail.length]; r.order = null; }
-  msg('Cerveau : ' + BRAINS[sel[0].brain].n + (sel.some(r => r.brain === 'tactical') ? ' (les cortex tactiques restent inchangés)' : ''), '#6fe3c8', 3); SFX.play('ui', 1);
+  msg(sel.some(r => r.brain === 'tactical') ? TL('Cerveau : {brain} (les cortex tactiques restent inchangés)', { brain: BRAINS[sel[0].brain].n }) : TL('Cerveau : {brain}', { brain: BRAINS[sel[0].brain].n }), '#6fe3c8', 3); SFX.play('ui', 1);
 }
 
 // ================= BOUCLE DE MISE À JOUR =================
@@ -317,7 +333,7 @@ function update(dt) {
   actT -= dt;
   if (!inBase && actT <= 0) {
     actT = .4; const A2 = 1900 * 1900;
-    for (const e of units) { if (e.kind !== 'enemy' || e.dead || e.net) continue; e.active = !!(e.forced || e.hunter || d2(e.x, e.y, F.x, F.y) < actReach(F, e, 1900) ** 2 || (B.unit && d2(e.x, e.y, B.unit.x, B.unit.y) < A2) || fleet.some(r => !r.dead && d2(e.x, e.y, r.x, r.y) < actReach(r, e, 900) ** 2) || (LIVE.game && LIVE.nearPeers(e.x, e.y, A2))); }
+    for (const e of units) { if (e.kind !== 'enemy' || e.dead || e.net) continue; e.active = !!(e.forced || e.hunter || e.roam || d2(e.x, e.y, F.x, F.y) < actReach(F, e, 1900) ** 2 || (B.unit && d2(e.x, e.y, B.unit.x, B.unit.y) < A2) || fleet.some(r => !r.dead && d2(e.x, e.y, r.x, r.y) < actReach(r, e, 900) ** 2) || (LIVE.game && LIVE.nearPeers(e.x, e.y, A2))); }
   }
   hashBuild(); NAVB.left = NAV_BUDGET;
   for (const u of units) u.wantMove = false;
@@ -329,6 +345,7 @@ function update(dt) {
   if (state === 'raid') { crewsTick(dt); for (const u of units) if (u.kind === 'rival' && !u.dead && !u.net) rivalAI(u, dt); }
   abilitiesTick(dt);
   for (const u of units) if (u.kind === 'enemy' && u.active && !u.dead && !u.net) enemyAI(u, dt);
+  if (MIS.length && state === 'raid') missionsTick(dt); // avant la physique : le camion, la foreuse et le pilote secouru bougent comme les autres
   for (const u of units) { if (u.dead || !u.active || u.net || (u.hidden && u !== player)) continue; if (u === player && player.inside) continue; physics(u, dt); }
   separate(dt);
   for (const u of units) { if (u.dead || !u.active || u.hidden || u.net || !u.mounts.length) continue; updateMounts(u, dt); }
@@ -340,8 +357,8 @@ function update(dt) {
   if (toxT <= 0) {
     toxT = .5;
     for (const u of units) {
-      if (u.dead || u.fly || u.hidden || u.net || u.crush >= 3 || !u.active || u.kind === 'beacon') continue;
-      const i = tileAt(u.x, u.y); if (i >= 0 && W.ground[i] === 3) { damage(u, u.kind === 'player' ? 2 : u.kind === 'robot' ? 1.5 : 1.5, null); if (u.kind === 'player' && Math.random() < .3) floatText(u.x, u.y - 16, 'toxique', '#b5e86a'); }
+      if (u.dead || u.fly || u.hidden || u.net || u.crush >= 3 || !u.active || u.kind === 'beacon' || u.kind === 'npc') continue;
+      const i = tileAt(u.x, u.y); if (i >= 0 && W.ground[i] === 3) { damage(u, u.kind === 'player' ? 2 : u.kind === 'robot' ? 1.5 : 1.5, null); if (u.kind === 'player' && Math.random() < .3) floatText(u.x, u.y - 16, TL('toxique'), '#b5e86a'); }
     }
   }
   ENV.tick(dt); FX.tick(dt); FX.damageTick(dt);
@@ -353,7 +370,8 @@ function update(dt) {
     const p = parts[i]; p.life -= dt;
     if (p.life <= 0) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
     p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.type === 'debris' || p.type === 'spark' || p.type === 'fire') { p.vx *= 1 - dt * 3; p.vy *= 1 - dt * 3; }
+    if (p.type === 'debris' || p.type === 'spark' || p.type === 'fire' || p.type === 'shard') { p.vx *= 1 - dt * 3; p.vy *= 1 - dt * 3; }
+    else if (p.type === 'ember') { p.vx *= 1 - dt * 1.2; p.vy = p.vy * (1 - dt * 1.2) - 12 * dt; }
     else if (p.type === 'smoke' || p.type === 'dust') { const kw = dt * (p.type === 'dust' ? 1.6 : .7); p.vx += (ENV.wind.x * .55 - p.vx) * kw; p.vy += (ENV.wind.y * .55 - p.vy) * kw; }
   }
   if (parts.length > 900) parts.splice(0, parts.length - 900);
@@ -372,6 +390,7 @@ function endRaid(success) {
   const wasLive = LIVE.game ? LIVE.game.mode : null;
   if (LIVE.game) { if (!success) LIVE.dropAll(); LIVE.finish(success); } // raid partagé : le butin d'un pilote tombé reste au sol
   state = 'result'; tactical = false; mapOpen = false; SFX.play(success ? 'success' : 'fail', 1); if (TUT.on) TUT.raidOk = success;
+  missionsEnd(success);
   const gained = {}; const lostRes = {};
   const add = (o, c) => { for (const k in c) if (c[k] > 0) o[k] = (o[k] || 0) + c[k]; };
   const back = [], lost = [], recovered = [];
@@ -384,7 +403,7 @@ function endRaid(success) {
       else { add(lostRes, r.cargo); lost.push(sr.name); save.robots = save.robots.filter(s => s !== sr); }
     }
     for (const k in gained) save.res[k] += gained[k];
-    save.stats.extract++;
+    save.stats.extract++; if (!LIVE.game && !TUT.on) save.bestDiff = Math.max(save.bestDiff || 0, save.diff);
     const val = (gained.scrap || 0) + 3 * (gained.alloy || 0) + 2 * (gained.circuits || 0) + 3 * (gained.crystals || 0) + 30 * (gained.cores || 0) + 4 * (gained.data || 0);
     save.base.threat = Math.min(100, (save.base.threat || 0) + 9 + alertLv * 4 + Math.min(20, val / 150));
   } else {
@@ -413,19 +432,19 @@ function endRaid(success) {
   if (save.robots.length === 0 && save.res.scrap < 25) { save.res.scrap += 40; save.res.circuits += 4; }
   fleet = []; fires = [];
   writeSave();
-  const resRows = (o, cls, sign) => RES_KEYS.filter(k => o[k]).map(k => `<div><span>${RES[k].n}</span><b class="${cls}">${sign}${fmt(o[k])}</b></div>`).join('') || '<div><span>Rien</span><b>—</b></div>';
+  const resRows = (o, cls, sign) => RES_KEYS.filter(k => o[k]).map(k => `<div><span>${RES[k].n}</span><b class="${cls}">${sign}${fmt(o[k])}</b></div>`).join('') || '<div><span>' + TL('Rien') + '</span><b>—</b></div>';
   $('#resultBox').innerHTML = `
-    <h3>${success ? 'Extraction réussie' : 'Signal perdu'}</h3>${wasLive ? `<p class="sub">Raid partagé · ${wasLive === 'pvp' ? 'PvP' : 'coopération'}</p>` : ''}
-    <p>${success ? 'Le lift orbital a remonté le pilote et tout ce qui se trouvait dans le cercle.' : 'Votre pilote est tombé. Tout ce qui était transporté reste dans la zone.'} Durée ${mmss(raidTime)} · ${raidStats.kills} hostiles abattus${raidStats.boss ? ' · Souverain vaincu' : ''}.</p>
-    ${success ? `<div class="slot-h">Butin rapatrié</div><div class="res-list">${resRows(gained, 'good', '+')}</div>` : ''}
-    ${Object.keys(lostRes).length ? `<div class="slot-h">Butin perdu</div><div class="res-list">${resRows(lostRes, 'lost', '−')}</div>` : ''}
-    ${back.length ? `<p class="good">Robots rentrés : ${back.map(esc).join(', ')}</p>` : ''}
-    ${recovered.length ? `<p class="good">Rappel automatique réussi : ${recovered.map(esc).join(', ')}</p>` : ''}
-    ${lost.length ? `<p class="lost">Robots perdus : ${lost.map(esc).join(', ')}</p>` : ''}
-    ${raidStats.fab ? `<p>Renforts fabriqués pendant le raid : ${raidStats.fab}. Ils ont été démontés au retour ; le chargement de ceux qui étaient dans le cercle est compté.</p>` : ''}
-    ${doneC.length ? `<div class="slot-h">Contrats remplis</div><div class="res-list">${doneC.map(c => `<div><span>${esc(contractText(c))}</span><b class="good">${rewardHtml(c.reward)}</b></div>`).join('')}</div>` : ''}
-    ${failC.length ? `<p>Contrats non remplis, toujours disponibles : ${failC.map(c => esc(contractText(c))).join(' · ')}</p>` : ''}
-    ${newRegions.length ? `<p class="good"><b>Nouvelle région débloquée : ${newRegions.map(R => R.n).join(', ')}.</b></p>` : ''}
-    <div class="btns"><button class="btn hot" data-act="tohub">Retour à la base</button></div>`;
+    <h3>${success ? TL('Extraction réussie') : TL('Signal perdu')}</h3>${wasLive ? `<p class="sub">${TL('Raid partagé')} · ${wasLive === 'pvp' ? TL('PvP') : TL('coopération')}</p>` : ''}
+    <p>${success ? TL('Le lift orbital a remonté le pilote et tout ce qui se trouvait dans le cercle.') : TL('Votre pilote est tombé. Tout ce qui était transporté reste dans la zone.')} ${TL('Durée {t}', { t: mmss(raidTime) })} · ${TLn(raidStats.kills, '{n} hostiles abattus', '{n} hostiles abattus')}${raidStats.boss ? ' · ' + TL('Souverain vaincu') : ''}.</p>
+    ${success ? `<div class="slot-h">${TL('Butin rapatrié')}</div><div class="res-list">${resRows(gained, 'good', '+')}</div>` : ''}
+    ${Object.keys(lostRes).length ? `<div class="slot-h">${TL('Butin perdu')}</div><div class="res-list">${resRows(lostRes, 'lost', '−')}</div>` : ''}
+    ${back.length ? `<p class="good">${TL('Robots rentrés : {list}', { list: back.map(esc).join(', ') })}</p>` : ''}
+    ${recovered.length ? `<p class="good">${TL('Rappel automatique réussi : {list}', { list: recovered.map(esc).join(', ') })}</p>` : ''}
+    ${lost.length ? `<p class="lost">${TL('Robots perdus : {list}', { list: lost.map(esc).join(', ') })}</p>` : ''}
+    ${raidStats.fab ? `<p>${TL('Renforts fabriqués pendant le raid : {n}. Ils ont été démontés au retour ; le chargement de ceux qui étaient dans le cercle est compté.', { n: raidStats.fab })}</p>` : ''}
+    ${doneC.length ? `<div class="slot-h">${TL('Contrats remplis')}</div><div class="res-list">${doneC.map(c => `<div><span>${esc(contractText(c))}</span><b class="good">${rewardHtml(c.reward)}</b></div>`).join('')}</div>` : ''}
+    ${failC.length ? `<p>${TL('Contrats non remplis, toujours disponibles : {list}', { list: failC.map(c => esc(contractText(c))).join(' · ') })}</p>` : ''}
+    ${newRegions.length ? `<p class="good"><b>${TL('Nouvelle région débloquée : {list}.', { list: newRegions.map(R => R.n).join(', ') })}</b></p>` : ''}
+    <div class="btns"><button class="btn hot" data-act="tohub">${TL('Retour à la base')}</button></div>`;
   showOverlay('result', true);
 }

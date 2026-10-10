@@ -3,7 +3,7 @@
 Extraction en monde ouvert, flottes de robots jusqu'aux géants grands comme des villes, base à défendre, expéditions autonomes, équipes rivales et assauts en ligne.
 Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance : il s'ouvre dans n'importe quel navigateur, sur ordinateur comme sur téléphone.
 
-**Version 2.0.0** : sortie de la phase alpha. Les nouveautés de chaque version sont dans [CHANGELOG.md](CHANGELOG.md), et dans le jeu (lien « Nouveautés » de l'écran titre).
+**Version 3.0.0** : dix langues avec leur drapeau (dont l'arabe de droite à gauche), opérations (convoi, sauvetage, sabotage, forage, traque), neuf nouveaux ennemis, difficultés Enfer et Apocalypse, robots et décor rénovés. Les nouveautés de chaque version sont dans [CHANGELOG.md](CHANGELOG.md), et dans le jeu (lien « Nouveautés » de l'écran titre).
 
 ## Contenu du dossier
 
@@ -11,6 +11,7 @@ Tout le jeu tient dans **un seul fichier `index.html`**, sans aucune dépendance
 |---|---|
 | `index.html` | Le jeu complet (graphismes et sons générés par le code), construit depuis `src/`. |
 | `src/`, `outils/construire.js` | Sources du jeu, découpées par domaine, et leur assemblage en `index.html`. |
+| `src/langues/`, `outils/extraire-textes.js` | Traductions (une par langue) et outil qui recense les phrases à traduire. |
 | `server/server.js` | Serveur en ligne : Node.js seul, **aucun paquet à installer**, IPv6 et IPv4. |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installation sur l'écran d'accueil et jeu hors ligne (version web). |
 | `electron/`, `package.json` | Version bureau : `.exe` Windows et `.AppImage` Linux. |
@@ -74,6 +75,7 @@ L'interface est une **console de commandement** sombre, dans le même style que 
 - **Forge** :
   - châssis filtrés par famille (et géants), avec aperçu ;
   - affûts numérotés directement sur l'aperçu : un clic sur un numéro choisit l'affût, glisser fait tourner le robot ;
+  - **affûts gradués** (version 2.1) : le premier tiers des affûts reçoit les armes de la taille maximale du châssis, le tiers suivant une taille en dessous, le reste deux tailles en dessous (jamais moins que léger). Un Colosse porte ainsi deux armes titanesques, deux lourdes et deux moyennes ; une Ville-machine cinq apocalyptiques, cinq colossales et quatre titanesques. Une arme trop grosse pour l'affût choisi va d'elle-même sur le premier affût assez grand ;
   - armurerie filtrée par rôle (anti-infanterie, antiblindé, antiaérien, artillerie, anti-géant, contact, soutien) ;
   - survoler une arme ou un châssis montre l'aperçu et la comparaison des caractéristiques (barres et écarts) avant de choisir ;
   - une silhouette de châssis ou d'arme mène à sa recherche.
@@ -114,7 +116,7 @@ Mesures sur un banc d'essai (mêmes mondes, trois graines, simulation à pas fix
 
 Une expédition envoie une escouade de robots fouiller une région **sans vous**. C'est une vraie partie, avec son monde, ses ennemis, sa météo et sa balise, qui tourne en même temps que la vôtre, pendant que vous jouez à la base ou en raid.
 
-- **Poste d'expédition** : à construire à la base, à partir du QG niveau 2. Chaque niveau permet une expédition de plus en même temps, jusqu'à trois (niveau 3 : QG 3). L'onglet Expéditions apparaît une fois le poste construit.
+- **Poste d'expédition** : à construire à la base, à partir du QG niveau 2. Chaque niveau permet une expédition de plus en même temps, jusqu'à cinq (niveau 5 : QG 5). L'onglet Expéditions apparaît une fois le poste construit.
 - **Départ** (onglet Expéditions, à la base) : région, difficulté, durée de fouille (5, 9 ou 14 minutes), consigne et robots. L'escouade utilise son propre commandement, sans toucher à celui de votre armée de raid.
 - **Consignes** :
   - Prudente : évite les zones gardées et rentre tôt.
@@ -138,7 +140,7 @@ Une expédition envoie une escouade de robots fouiller une région **sans vous**
 Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à six fois sa taille, s'ajoutent à la recherche et à la forge.
 
 - **Construire un géant** :
-  - **Chantier titanesque** à la base (QG niveau 5) : son niveau 1, 2 ou 3 permet de rechercher puis d'assembler les géants du rang 7, 8 ou 9 ;
+  - **Chantier titanesque** à la base (QG niveau 5) : son niveau 1, 2 ou 3 permet de rechercher puis d'assembler les géants du rang 7, 8 ou 9 ; les niveaux 4 et 5 les rendent 10 % moins chers chacun ;
   - recherche au laboratoire de niveau 5, dans la suite de chaque famille : Colosse → Rempart → Forge-mère → Ville-machine (chenillés), Béhémoth → Arachné → Cyclope (marcheurs), Arche → Porte-nef → Aéropole → Astre (volants) ;
   - forge de niveau 5 et des Cœurs de Colosse.
 - **Les géants** :
@@ -148,18 +150,59 @@ Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à 
 - **Fabrication** : le Porte-nef, la Forge-mère, la Ville-machine et l'Astre fabriquent en raid des robots de trois rangs en dessous au plus (rang 4, 5 ou 6).
   - Au hangar, choisissez jusqu'à trois de vos robots comme plans, ou laissez « Automatique » (les meilleurs modèles débloqués).
   - Ce sont des renforts temporaires : ils se battent et ramassent, puis sont démontés à l'extraction. Le chargement de ceux qui sont dans le cercle est gardé.
-- **Nouveaux robots plus petits** : Grillon (sauteur), Hérisson (pointes qui blessent au contact), Scarabée (volant blindé), Hydre (cinq têtes armées), Wyverne (bombardier volant), Mammouth (transporteur de siège à quatre armes titanesques).
+- **Nouveaux robots plus petits** : Grillon (sauteur), Hérisson (pointes qui blessent au contact), Scarabée (volant blindé), Hydre (cinq têtes armées), Wyverne (bombardier volant), Mammouth (transporteur de siège à deux armes titanesques).
 - **20 nouvelles armes**, dont deux nouvelles tailles réservées aux géants :
   - légères à titanesques : lance-harpon, projecteur d'acide, canon de DCA, lance-disques, roquettes thermobariques, lance-foudre, désintégrateur, canon de Gauss ;
   - **colossales** (rangs 7 et 8) : canon de bataille, mur de missiles, rayon annihilateur, fournaise, tempête ionique, hangar de chasseurs, dôme de bouclier, nuée réparatrice ;
   - **apocalyptiques** (rang 9) : lance de fission, projecteur de singularité (un trou noir qui aspire puis implose), missile Crépuscule, pluie de météores.
 - **Géants ennemis** : quand votre armée grossit, les régions répondent avec des Colosses renégats, le Dévoreur, la Forge noire (qui assemble des renforts), le Léviathan volant et la Nécropole.
-- **Zoom** : plus votre plus grand robot est gros, plus le zoom recule, jusqu'à voir presque toute la région. De loin, le jeu simplifie l'affichage (sol en basse résolution, petites unités en points) pour rester fluide.
+- **Zoom** : plus votre plus grand robot est gros, plus le zoom recule, jusqu'à voir presque toute la région. De loin, le jeu simplifie l'affichage (sol en basse résolution, petites unités en points) pour rester fluide. La vue s'arrête au bord de la carte ; une carte de fond de toute la région se prépare dès le début du raid, si bien que le sol reste net en dézoomant, et les noms et invites se rangent sans se chevaucher.
 - **À savoir** :
   - un géant compte dans le cercle d'extraction dès que sa carcasse le couvre ;
   - les petits robots alliés passent sous les géants ;
-  - à la base, les géants se garent autour de la zone constructible ;
+  - à la base, les géants se garent dans la friche autour de l'enceinte ;
   - les géants ne participent pas aux assauts de base en ligne : ils sont trop grands.
+
+### Langues
+
+Depuis la version 3.0, le jeu parle les dix langues les plus parlées au monde : anglais, chinois mandarin, hindi, espagnol, arabe, français, bengali, portugais (Brésil), russe et indonésien. Chacune a son drapeau.
+
+- Au premier lancement, un écran propose la langue de l'appareil. On la change ensuite depuis le bouton à drapeau de l'écran titre, ou dans Réglages → Langue : le jeu redémarre dans la nouvelle langue, la partie est conservée (le changement se fait entre deux raids).
+- L'arabe se lit de droite à gauche : les menus passent en miroir et les textes du jeu s'écrivent dans le bon sens.
+- En raid partagé, les annonces des autres joueurs (extraction, chute, boss abattu) s'affichent dans la langue de chacun ; les noms d'équipes rivales gardent celle de l'hôte.
+
+**Corriger ou compléter une traduction.** Le français est la langue source : chaque texte affiché passe par `TL('phrase française')` (ou `TLn(n, 'singulier', 'pluriel')`), et la phrase française sert de clé dans `src/langues/xx.json` (`en`, `zh`, `hi`, `es`, `ar`, `bn`, `pt`, `ru`, `id`). Pour corriger une traduction, modifiez la valeur dans le fichier de la langue, puis reconstruisez. Après un ajout de texte dans le code, `node outils/extraire-textes.js --manque` liste les phrases qui manquent dans chaque langue ; une phrase absente s'affiche simplement en français. Les espaces réservés `{nom}` et les balises `<b>` doivent rester tels quels ; les pluriels sont des objets (`one`, `few`, `many`, `other`… selon la langue).
+
+### Opérations
+
+Cinq contrats, marqués « Opération », placent leurs objectifs dans le monde ; comme les autres contrats, leur récompense se touche à l'extraction. Ils rapportent de 1,7 à 1,9 fois un contrat de chasse et comptent double pour la réputation.
+
+| Opération | Objectif |
+|---|---|
+| Convoi | Escorter un camion blindé jusqu'à son dépôt. Il n'avance que si le pilote ou un robot reste à moins de 65 m, des embuscades l'attendent, et il dégage la route à l'explosif s'il est bloqué. |
+| Sauvetage | Trouver un pilote abattu dans une zone de recherche (fumée de l'épave visible de loin), le relever (touche Interagir), puis le ramener vivant dans le cercle d'extraction. |
+| Sabotage | Détruire les trois générateurs d'un avant-poste. Le premier détruit déclenche l'alarme : il reste de 1 min 50 à 2 min 20 avant le verrouillage des autres. |
+| Forage | Lancer une foreuse (touche Interagir) et la défendre de 1 min 45 à 2 min 30. Elle s'arrête si personne ne reste à moins de 70 m ; le minerai tombe au sol à la fin. |
+| Traque | Abattre une cible d'élite nommée, renforcée et escortée, qui change de terrain de chasse. Sa zone approximative se resserre toutes les 30 s ; elle se révèle quand on s'en approche. |
+
+### Ennemis et difficultés
+
+Neuf ennemis apparaissent en 3.0 : Sapeur (charge et explose), Égide (bouclier pour ses voisins), Réparateur (volant, soigne les autres), Ravageur (lance-missiles), Spectre (presque invisible de loin), Nid volant (lâche des drones), Obusier (artillerie), et deux élites, Broyeur et Exécuteur. Les plus durs n'arrivent que dans les régions de rang élevé et quand l'alerte monte.
+
+Deux difficultés s'ajoutent après Cauchemar : Enfer (PV ×2,5, dégâts ×2,25, butin ×3) et Apocalypse (PV ×3,3, dégâts ×2,8, butin ×4,2). Chacune se débloque par une extraction réussie dans la précédente.
+
+### Base : bâtiments jusqu'au niveau 10
+
+Depuis la version 2.1, tous les bâtiments montent jusqu'au niveau 10 (le bureau des contrats, le poste d'expédition et le chantier titanesque jusqu'au niveau 5). Le niveau du QG reste le plafond des autres.
+
+- Au-delà du niveau 5, chaque niveau coûte ×1,75 (au lieu de ×2,15) et dure ×1,5 (au lieu de ×1,9). Les Noyaux IA grimpent plus doucement (×1,4).
+- Ce que rapportent les niveaux 6 à 10 :
+  - QG : 6 ouvriers au niveau 9, +2 commandement par niveau, et davantage de bâtiments de chaque sorte (collecteurs, tourelles, murs…) ; les attaques de pillards grossissent aussi ;
+  - forge : −4 % sur l'assemblage par niveau (−36 % au niveau 10) ; laboratoire : recherches −5 % par niveau au-delà de 5 ;
+  - hangar : 130, 160, 200, 250 puis 300 robots ; relais de commandement : +3 commandement par niveau au-delà de 5 ;
+  - plateforme de largage : balise +20 % par niveau, ancrage −3 % par niveau au-delà de 5 ; station radar : zone révélée plus large ;
+  - producteurs, baie de réparation, champ de tir, défenses et murs : leurs effets continuent de croître ;
+  - entrepôt blindé : jusqu'à 85 % des stocks à l'abri des pillages ; bureau des contrats : 7 contrats par région et +60 % de récompense au niveau 5 ; poste d'expédition : 5 escouades à la fois.
 
 ### Armes en pilotage et tir fractionné
 
@@ -233,6 +276,8 @@ Dans Réglages : volume général, effets, musique et ambiance séparés, et vib
 
 Le serveur n'utilise que Node.js (version 18 ou plus) : https://nodejs.org
 
+> **Mise à jour 2.1** : remplacez `server/server.js` et relancez le serveur en même temps que vous publiez le jeu. L'ancien serveur refuse les bâtiments au-delà du niveau 5 et les bases de plus de 400 constructions ; les comptes et les parties enregistrées sont conservés.
+
 ```bash
 node server/server.js          # ou ./serveur.sh  (Windows : serveur.bat)
 ```
@@ -254,7 +299,7 @@ En ligne, vous avez :
   - On peut rejoindre une partie déjà lancée.
   - L'hôte fait vivre le monde. S'il part, un autre joueur prend le relais. Gardez la fenêtre du jeu ouverte pendant le raid.
 - **Pillage des bases** : votre armée attaque la base d'un autre joueur pendant 3 minutes (jusqu'à 3 étoiles) et emporte une **vraie part de ses stocks**.
-  - Le QG et l'entrepôt protègent une partie des stocks (jusqu'à 70 % avec un entrepôt amélioré).
+  - Le QG et l'entrepôt protègent une partie des stocks (jusqu'à 85 % avec un entrepôt de niveau 10).
   - La base pillée passe sous bouclier : 1, 2 ou 4 h selon les étoiles.
   - Attaquer retire votre propre bouclier.
   - Le défenseur voit le pillage dans son journal à sa prochaine connexion.
@@ -315,20 +360,20 @@ GitHub demande de vous identifier : utilisez un *personal access token* (Setting
 ### 3. Lancer la compilation et créer une version
 
 ```bash
-./publier.sh v2.0.0          # Windows : publier.bat v2.0.0
+./publier.sh v2.1.0          # Windows : publier.bat v2.1.0
 ```
 
 ou :
 
 ```bash
-git tag v2.0.0
-git push origin v2.0.0
+git tag v2.1.0
+git push origin v2.1.0
 ```
 
 Le workflow **Compiler Colosse** se lance (onglet *Actions*, environ 10 minutes). Il reconstruit `index.html` depuis `src/`, puis produit et publie dans **Releases**, avec comme description la section de cette version dans `CHANGELOG.md` :
 - `Colosse-…-portable.exe` : se lance sans installation ;
 - `Colosse-…-nsis.exe` : l'installeur Windows ;
-- `Colosse-v2.0.0.apk` : Android, à installer en autorisant les sources inconnues ;
+- `Colosse-v2.1.0.apk` : Android, à installer en autorisant les sources inconnues ;
 - `Colosse-….AppImage` : Linux ;
 - `Colosse-web-et-serveur.zip` : la version web et le serveur.
 
@@ -369,12 +414,13 @@ node outils/construire.js --verifier  vérifie que index.html correspond aux sou
 
 | Fichier | Contenu |
 |---|---|
-| `src/page.html` | Squelette de la page : écrans, menus, commandes tactiles. |
+| `src/page.html` | Squelette de la page : écrans, menus, commandes tactiles (textes traduits au chargement). |
 | `src/style.css` | Thème « console de commandement ». |
+| `src/js/00-langues.js` | Langues : `TL`, `TLn`, pluriels, liste des dix langues. |
 | `src/js/01-outils.js` | Mathématiques, aléas, dessin de base. |
 | `src/js/02-audio.js` | Son synthétisé : effets spatialisés, musique générative, ambiances. |
 | `src/js/03-reglages.js` | Réglages et accessibilité. |
-| `src/js/04-donnees.js` | Châssis, armes, ennemis, bâtiments, recherches, régions, contrats. |
+| `src/js/04-donnees.js` | Châssis, armes, ennemis, bâtiments, recherches, régions, contrats ; affûts gradués et niveaux 6 à 10 des bâtiments. |
 | `src/js/05-sauvegarde.js` | Sauvegarde de la partie. |
 | `src/js/06-monde.js` | Génération des régions et de la base. |
 | `src/js/07-peintres.js` | Dessin procédural des robots, armes, bâtiments et géants. |
@@ -393,7 +439,11 @@ node outils/construire.js --verifier  vérifie que index.html correspond aux sou
 | `src/js/22-rendu.js`, `23-tactile.js` | Rendu et HUD, commandes tactiles. |
 | `src/js/24-interface.js`, `25-entrees.js` | Console de commandement, souris et clavier. |
 | `src/js/26-nouveautes.js` | Notes de version affichées après une mise à jour. |
-| `src/js/27-demarrage.js` | Boucle d'images et démarrage. |
+| `src/js/27-ennemis.js` | Ennemis de la 3.0, difficultés Enfer et Apocalypse. |
+| `src/js/28-missions.js` | Opérations : convoi, sauvetage, sabotage, forage, traque. |
+| `src/js/29-langues.js` | Écran des langues, drapeaux, traduction des textes fixes de la page, sens de lecture. |
+| `src/js/30-demarrage.js` | Boucle d'images et démarrage. |
+| `src/langues/xx.json` | Traductions : phrase française → traduction (intégrées à `index.html` à la construction). |
 
 Les fichiers s'assemblent dans l'ordre de leur numéro.
 

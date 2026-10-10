@@ -15,7 +15,7 @@ const LIVE = {
   // ---------- connexion ----------
   connect() {
     if (this.ws || NET.kind !== 'http' || !NET.ok || !ACC.token || typeof WebSocket === 'undefined') return;
-    let ws; try { ws = new WebSocket(NET.srv.replace(/^http/i, 'ws') + '/ws'); } catch (e) { this.err = 'connexion en direct impossible'; return; }
+    let ws; try { ws = new WebSocket(NET.srv.replace(/^http/i, 'ws') + '/ws'); } catch (e) { this.err = TL('connexion en direct impossible'); return; }
     this.ws = ws; this.err = '';
     ws.onopen = () => { this.backoff = 2000; ws.send(JSON.stringify({ t: 'auth', token: ACC.token })); };
     ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (er) { return; } try { this.onMsg(m); } catch (er) { console.error(er); } };
@@ -26,7 +26,7 @@ const LIVE = {
       this.refresh();
       if (NET.kind === 'http' && NET.ok && ACC.token) { clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), this.backoff); this.backoff = Math.min(30000, this.backoff * 2); }
     };
-    ws.onerror = () => { this.err = 'serveur en direct injoignable'; };
+    ws.onerror = () => { this.err = TL('serveur en direct injoignable'); };
   },
   disconnect() { clearTimeout(this.retryT); const ws = this.ws; this.ws = null; this.on = false; this.room = null; this.rooms = []; if (this.game) this.lost(); if (ws) try { ws.close(); } catch (e) { } },
   send(m) { if (this.ws && this.ws.readyState === 1 && !(this.game && this.game.offline)) this.ws.send(JSON.stringify(m)); },
@@ -39,11 +39,11 @@ const LIVE = {
   onMsg(m) {
     switch (m.t) {
       case 'hi': this.on = true; this.pid = m.pid; this.send({ t: 'sub', on: true }); this.refresh(); return;
-      case 'err': this.err = m.e; toast(m.e); this.refresh(); return;
+      case 'err': this.err = TL(String(m.e || '')); toast(this.err); this.refresh(); return;
       case 'rooms': this.rooms = m.list || []; this.refresh(); return;
       case 'joined': this.room = m.room; this.chat = m.chat || []; this.refresh(); return;
       case 'room': if (this.room && m.room.id === this.room.id) { this.room = m.room; if (this.game) this.syncPeers(m.room); } this.refresh(); return;
-      case 'chat': this.chat.push(m.line); if (this.chat.length > 30) this.chat.shift(); if (this.game && state === 'raid') msg(m.line.from + ' : ' + m.line.text, '#e8dcc4', 7); this.refresh(); return;
+      case 'chat': this.chat.push(m.line); if (this.chat.length > 30) this.chat.shift(); if (this.game && state === 'raid') msg(TL('{name} : {text}', { name: m.line.from, text: m.line.text }), '#e8dcc4', 7); this.refresh(); return;
       case 'start': this.onStart(m); return;
       case 'host': if (this.room) this.room.host = m.pid; if (this.game) this.onHost(m.pid); this.refresh(); return;
       case 'peer': if (this.game) this.onPeer(m.pid, m.why); return;
@@ -62,32 +62,32 @@ const LIVE = {
   renderTab() {
     if (NET.kind !== 'http' || TUT.on) return '';
     const R = REGIONS[save.region || 0], D = DIFFS[save.diff];
-    let h = '<div class="rs-cat">Raids partagés <span style="font-family:var(--f-ui);font-size:14px;color:var(--mute)">en direct, jusqu\'à 4 pilotes</span></div>';
-    if (!this.on) return h + `<p class="lead">${this.ws ? 'Connexion au serveur en direct…' : 'Connexion en direct indisponible' + (this.err ? ' : ' + esc(this.err) : '') + '.'}</p>`;
-    if (this.game) return h + '<p class="lead">Raid partagé en cours.</p>';
-    const mName = m => m === 'pvp' ? 'PvP' : 'Coopération';
+    let h = '<div class="rs-cat">' + TL('Raids partagés') + ' <span style="font-family:var(--f-ui);font-size:14px;color:var(--mute)">' + TL('en direct, jusqu\'à 4 pilotes') + '</span></div>';
+    if (!this.on) return h + `<p class="lead">${this.ws ? TL('Connexion au serveur en direct…') : this.err ? TL('Connexion en direct indisponible : {err}.', { err: esc(this.err) }) : TL('Connexion en direct indisponible.')}</p>`;
+    if (this.game) return h + '<p class="lead">' + TL('Raid partagé en cours.') + '</p>';
+    const mName = m => m === 'pvp' ? TL('PvP') : TL('Coopération');
     if (this.room) {
       const r = this.room, host = r.host === this.pid, hm = r.members.find(x => x.pid === r.host);
       return h + `<div class="card" style="max-width:820px">
-        <div class="nm">Salon de ${esc(hm ? hm.name : '?')} · ${mName(r.mode)} · ${esc(REGIONS[r.region].n)} · ${esc(DIFFS[r.diff].n)}${r.started ? ' · en cours' : ''}</div>
-        <div class="sub">${r.mode === 'pvp' ? 'Chacun pour soi : abattez les autres pilotes pour récupérer leur butin. Les monstres et les équipes rivales attaquent tout le monde.' : 'Vous êtes alliés : chacun pose sa balise et s\'extrait quand il veut. L\'hôte fait vivre le monde.'}</div>
-        <div class="res-list">${r.members.map(m => `<div><span><b style="color:${NPAL_ACC[m.slot % 4]}">●</b> ${esc(m.name)}${m.pid === r.host ? ' · hôte' : ''}${m.pid === this.pid ? ' · vous' : ''}</span><b>${fmtCmd(m.power || 0)} cmd</b></div>`).join('')}<div><span>${r.members.length} / ${r.max} pilotes</span><b></b></div></div>
-        <div class="res-list" style="max-height:150px;overflow:auto">${this.chat.slice(-8).map(l => `<div><span><b>${esc(l.from)}</b> : ${esc(l.text)}</span><b></b></div>`).join('') || '<div><span class="sub">Aucun message.</span><b></b></div>'}</div>
-        <div class="acts"><input class="name" id="liveChat" maxlength="140" placeholder="Message pour le salon" style="flex:1;min-width:180px"><button class="btn sm" data-act="lchat">Envoyer</button></div>
-        <div class="acts">${host ? `<button class="btn hot" data-act="lstart">${r.started ? 'Raid en cours' : 'Lancer le raid'}</button>` : `<span class="sub">${r.started ? 'Raid en cours.' : 'En attente du lancement par l\'hôte…'}</span>`}<button class="btn" data-act="lleave">Quitter le salon</button></div>
-        <div class="sub">Votre flotte : les robots déployés au hangar, dans la limite de votre commandement. Gardez la fenêtre du jeu ouverte pendant le raid.</div></div>`;
+        <div class="nm">${TL('Salon de {name}', { name: esc(hm ? hm.name : '?') })} · ${mName(r.mode)} · ${esc(REGIONS[r.region].n)} · ${esc(DIFFS[r.diff].n)}${r.started ? ' · ' + TL('en cours') : ''}</div>
+        <div class="sub">${r.mode === 'pvp' ? TL('Chacun pour soi : abattez les autres pilotes pour récupérer leur butin. Les monstres et les équipes rivales attaquent tout le monde.') : TL('Vous êtes alliés : chacun pose sa balise et s\'extrait quand il veut. L\'hôte fait vivre le monde.')}</div>
+        <div class="res-list">${r.members.map(m => `<div><span><b style="color:${NPAL_ACC[m.slot % 4]}">●</b> ${esc(m.name)}${m.pid === r.host ? ' · ' + TL('hôte') : ''}${m.pid === this.pid ? ' · ' + TL('vous') : ''}</span><b>${TL('{n} cmd', { n: fmtCmd(m.power || 0) })}</b></div>`).join('')}<div><span>${TLn(r.max, '{k} / {n} pilote', '{k} / {n} pilotes', { k: r.members.length })}</span><b></b></div></div>
+        <div class="res-list" style="max-height:150px;overflow:auto">${this.chat.slice(-8).map(l => `<div><span>${TL('{name} : {text}', { name: '<b>' + esc(l.from) + '</b>', text: esc(l.text) })}</span><b></b></div>`).join('') || '<div><span class="sub">' + TL('Aucun message.') + '</span><b></b></div>'}</div>
+        <div class="acts"><input class="name" id="liveChat" maxlength="140" placeholder="${esc(TL('Message pour le salon'))}" style="flex:1;min-width:180px"><button class="btn sm" data-act="lchat">${TL('Envoyer')}</button></div>
+        <div class="acts">${host ? `<button class="btn hot" data-act="lstart">${r.started ? TL('Raid en cours') : TL('Lancer le raid')}</button>` : `<span class="sub">${r.started ? TL('Raid en cours.') : TL('En attente du lancement par l\'hôte…')}</span>`}<button class="btn" data-act="lleave">${TL('Quitter le salon')}</button></div>
+        <div class="sub">${TL('Votre flotte : les robots déployés au hangar, dans la limite de votre commandement. Gardez la fenêtre du jeu ouverte pendant le raid.')}</div></div>`;
     }
     const list = this.rooms.filter(r => r.members.length);
-    return h + `<p class="lead">Partez à plusieurs dans la même zone, chacun avec sa flotte. <b>Coopération</b> : vous êtes alliés, chacun pose sa balise et s'extrait quand il veut. <b>PvP</b> : chacun pour soi, et le butin d'un pilote abattu reste au sol pour qui le ramasse. La région et la difficulté sont celles choisies dans « Partir en raid ».</p>
-      <div class="chips" style="margin-bottom:10px">${['coop', 'pvp'].map(m => `<button class="chip ${this.wantMode === m ? 'on' : ''}" data-act="lmode" data-id="${m}">${mName(m)}</button>`).join('')}<span class="desc" style="align-self:center;margin:0 6px">Places</span>${[2, 3, 4].map(n => `<button class="chip ${this.wantMax === n ? 'on' : ''}" data-act="lmax" data-id="${n}">${n}</button>`).join('')}
-        <button class="btn hot sm" data-act="lcreate" style="margin-left:8px">Créer un salon · ${esc(R.n)} · ${esc(D.n)}</button></div>
-      <div class="grid-cards">${list.length ? list.map(r => { const full = r.members.length >= r.max, hm = r.members.find(x => x.pid === r.host); return `<div class="card"><div class="nm">${mName(r.mode)} · ${esc(REGIONS[r.region].n)}</div><div class="sub">Hôte : ${esc(hm ? hm.name : '?')} · ${esc(DIFFS[r.diff].n)} · ${r.members.length} / ${r.max} pilotes${r.started ? ' · en cours' : ''}</div><div class="sub">${r.members.map(m => esc(m.name)).join(', ')}</div><div class="acts"><button class="btn sm ${full ? '' : 'hot'}" data-act="ljoin" data-id="${esc(r.id)}" ${full ? 'disabled' : ''}>${full ? 'Complet' : r.started ? 'Rejoindre la partie en cours' : 'Rejoindre'}</button></div></div>`; }).join('') : '<div class="card"><div class="sub">Aucun salon ouvert. Créez-en un et donnez rendez-vous à vos amis.</div></div>'}</div>`;
+    return h + `<p class="lead">${TL('Partez à plusieurs dans la même zone, chacun avec sa flotte. <b>Coopération</b> : vous êtes alliés, chacun pose sa balise et s\'extrait quand il veut. <b>PvP</b> : chacun pour soi, et le butin d\'un pilote abattu reste au sol pour qui le ramasse. La région et la difficulté sont celles choisies dans « {btn} ».', { btn: TL('Partir en raid') })}</p>
+      <div class="chips" style="margin-bottom:10px">${['coop', 'pvp'].map(m => `<button class="chip ${this.wantMode === m ? 'on' : ''}" data-act="lmode" data-id="${m}">${mName(m)}</button>`).join('')}<span class="desc" style="align-self:center;margin:0 6px">${TL('Places')}</span>${[2, 3, 4].map(n => `<button class="chip ${this.wantMax === n ? 'on' : ''}" data-act="lmax" data-id="${n}">${n}</button>`).join('')}
+        <button class="btn hot sm" data-act="lcreate" style="margin-left:8px">${TL('Créer un salon')} · ${esc(R.n)} · ${esc(D.n)}</button></div>
+      <div class="grid-cards">${list.length ? list.map(r => { const full = r.members.length >= r.max, hm = r.members.find(x => x.pid === r.host); return `<div class="card"><div class="nm">${mName(r.mode)} · ${esc(REGIONS[r.region].n)}</div><div class="sub">${TL('Hôte : {name}', { name: esc(hm ? hm.name : '?') })} · ${esc(DIFFS[r.diff].n)} · ${TLn(r.max, '{k} / {n} pilote', '{k} / {n} pilotes', { k: r.members.length })}${r.started ? ' · ' + TL('en cours') : ''}</div><div class="sub">${r.members.map(m => esc(m.name)).join(', ')}</div><div class="acts"><button class="btn sm ${full ? '' : 'hot'}" data-act="ljoin" data-id="${esc(r.id)}" ${full ? 'disabled' : ''}>${full ? TL('Complet') : r.started ? TL('Rejoindre la partie en cours') : TL('Rejoindre')}</button></div></div>`; }).join('') : '<div class="card"><div class="sub">' + TL('Aucun salon ouvert. Créez-en un et donnez rendez-vous à vos amis.') + '</div></div>'}</div>`;
   },
   // ---------- début et fin de partie ----------
   onStart(m) {
     const R = m.room; this.room = R;
     const me = R.members.find(x => x.pid === this.pid); if (!me || this.game) return;
-    if (state !== 'base' || attack || placing) { toast(state === 'base' ? 'Raid partagé lancé : repoussez d\'abord l\'attaque en cours.' : 'Raid partagé lancé : revenez à la base pour le rejoindre.'); this.leave(); return; }
+    if (state !== 'base' || attack || placing) { toast(state === 'base' ? TL('Raid partagé lancé : repoussez d\'abord l\'attaque en cours.') : TL('Raid partagé lancé : revenez à la base pour le rejoindre.')); this.leave(); return; }
     const g = this.game = { mode: R.mode, host: R.host, isHost: R.host === this.pid, slot: me.slot, region: R.region, diff: R.diff, seed: m.seed, late: !!m.late, ready: false, offline: false, queue: [],
       peers: new Map(), byNid: new Map(), local: new Map(), specs: new Map(), sentU: new Map(), annU: new Set(), annW: new Map(), hitsOut: new Map(), drops: [], tiles: [], gone: new Set(), itemSeq: 1, crateSeq: 1, tU: 0, tH: 0, kf: 0, spawns: [] };
     this.syncPeers(R);
@@ -119,7 +119,8 @@ const LIVE = {
     this.send({ t: 'need' });
     const q = g.queue; g.queue = []; for (const m of q) this.handle(m);
     const others = [...g.peers.values()].filter(p => !p.done).map(p => p.name);
-    msg('Raid partagé (' + (g.mode === 'pvp' ? 'PvP : chacun pour soi' : 'coopération') + ')' + (others.length ? ' avec ' + others.join(', ') : '') + '. ' + (g.isHost ? 'Vous faites vivre le monde.' : ''), g.mode === 'pvp' ? COL.rival : COL.ally, 9);
+    const mode = g.mode === 'pvp' ? TL('PvP : chacun pour soi') : TL('coopération');
+    msg((others.length ? TL('Raid partagé ({mode}) avec {names}.', { mode, names: others.join(', ') }) : TL('Raid partagé ({mode}).', { mode })) + ' ' + (g.isHost ? TL('Vous faites vivre le monde.') : ''), g.mode === 'pvp' ? COL.rival : COL.ally, 9);
   },
   dropAll() { // pilote tombé : tout ce qu'il transportait, lui et sa flotte, reste au sol
     const add = u => { for (const k in u.cargo) if (u.cargo[k] > 0) spawnItem(k, u.cargo[k], u.x + rnd(-20, 20), u.y + rnd(-20, 20)); };
@@ -132,7 +133,7 @@ const LIVE = {
       this.flushHits(); this.flushMisc();
       const all = [...g.sentU.keys()];
       this.send({ t: 'u', f: [0, 0], b: 0, l: [], sp: {}, d: success ? [] : all, x: success ? all : [] });
-      this.send({ t: 'note', x: pseudo() + (success ? ' s\'est extrait.' : ' est tombé.'), c: success ? '#f2c14e' : '#ec6b74' });
+      this.send({ t: 'note', x: success ? TL('{name} s\'est extrait.', { name: pseudo() }) : TL('{name} est tombé.', { name: pseudo() }), k: success ? 'ext' : 'down', n: pseudo(), c: success ? '#f2c14e' : '#ec6b74' }); // k : chacun la lit dans sa langue
       this.send({ t: 'done' });
     }
     if (success && g.mode === 'coop') save.stats.coop = (save.stats.coop || 0) + 1;
@@ -146,17 +147,17 @@ const LIVE = {
     g.offline = true;
     for (const u of g.byNid.values()) if (u.net) u.dead = true;
     g.byNid.clear();
-    msg('Connexion au serveur perdue : vous continuez seul dans cette zone.', '#ec6b74', 9);
+    msg(TL('Connexion au serveur perdue : vous continuez seul dans cette zone.'), '#ec6b74', 9);
   },
   onPeer(pid, why) {
     const g = this.game, p = g.peers.get(pid); if (!p) return;
     p.done = true;
-    if (why !== 'done') { msg(p.name + ' a quitté le raid.', '#a59c88', 5); for (const u of g.byNid.values()) if (u.owner === pid && !this.isWorld(u)) { u.dead = true; parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .3, max: .3, size: u.r * 3, col: '#fff', a: 0 }); } }
+    if (why !== 'done') { msg(TL('{name} a quitté le raid.', { name: p.name }), '#a59c88', 5); for (const u of g.byNid.values()) if (u.owner === pid && !this.isWorld(u)) { u.dead = true; parts.push({ type: 'flash', x: u.x, y: u.y, vx: 0, vy: 0, life: .3, max: .3, size: u.r * 3, col: '#fff', a: 0 }); } }
   },
   onHost(pid) {
     const g = this.game, old = g.host; if (pid === old) return;
     g.host = pid;
-    if (pid === this.pid && !g.isHost) { this.promote(old); msg('L\'hôte a quitté la zone : votre partie fait maintenant vivre le monde.', COL.ally, 7); }
+    if (pid === this.pid && !g.isHost) { this.promote(old); msg(TL('L\'hôte a quitté la zone : votre partie fait maintenant vivre le monde.'), COL.ally, 7); }
     else for (const u of g.byNid.values()) if (u.owner === old && !this.isWorld(u)) u.dead = true;
   },
   isWorld(u) { return u.kind === 'enemy' || u.kind === 'rival' || u.kind === 'beacon2' || (u.kind === 'minion' && u.worldMinion); },
@@ -343,7 +344,7 @@ const LIVE = {
       case 'need': g.annU.clear(); if (g.isHost) this.sendWorldInit(from); return;
       case 'hits': return this.onHits(m);
       case 'kill': return this.onKill(m);
-      case 'note': if (m.boss && g.mode === 'coop' && raidStats && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.boss; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; } if (m.x) msg(m.x, m.c || '#e8dcc4', 6); return;
+      case 'note': if (m.boss && g.mode === 'coop' && raidStats && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.boss; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; } { const tx = m.k === 'ext' ? TL('{name} s\'est extrait.', { name: m.n }) : m.k === 'down' ? TL('{name} est tombé.', { name: m.n }) : m.k === 'boss' && ENEMIES[m.fe] ? bossFallTxt(m.fe) : m.x; if (tx) msg(tx, m.c || '#e8dcc4', 6); } return;
       case 'tile': this.quiet = true; try { for (const i of m.l) { g.gone.add(i); const o = W.obs[i]; if (o && o < 7) { const tx = i % WT, ty = (i / WT) | 0; W.obs[i] = 0; W.ohp[i] = 0; miniSetTile(tx, ty); for (let k = 0; k < 4; k++) parts.push({ type: 'debris', x: tx * TILE + 20 + rnd(-14, 14), y: ty * TILE + 20 + rnd(-14, 14), vx: rnd(-80, 80), vy: rnd(-80, 80), life: rnd(.4, .8), max: .8, size: rnd(2, 5), col: OBS[o].mm, rot: 0 }); } } } finally { this.quiet = false; } return;
       case 'it': if (g.isHost) return;
         for (const a of m.a || []) if (!items.some(i => i.iid === a[0])) items.push({ iid: a[0], res: RES_KEYS[a[1]], amt: a[2], x: a[3], y: a[4], vx: a[5] || 0, vy: a[6] || 0, t: 0, dead: false });
@@ -358,10 +359,10 @@ const LIVE = {
         this.send({ t: 'got', to: from, n: m.n, res: it.res, a: n, x: Math.round(it.x), y: Math.round(it.y) }); return;
       }
       case 'got': {
-        if (m.crate !== undefined) { if (m.ty === 'donnees' && raidStats) { raidStats.archives++; floatText(m.x, m.y - 20, 'Archive de données', '#7fa9ff'); } SFX.play('open', 1, m.x, m.y); return; }
+        if (m.crate !== undefined) { if (m.ty === 'donnees' && raidStats) { raidStats.archives++; floatText(m.x, m.y - 20, TL('Archive de données'), '#7fa9ff'); } SFX.play('open', 1, m.x, m.y); return; }
         const u = g.local.get(m.n);
         const got = u && !u.dead ? addCargo(u, m.res, m.a) : 0;
-        if (got > 0) { floatText(m.x, m.y - 10, '+' + got + ' ' + RES[m.res].n, u === focus() ? RES[m.res].c : '#6fe3c8'); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[m.res] || 880, chord: m.res === 'heart' || m.res === 'cores' }); if (m.res === 'heart') msg('Cœur de Colosse récupéré. Ramenez-le vivant.', '#ff8a5c', 8); }
+        if (got > 0) { floatText(m.x, m.y - 10, TL('{n} {res}', { n: '+' + got, res: RES[m.res].n }), u === focus() ? RES[m.res].c : '#6fe3c8'); SFX.play('pickup', .7, undefined, undefined, { note: PICK_NOTE[m.res] || 880, chord: m.res === 'heart' || m.res === 'cores' }); if (m.res === 'heart') msg(TL('Cœur de Colosse récupéré. Ramenez-le vivant.'), '#ff8a5c', 8); }
         if (m.a - got > 0) spawnItem(m.res, m.a - got, m.x, m.y);
         return;
       }
@@ -436,7 +437,7 @@ const LIVE = {
           break;
         }
         case 'm': u = baseUnit({ kind: 'minion', r: 8, fly: true, mscale: .7, x, y, spd: 270 }); u.mounts = [makeMount('mg_mini', WEAPONS.mg_mini, 3, 0)]; u.worldMinion = !!s.wm; break;
-        case 'b': case 'b2': u = baseUnit({ kind: s.k === 'b' ? 'beacon' : 'beacon2', r: 18, x, y, name: 'Balise' }); break;
+        case 'b': case 'b2': u = baseUnit({ kind: s.k === 'b' ? 'beacon' : 'beacon2', r: 18, x, y, name: TL('Balise') }); break;
         default: return null;
       }
     } catch (er) { return null; }
@@ -469,12 +470,12 @@ const LIVE = {
       const E = ENEMIES[m.e], xp = Math.max(1, (E ? E.hp : 100) / 10);
       if (src && src.kind === 'robot' && !src.dead) { src.kills = (src.kills || 0) + 1; giveXP(src, xp); }
       if (src) for (const v of fleet) if (v !== src && !v.dead && d2(v.x, v.y, src.x, src.y) < 600 * 600) giveXP(v, xp * .25);
-      if (m.el) msg('Mastodonte abattu.', '#f2c14e');
-      if (m.b && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.e; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; msg((E ? E.n : 'Le boss') + ' est tombé sous vos coups !', '#ff8a5c', 8); }
-    } else if (m.k === 'rl') { raidStats.rivalKills++; msg('Vous avez abattu le chef de ' + (m.cr || 'l\'équipe rivale') + '.', COL.rival, 6); }
-    else if (m.k === 'b2') { raidStats.sabotage++; msg('Balise de ' + (m.cr || 'l\'équipe rivale') + ' détruite par vos tirs.', COL.rival, 5); }
-    else if (m.k === 'pilot') { save.stats.pvpKills = (save.stats.pvpKills || 0) + 1; msg('Vous avez abattu ' + m.n + ' ! Son butin est tombé au sol.', '#ff8a5c', 7); }
-    else if (m.k === 'robot') msg('Robot adverse détruit : ' + m.n + '.', '#f2c14e', 4);
+      if (m.el) msg(TL('Mastodonte abattu.'), '#f2c14e');
+      if (m.b && !raidStats.boss) { raidStats.boss = true; raidStats.bossType = m.e; if (regionCur !== null) save.bossKills[regionCur] = (save.bossKills[regionCur] || 0) + 1; msg(E ? TL('{foe} est tombé sous vos coups !', { foe: E.n }) : TL('Le boss est tombé sous vos coups !'), '#ff8a5c', 8); }
+    } else if (m.k === 'rl') { raidStats.rivalKills++; msg(m.cr ? TL('Vous avez abattu le chef de {crew}.', { crew: m.cr }) : TL('Vous avez abattu le chef de l\'équipe rivale.'), COL.rival, 6); }
+    else if (m.k === 'b2') { raidStats.sabotage++; msg(m.cr ? TL('Balise de {crew} détruite par vos tirs.', { crew: m.cr }) : TL('Balise de l\'équipe rivale détruite par vos tirs.'), COL.rival, 5); }
+    else if (m.k === 'pilot') { save.stats.pvpKills = (save.stats.pvpKills || 0) + 1; msg(TL('Vous avez abattu {name} ! Son butin est tombé au sol.', { name: m.n }), '#ff8a5c', 7); }
+    else if (m.k === 'robot') msg(TL('Robot adverse détruit : {name}.', { name: m.n }), '#f2c14e', 4);
     if (src && isMine(src)) { killMarkT = .4; SFX.play('kill', .7); }
   },
   // ---------- reproduction des tirs des autres ----------
@@ -519,22 +520,20 @@ const LIVE = {
     c.textAlign = 'center'; c.font = `700 ${12 / z}px ${FONT}`;
     for (const u of g.byNid.values()) {
       if (u.dead || u.hidden || !u.pname || !(u.kind === 'pilot' || (u.kind === 'robot' && (u.piloted || tactical)))) continue;
-      const y = u.y - u.r - (u.kind === 'pilot' ? 18 : 22) / z;
-      c.fillStyle = 'rgba(14,17,18,.75)'; const tw = c.measureText(u.pname).width; c.fillRect(u.x - tw / 2 - 5 / z, y - 12 / z, tw + 10 / z, 16 / z);
-      c.fillStyle = g.mode === 'pvp' ? COL.enemy2 : NPAL_ACC[(u.pslot || 0) % 4]; c.fillText(u.pname, u.x, y);
+      wLabel(u.x, u.y - u.r - (u.kind === 'pilot' ? 18 : 22) / z, u.pname, { pri: 3, size: 12, w8: 700, bg: 'rgba(14,17,18,.75)', col: g.mode === 'pvp' ? COL.enemy2 : NPAL_ACC[(u.pslot || 0) % 4] });
     }
   },
   drawParty(c, x, y, w) {
     const g = this.game; if (!g) return;
     const ps = [...g.peers.values()].sort((a, b) => a.slot - b.slot), F = focus(), h = 22 + ps.length * 17;
     panel(c, x, y, w, h); c.textAlign = 'left'; c.font = `700 12px ${FONT}`; c.fillStyle = g.mode === 'pvp' ? COL.rival : COL.ally;
-    c.fillText((g.mode === 'pvp' ? 'PvP' : 'Coopération') + (g.isHost ? ' · hôte' : '') + (g.offline ? ' · hors ligne' : ''), x + 8, y + 15);
+    c.fillText((g.mode === 'pvp' ? TL('PvP') : TL('Coopération')) + (g.isHost ? ' · ' + TL('hôte') : '') + (g.offline ? ' · ' + TL('hors ligne') : ''), x + 8, y + 15);
     c.font = `500 11.5px ${FONT}`;
     ps.forEach((p, i) => {
       const yy = y + 32 + i * 17; c.fillStyle = NPAL_ACC[p.slot % 4]; c.fillRect(x + 8, yy - 8, 7, 7);
       c.fillStyle = '#e8dcc4'; c.fillText(fitText(c, p.name, w - 90), x + 20, yy);
       c.textAlign = 'right'; c.fillStyle = '#a59c88';
-      c.fillText(p.done ? 'parti' : p.focus ? Math.round(Math.hypot(p.focus[0] - F.x, p.focus[1] - F.y) / 10) + ' m' : '…', x + w - 8, yy); c.textAlign = 'left';
+      c.fillText(p.done ? TL('parti') : p.focus ? TL('{n} m', { n: Math.round(Math.hypot(p.focus[0] - F.x, p.focus[1] - F.y) / 10) }) : '…', x + w - 8, yy); c.textAlign = 'left';
     });
   },
   drawMini(c, M) {
