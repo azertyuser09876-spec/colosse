@@ -79,7 +79,7 @@ function drawTitle(t) {
 // ================= TIROIR DE GESTION =================
 let hubTab = 'atelier', activeSlot = 0, activeMod = 0, buildQty = 1;
 let design = { chassis: 'crawler', weapons: ['mg'], modules: [], brain: 'escort', name: '', refit: null };
-const CRUSH_TXT = [TL('Aucun'), TL('Végétation, cristaux'), TL('Rochers, épaves'), TL('Murs'), TL('Tout, remparts compris'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier')];
+const CRUSH_TXT = [TL('Aucun'), TL('Végétation, cristaux'), TL('Rochers, épaves'), TL('Murs'), TL('Tout, remparts compris'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier'), TL('Tout : le paysage entier')];
 function randomName(ch) { return (CHASSIS[ch].tier >= 7 ? pick(GIANT_NAMES) : CHASSIS[ch].tier >= 5 ? pick(BIG_NAMES) : pick(ROBOT_NAMES)) + '-' + rndi(2, 99); }
 function allowedWeapons(ch) { return CRAFT_WEAPONS.filter(w => weaponUnlocked(w) && WEAPONS[w].size <= CHASSIS[ch].wsize); }
 // aperçu : sur chaque affût, la plus grosse arme connue qui y tient
@@ -110,6 +110,7 @@ function costHtml(cost, mul = 1) { return Object.keys(cost).map(k => { const n =
 function dur(s) { s = Math.round(s); return s >= 60 ? (s % 60 ? TL('{m} min {s} s', { m: Math.floor(s / 60), s: s % 60 }) : TL('{m} min', { m: Math.floor(s / 60) })) : TL('{s} s', { s }); }
 function weaponStat(id) {
   const w = WEAPONS[id];
+  if (w.stat) return w.stat(w); // armes de la 3.1 : ligne de statistiques sur mesure
   switch (w.kind) {
     case 'repair': return TL('soin {n}/s', { n: w.heal }) + ' · ' + TL('{n} px', { n: w.range });
     case 'shield': return TL('bouclier {n}', { n: w.cap }) + ' · ' + TL('régén. {n}/s', { n: w.regen });
@@ -538,7 +539,7 @@ const newTag = on => on ? '<span class="newtag">' + TL('Nouveau') + '</span>' : 
 
 // ================= ARBRE DE RECHERCHE INTERACTIF =================
 const RT = { br: 'ch', view: {}, sel: null, hover: null, drag: null, dragged: false, pts: new Map(), pinch: null, lay: null };
-const RT_BANDS = [TL('Départ'), TL('Labo {n}', { n: 1 }), TL('Labo {n}', { n: 2 }), TL('Labo {n}', { n: 3 }), TL('Labo {n}', { n: 4 }), TL('Labo {n}', { n: 5 }), TL('Chantier {n}', { n: 'I' }), TL('Chantier {n}', { n: 'II' }), TL('Chantier {n}', { n: 'III' })];
+const RT_BANDS = [TL('Départ'), TL('Labo {n}', { n: 1 }), TL('Labo {n}', { n: 2 }), TL('Labo {n}', { n: 3 }), TL('Labo {n}', { n: 4 }), TL('Labo {n}', { n: 5 }), TL('Chantier {n}', { n: 'I' }), TL('Chantier {n}', { n: 'II' }), TL('Chantier {n}', { n: 'III' }), TL('Chantier {n}', { n: 'IV' }), TL('Chantier {n}', { n: 'V' })];
 const RT_NW = 176, RT_NH = 56, RT_CW = 200, RT_RH = 66, RT_LH = 34, RT_TOP = 30;
 const rtNode = id => RT_BASE[id] ? Object.assign({ id, base: true }, RT_BASE[id]) : RESEARCH_BY_ID[id];
 const rtBand = n => n.base ? 0 : n.bld && n.bld[0] === 'shipyard' ? 5 + n.bld[1] : (n.lab || 1);
@@ -796,7 +797,7 @@ function designStats(chassis, weapons, modules, RF) {
   const range = weapons.reduce((m, id) => { const w = WEAPONS[id]; return w && !isSupportW(id) && w.kind !== 'melee' ? Math.max(m, w.range || 0) : m; }, 0);
   return { hp: st.hp, armor: st.armor, spd: st.spd, cargo: st.cargo, dps, range, cmd: C.cmd };
 }
-const FG_ROWS = [['hp', TL('Points de vie'), v => fmt(v), 'log', 380000], ['armor', TL('Blindage'), v => Math.round(v * 100) + ' %', 'lin', .75], ['spd', TL('Vitesse'), v => Math.round(v), 'lin', 260], ['cargo', TL('Soute'), v => TL('{n} kg', { n: fmt(v) }), 'log', 2600], ['dps', TL('Puissance'), v => TL('{n} dps', { n: fmt(v) }), 'log', 40000], ['range', TL('Portée'), v => v ? TL('{n} px', { n: fmt(v) }) : TL('contact'), 'log', 6000], ['cmd', TL('Commandement'), v => fmtCmd(v), 'lin', 50]];
+const FG_ROWS = [['hp', TL('Points de vie'), v => fmt(v), 'log', 2000000], ['armor', TL('Blindage'), v => Math.round(v * 100) + ' %', 'lin', .75], ['spd', TL('Vitesse'), v => Math.round(v), 'lin', 260], ['cargo', TL('Soute'), v => TL('{n} kg', { n: fmt(v) }), 'log', 6000], ['dps', TL('Puissance'), v => TL('{n} dps', { n: fmt(v) }), 'log', 150000], ['range', TL('Portée'), v => v ? TL('{n} px', { n: fmt(v) }) : TL('contact'), 'log', 6000], ['cmd', TL('Commandement'), v => fmtCmd(v), 'lin', 50]];
 const fgPct = (v, kind, mx) => clamp(kind === 'log' ? Math.log(1 + Math.max(0, v)) / Math.log(1 + mx) : v / mx, 0, 1) * 100;
 function fgStatsHTML() {
   return `<div class="fg-stats">${FG_ROWS.map(([k, lb]) => `<span class="lb">${lb}</span><span class="bv"><i class="gh" id="fgG-${k}"></i><i id="fgB-${k}"></i></span><span class="vl" id="fgV-${k}"></span>`).join('')}</div>`;
@@ -836,7 +837,7 @@ function renderForge() {
   const many = ch.slots > 6;
   const slots = d.weapons.map((w, i) => `<button class="slot ${i === activeSlot ? 'on' : ''}" data-act="slot" data-slot="${i}" title="${esc(TL('Affût {size} : armes {sizes} au plus', { size: WSIZE_ADJ[slotSize(d.chassis, i)], sizes: WSIZE_PL[slotSize(d.chassis, i)].toLowerCase() }))}"><span class="sn">${i + 1}</span><small>${TL('affût {size}', { size: WSIZE_ADJ[slotSize(d.chassis, i)] })}</small>${esc(WEAPONS[w].n)}</button>`).join('');
   // --- armurerie : tailles utilisables, filtre par rôle
-  const sizes = [1, 2, 3, 4, 5, 6].filter(sz => sz <= ch.wsize);
+  const sizes = [1, 2, 3, 4, 5, 6, 7, 8].filter(sz => sz <= ch.wsize);
   const roleOk = w => FGS.role === 'all' || wRoleOf(w) === FGS.role;
   const vw = CRAFT_WEAPONS.filter(w => wVis(w) && WEAPONS[w].size <= ch.wsize);
   const rolesHere = FG_ROLES.filter(([r]) => r === 'all' || vw.some(w => wVis(w) === 'own' && wRoleOf(w) === r));
@@ -856,7 +857,7 @@ function renderForge() {
         return `<button class="wcard ${d.weapons[activeSlot] === w ? 'on' : ''} ${nw ? 'isnew' : ''} ${big ? 'toobig' : ''}" data-act="weapon" data-id="${w}" data-hw="${w}" title="${esc(W_.d || '')}${big ? ' · ' + esc(fitI >= 0 ? TL('Trop grosse pour l\'affût {a} : ira sur l\'affût {b}', { a: activeSlot + 1, b: fitI + 1 }) : TL('Trop grosse pour l\'affût {a}', { a: activeSlot + 1 })) : ''}">${big && fitI >= 0 ? `<span class="wfit">${TL('affût {n}', { n: fitI + 1 })}</span>` : ''}<canvas data-wicon="${w}"></canvas><span class="nm">${esc(W_.n)}</span><span class="st">${esc(weaponStat(w))}</span><span class="wl">${bars}<em>${isSupportW(w) ? TL('soutien') : (W_ROLE_TXT[wRole(W_)] || '')}</em></span>${newTag(nw)}</button>`;
       }).join('')}${hid && FGS.role === 'all' ? `<div class="hidden-n">${TLn(hid, '{n} à découvrir', '{n} à découvrir')}</div>` : ''}</div>`;
   }).join('');
-  const bigHidden = [5, 6].filter(sz => sz > ch.wsize && CRAFT_WEAPONS.some(w => WEAPONS[w].size === sz && wVis(w) === 'own')).length;
+  const bigHidden = [5, 6, 7, 8].filter(sz => sz > ch.wsize && CRAFT_WEAPONS.some(w => WEAPONS[w].size === sz && wVis(w) === 'own')).length;
   // --- modules
   const ms = modSlots(d.chassis), mk = MODULE_KEYS.filter(k => mVis(k));
   const modsHtml = ms && mk.length ? `<div><div class="slot-h">${TL('Modules')} · ${TLn(ms, '{n} emplacement', '{n} emplacements')}</div>
@@ -866,7 +867,7 @@ function renderForge() {
   const perks = [];
   if (ch.fly) perks.push(TL('<b>Vol</b> : ignore le terrain.')); else perks.push(TL('<b>Écrase</b> : {what}.', { what: CRUSH_TXT[ch.crush || 0].toLowerCase() }));
   if (ch.fab) perks.push(TL('<b>Fabrique en raid</b> des robots du rang {tier} au plus, {n} à la fois.', { tier: ch.fab.tier, n: ch.fab.cap }));
-  if (ch.perk === 'leap') perks.push(TL('<b>Bond</b> : saute de lui-même sur ses proies.')); if (ch.perk === 'fortify') perks.push(TL('<b>Carapace</b> : −25 % de dégâts à l\'arrêt.')); if (ch.perk === 'spikes') perks.push(TL('<b>Pointes</b> : blesse au contact.')); if (ch.perk === 'range') perks.push(TL('<b>Échasses</b> : +20 % de portée.'));
+  if (ch.perk === 'leap') perks.push(TL('<b>Bond</b> : saute de lui-même sur ses proies.')); if (ch.perk === 'fortify') perks.push(TL('<b>Carapace</b> : −25 % de dégâts à l\'arrêt.')); if (ch.perk === 'spikes') perks.push(TL('<b>Pointes</b> : blesse au contact.')); if (ch.perk === 'range') perks.push(TL('<b>Échasses</b> : +20 % de portée.')); if (ch.perk && PERK_TXT[ch.perk]) perks.push(PERK_TXT[ch.perk]);
   const sumParts = [`<span>${TL('Forge {n}', { n: '<b>' + forgeLevel() + '</b>' })} · ${TL('rangs jusqu\'à {n}', { n: '<b>' + forgeMaxTier() + '</b>' })}</span>`];
   if (bLevel('shipyard')) sumParts.push(`<span>${TL('Chantier {n}', { n: '<b>' + bLevel('shipyard') + '</b>' })} · ${TL('géants jusqu\'au rang {n}', { n: '<b>' + (6 + bLevel('shipyard')) + '</b>' })}</span>`);
   sumParts.push(`<span>${TL('Hangar {n}', { n: '<b>' + save.robots.length + ' / ' + hangarCap() + '</b>' })}</span>`);

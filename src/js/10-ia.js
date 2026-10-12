@@ -10,7 +10,7 @@ function steer(u, gx, gy, dt, mul = 1, stop = 0) {
   // contournement d'obstacle : déviation progressive plutôt qu'un coup de volant
   u.sideA = (u.sideA || 0) + ((u.sideT > 0 ? u.sideDir * 1.3 : 0) - (u.sideA || 0)) * Math.min(1, dt * 6); a += u.sideA;
   const slow = 34 + u.r * 1.3, kd = (d - stop) / slow;
-  const sp = u.spd * mul * terrainMul(u) * (u.slowT > 0 ? .55 : 1) * (kd < 1 ? Math.max(.15, kd) : 1);
+  const sp = u.spd * mul * terrainMul(u) * (u.slowT > 0 ? .55 : 1) * (u.stunT > time ? .05 : 1) * (kd < 1 ? Math.max(.15, kd) : 1); // étourdi : presque immobile
   // inertie : les grosses machines accélèrent et freinent plus lentement
   const k = 1 - Math.exp(-dt * 6.5 * (26 / (26 + u.r * .55)));
   u.vx += (Math.cos(a) * sp - u.vx) * k; u.vy += (Math.sin(a) * sp - u.vy) * k; u.wantMove = true;
@@ -329,6 +329,8 @@ function updateMounts(u, dt) {
     if (w.kind === 'repair') { repairTick(u, m, dt, mx, my); continue; }
     if (w.kind === 'shield') { shieldTick(u, m, dt); continue; }
     if (w.kind === 'bay') { bayTick(u, m, dt, mx, my); continue; }
+    if (W_TICK[w.kind] && W_TICK[w.kind](u, m, dt, mx, my)) continue;
+    if (u.stunT > time) continue; // étourdi : les armes se taisent
     let tx, ty, tgt = null, want = false, manual = false;
     if (pil && !(u.wm && u.wm[mi] === 'a')) {
       manual = true;
@@ -362,7 +364,7 @@ function updateMounts(u, dt) {
       } else { tx = mx + Math.cos(u.ang) * 100; ty = my + Math.sin(u.ang) * 100; }
     }
     const da = Math.atan2(ty - my, tx - mx);
-    const trate = (w.size >= 6 ? .8 : w.size === 5 ? 1.05 : w.size >= 4 ? 1.4 : w.size === 3 ? 2.8 : w.size === 2 ? 4.8 : 9) * (pil ? 1.6 : 1) * (w.kind === 'beam' ? .55 : 1) * (w.turnMul || 1);
+    const trate = (w.size >= 8 ? .55 : w.size === 7 ? .65 : w.size === 6 ? .8 : w.size === 5 ? 1.05 : w.size >= 4 ? 1.4 : w.size === 3 ? 2.8 : w.size === 2 ? 4.8 : 9) * (pil ? 1.6 : 1) * (w.kind === 'beam' ? .55 : 1) * (w.turnMul || 1);
     m.aim = turnTo(m.aim, da, trate * dt);
     const aimed = Math.abs(angDiff(m.aim, da)) < .3 || w.kind === 'melee' || ARTILLERY[w.kind] || w.kind === 'chain';
     if (w.spin) { m.spin = want ? Math.min(1, m.spin + dt / w.spin) : Math.max(0, m.spin - dt * .8); m.spinA += m.spin * dt * 40; }
@@ -500,7 +502,7 @@ function robotAI(u, dt) {
       else if (tgt && d2(tgt.x, tgt.y, L.x, L.y) < 1000 * 1000) engage(u, tgt, dt, rng * .9, true);
       else escortMove(u, L, dt, null);
       break;
-    default: escortMove(u, L, dt, tgt);
+    default: if (BRAIN_AI[u.brain]) BRAIN_AI[u.brain](u, L, dt, tgt); else escortMove(u, L, dt, tgt);
   }
 }
 

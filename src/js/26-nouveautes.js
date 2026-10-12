@@ -3,6 +3,19 @@
 // ================= NOTES DE VERSION =================
 // bal : détail de l'équilibrage, affiché sous la version
 const NOTES = [
+  { v: '3.1.0', t: TL('Le double de tout : 40 châssis, 50 armes, deux rangs de géants'), items: [
+    TL('Quarante nouveaux châssis, du minuscule Moucheron aux géants : la Taupe qui avance enterrée, le Crabe à pinces, l\'Ours qui enrage, le Kraken et ses tentacules, la Manticore, la Baleine volante, la Vigie, le Caravansérail… Chacun a son dessin animé, et la plupart une aptitude propre : charge, meute, bouclier frontal, radar, antimissile, siège, pas sismiques, renaissance.'),
+    TL('Deux nouveaux plafonds : le Chantier titanesque monte aux niveaux 4 et 5 pour assembler les géants de rang 10 (Pangée, un continent sur chenilles, et Éther, une station céleste) et de rang 11 (Gaïa, un monde qui marche, et Constellation, qui libère des géants en plein combat).'),
+    TL('Cinquante nouvelles armes, presque toutes à mécanique inédite : balles qui ricochent, lames boomerang, mines, jet qui gèle, grappin, tourelles larguées, tornades, nuées de nanites, failles tectoniques, phalange qui abat les missiles, mur de plasma, bulle temporelle, rayon solaire, lune qui roule, supernova… et deux nouvelles tailles d\'armes, cataclysmique et stellaire.'),
+    TL('Quatorze nouveaux modules, dont cinq capacités actives (leurre holographique, écran de fumée, drone de réparation, onde de choc, poseur de mines), et deux nouveaux cerveaux : Infirmier et Artilleur.'),
+    TL('Pilote : cinq nouvelles armes (pistolet-mitrailleur, lance-flammes, fusil cryogénique, fusil électromagnétique, lance-grenades), deux niveaux de plus pour l\'exosquelette et le sac, propulseurs dorsaux, nanomédecine, bouclier personnel et aimant à butin. Sept nouveaux protocoles, dont une famille Logistique.'),
+    TL('L\'arbre de recherche passe de 114 à 240 technologies, avec deux nouvelles familles d\'armes : Contrôle et gravité, Drones et déploiements.'),
+    TL('Nouveaux états visibles en combat : étourdi, blindage rongé, cible marquée.'),
+  ], bal: [
+    TL('Le Chantier titanesque ne baisse plus le prix des géants : ses niveaux 4 et 5 débloquent les rangs 10 et 11.'),
+    TL('Commandement : +12 et +20 points avec les Liaisons de commandement V et VI, pour déployer les nouveaux géants (de 62 à 84 points chacun).'),
+    TL('Correction : les robots à pattes équipés du cerveau Récolteur ramassent de nouveau normalement.'),
+  ] },
   { v: '3.0.0', t: TL('Dix langues, opérations et grande rénovation'), items: [
     TL('Dix langues : anglais, chinois, hindi, espagnol, arabe (lu de droite à gauche), français, bengali, portugais, russe et indonésien, chacune avec son drapeau. Le choix se fait au premier lancement, puis à tout moment depuis l\'écran titre ou les réglages.'),
     TL('Opérations : cinq nouveaux contrats qui placent leurs objectifs dans le monde. Escorter un convoi jusqu\'à son dépôt, retrouver et ramener un pilote abattu, saboter les générateurs d\'un avant-poste avant leur verrouillage, défendre une foreuse sous des vagues d\'assaut, traquer une cible d\'élite nommée qui change sans cesse de terrain.'),

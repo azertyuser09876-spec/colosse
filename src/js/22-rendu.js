@@ -32,7 +32,7 @@ function render() {
   for (const p of W.pylons) if (p.x > vx0 - 100 && p.x < vx1 + 100 && p.y > vy0 - 100 && p.y < vy1 + 100) drawPylon(c, p);
   for (const cr of crates) if (cr.x > vx0 && cr.x < vx1 && cr.y > vy0 && cr.y < vy1) drawCrate(c, cr);
   { const li = cam.zoom < .25; for (const it of items) if (!it.dead && (!li || it.res === 'heart' || it.res === 'cores') && it.x > vx0 && it.x < vx1 && it.y > vy0 && it.y < vy1) drawItem(c, it); }
-  for (const f of fires) { if (f.x < vx0 - f.r || f.x > vx1 + f.r || f.y < vy0 - f.r || f.y > vy1 + f.r) continue; if (f.vortex) { drawVortex(c, f); continue; } const k = Math.min(1, f.t / 1.5); const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r); g.addColorStop(0, `rgba(255,120,40,${.35 * k})`); g.addColorStop(1, 'rgba(255,60,20,0)'); c.fillStyle = g; circ(c, f.x, f.y, f.r); c.fill(); }
+  for (const f of fires) { if (f.x < vx0 - f.r || f.x > vx1 + f.r || f.y < vy0 - f.r || f.y > vy1 + f.r) continue; if (f.vortex) { drawVortex(c, f); continue; } if (f.zk) { if (ZONE_K[f.zk]) { c.save(); try { ZONE_K[f.zk].draw(c, f); } catch (e) { } c.restore(); } continue; } const k = Math.min(1, f.t / 1.5); const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r); g.addColorStop(0, `rgba(255,120,40,${.35 * k})`); g.addColorStop(1, 'rgba(255,60,20,0)'); c.fillStyle = g; circ(c, f.x, f.y, f.r); c.fill(); }
   drawObstacles(c, vx0, vy0, vx1, vy1);
   if (state === 'base' || state === 'assault' || (state === 'result' && W && W.isBase)) drawBuildings(c, vx0, vy0, vx1, vy1);
   const vis = [];
@@ -365,6 +365,10 @@ function drawUnit(c, u) {
   if (u.piloted) { c.strokeStyle = 'rgba(255,138,61,.8)'; c.lineWidth = 2; c.setLineDash([6, 6]); circ(c, u.x, u.y, u.r + 8); c.stroke(); c.setLineDash([]); }
   c.globalAlpha = 1;
   if (u.slowT > 0) { c.strokeStyle = 'rgba(143,208,255,.7)'; c.lineWidth = 2; c.setLineDash([3, 4]); circ(c, u.x, u.y, u.r + 5); c.stroke(); c.setLineDash([]); }
+  // états de la 3.1 : étourdi (étincelles jaunes qui tournent), blindage rongé (anneau vert pointillé), marqué (réticule rouge)
+  if (u.stunT > time) { const R = u.r + 7, n = 4; c.fillStyle = '#ffe27a'; for (let k = 0; k < n; k++) { const a = time * 5 + k / n * TAU; circ(c, u.x + Math.cos(a) * R, u.y + Math.sin(a) * R * .5 - u.r * .4, Math.max(1.6, u.r * .06)); c.fill(); } }
+  if (u.corrT > time && u.corr) { c.strokeStyle = 'rgba(170,230,90,.65)'; c.lineWidth = 2; c.setLineDash([2, 5]); circ(c, u.x, u.y, u.r + 9); c.stroke(); c.setLineDash([]); }
+  if (u.vulnT > time && u.vuln) { const R = u.r + 12; c.strokeStyle = 'rgba(255,70,70,.75)'; c.lineWidth = 1.6; c.beginPath(); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + time * .8; c.moveTo(u.x + Math.cos(a) * R, u.y + Math.sin(a) * R); c.lineTo(u.x + Math.cos(a) * (R - Math.max(5, u.r * .25)), u.y + Math.sin(a) * (R - Math.max(5, u.r * .25))); } c.stroke(); }
   if (settings.contrast && u.kind !== 'player') { c.strokeStyle = u.team === 0 ? COL.ally : u.team === 2 ? COL.rival : COL.enemy; c.lineWidth = 2.5 / Math.max(.6, cam.zoom); circ(c, u.x, u.y, u.r + 3); c.stroke(); }
   if (u.rank > 0) { const z = cam.zoom, s = 5 / Math.max(.6, z), bx = u.x + u.r * .8, by = u.y + u.r * .8; c.fillStyle = u.rank >= 4 ? '#f2c14e' : u.rank >= 3 ? '#e8dcc4' : '#c4a77a'; for (let k = 0; k < u.rank; k++) { c.beginPath(); c.moveTo(bx - s, by - k * s * .9); c.lineTo(bx, by - k * s * .9 - s * .7); c.lineTo(bx + s, by - k * s * .9); c.lineTo(bx + s, by - k * s * .9 + s * .35); c.lineTo(bx, by - k * s * .9 - s * .35); c.lineTo(bx - s, by - k * s * .9 + s * .35); c.closePath(); c.fill(); } }
 }
@@ -436,6 +440,7 @@ function drawBullets(c, vx0, vy0, vx1, vy1, mortarPass) {
   c.lineCap = 'round';
   for (const b of bullets) {
     if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
+    if (B_KIND[b.kind]) { if (!mortarPass === !B_KIND[b.kind].high) { c.save(); try { B_KIND[b.kind].draw(c, b); } catch (e) { } c.restore(); } continue; }
     if (b.kind === 'mortar') {
       if (!mortarPass) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(b.x, b.y, 7, 4, 0, 0, TAU); c.fill(); c.strokeStyle = 'rgba(255,90,60,.35)'; c.lineWidth = 1.5; circ(c, b.tx, b.ty, b.splash * (1 - b.t / b.T * .5)); c.stroke(); }
       else { c.fillStyle = '#2a2420'; circ(c, b.x, b.y - b.h, 5 * b.sc * .6); c.fill(); c.fillStyle = b.col; circ(c, b.x, b.y - b.h, 2.5); c.fill(); }

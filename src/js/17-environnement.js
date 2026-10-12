@@ -215,7 +215,7 @@ const LIGHT = {
       if (p.type === 'flash') { if (inV(p.x, p.y, p.size * 3)) this.add(p.x, p.y, Math.max(70, Math.min(420, p.size * 2.4)), '#ffc27a', p.life / p.max * .9); }
       else if (p.type === 'fire' && (nf++ & 3) === 0 && inV(p.x, p.y, 80)) this.add(p.x, p.y, p.size * 4 + 30, '#ff8a3a', p.life / p.max * .7);
     }
-    for (const f of fires) if (inV(f.x, f.y, f.r * 2)) { if (f.vortex) this.add(f.x, f.y, f.r * .9, '#9a7aff', .35); else this.add(f.x, f.y, f.r * 1.8 + 40, '#ff7a30', .75 * Math.min(1, f.t / 1.5)); }
+    for (const f of fires) if (inV(f.x, f.y, f.r * 2)) { if (f.zk) { const Z = ZONE_K[f.zk], l = Z && Z.light && Z.light(f); if (l) this.add(f.x, f.y, l[0], l[1], l[2]); continue; } if (f.vortex) this.add(f.x, f.y, f.r * .9, '#9a7aff', .35); else this.add(f.x, f.y, f.r * 1.8 + 40, '#ff7a30', .75 * Math.min(1, f.t / 1.5)); }
     let nb = 0;
     for (const b of bullets) {
       if (!inV(b.x, b.y, 60)) continue;

@@ -79,7 +79,7 @@ function fireMount0(u, m, tx, ty, tgt) {
   const w = m.w; u.lastFire = time; const nb0 = bullets.length;
   const res = fireMountCore(u, m, tx, ty, tgt, w);
   if (res !== false) { m.fc = ((m.fc || 0) + 1) & 255; m.td = Math.round(Math.hypot(tx - u.x, ty - u.y)); }
-  if (w.slow || w.aa || w.pull || w.cluster) for (let i = nb0; i < bullets.length; i++) { const b = bullets[i]; b.slow = w.slow; b.aa = w.aa; b.pull = w.pull; b.cluster = w.cluster; }
+  if (w.slow || w.aa || w.pull || w.cluster || w.fx) for (let i = nb0; i < bullets.length; i++) { const b = bullets[i]; b.slow = w.slow; b.aa = w.aa; b.pull = w.pull; b.cluster = w.cluster; if (w.fx && !b.fx) b.fx = w.fx; }
   return res;
 }
 function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u, m); const a = m.aim; const sc = m.ds || u.mscale || 1;
@@ -128,9 +128,9 @@ function fireMountCore(u, m, tx, ty, tgt, w) { const [mx, my] = mountWorldPos(u,
     case 'melee': {
       if (!tgt || tgt.dead || tgt.hidden || tgt.team === u.team) return false;
       const reach = u.r + tgt.r + 18 * sc; if (d2(u.x, u.y, tgt.x, tgt.y) > reach * reach) return false;
-      damage(tgt, dmg, u); sparks(lerp(u.x, tgt.x, .6), lerp(u.y, tgt.y, .6), 6, '#e8f0ff'); m.recoil = 1; SFX.play(w.snd || 'melee', vol, u.x, u.y, { size: w.size || 1, self: u.piloted && !u.net }); if (u.piloted && !u.net) buzz(12); return true;
+      damage(tgt, dmg, u, w.fx && w.fx.ap); if (w.fx && !tgt.dead) hurt(tgt, 0, u, w.fx); sparks(lerp(u.x, tgt.x, .6), lerp(u.y, tgt.y, .6), 6, '#e8f0ff'); m.recoil = 1; SFX.play(w.snd || 'melee', vol, u.x, u.y, { size: w.size || 1, self: u.piloted && !u.net }); if (u.piloted && !u.net) buzz(12); return true;
     }
-    default: return false;
+    default: { const FX_ = W_FIRE[w.kind]; if (!FX_ || FX_(u, m, w, { sx, sy, a, tx, ty, mx, my, tgt, dmg, sc, vol, spr }) === false) return false; break; }
   }
   m.recoil = 1;
   // les grosses armes font reculer tout le robot d'un coup sec
@@ -190,7 +190,7 @@ function boom(x, y, rad) {
   SFX.play('explo', clamp(rad / 90, .45, 1), x, y, { size: rad / 60 });
   if (player && (big || rad > 55)) { const F = focus(); if (d2(x, y, F.x, F.y) < 500 * 500) buzz(big ? 60 : 25); }
 }
-function damage(u, amt, src) {
+function damage(u, amt, src, ap) { // ap : part du blindage ignorée (0 à 1)
   if (u.dead || u.hidden) return;
   if (NETVIS) return; // tir reproduit d'un autre joueur : c'est lui qui compte les dégâts
   if (u.net) { LIVE.hit(u, amt, src); u.hitFlash = .1; return; } // unité d'un autre joueur ou du monde de l'hôte
@@ -201,7 +201,10 @@ function damage(u, amt, src) {
   if (u.dodge && Math.random() < u.dodge) { if (Math.random() < .3) floatText(u.x, u.y - u.r - 6, TL('esquive'), '#e8dcc4'); return; }
   if (u.kind === 'building' && src && src.siege) amt *= 3;
   if (u.fortifyOn) amt *= .75;
-  amt *= 1 - (u.armor || 0); u.lastHurt = time;
+  if (u.vulnT > time) amt *= 1 + (u.vuln || 0); // cible marquée
+  if (src && src.ext) for (let i = 0; i < HURT_OUT.length; i++) amt = HURT_OUT[i](src, u, amt);
+  if (u.ext) for (let i = 0; i < HURT_IN.length; i++) amt = HURT_IN[i](u, amt, src);
+  amt *= 1 - Math.max(0, (u.armor || 0) - (u.corrT > time ? u.corr || 0 : 0)) * (1 - (ap || 0)); u.lastHurt = time; // corrosion : blindage rongé
   if (u.shield > 0) { const a = Math.min(u.shield, amt); u.shield -= a; amt -= a; u.shieldHit = .15; if (amt <= 0) { if (isMine(u)) SFX.play('shield', .6); return; } }
   if (u.etype === 'cible') { if (TUT.on && isMine(src)) { TUT.hits++; if (player.inside) TUT.pilotHits++; } u.hp -= amt; u.hitFlash = .1; u.lastHit = time; if (Math.random() < .3) floatText(u.x, u.y - 20, Math.round(amt) + '', '#e8dcc4'); if (u.hp <= 0) { u.hp = u.maxhp; boom(u.x, u.y, 30); } return; }
   u.hp -= amt; u.hitFlash = .1;
@@ -215,6 +218,7 @@ function damage(u, amt, src) {
 function bossFallTxt(et) { return et === 'souverain' || et === 'archonte' ? TL('{foe} EST TOMBÉ. Son cœur gît dans le cratère.', { foe: ENEMIES[et].n.toUpperCase() }) : TL('{foe} EST TOMBÉ !', { foe: ENEMIES[et].n.toUpperCase() }); }
 function kill(u, src) {
   if (u.dead) return;
+  for (let i = 0; i < DEATH_SAVE.length; i++) if (DEATH_SAVE[i](u, src)) return;
   if (state === 'base' && u.kind === 'player') { u.hp = u.maxhp; const sp = W.spawn; boom(u.x, u.y, 40); u.x = sp.x; u.y = sp.y; u.vx = u.vy = 0; u.inv = 3; msg(TL('Pilote évacué vers le QG.'), '#ec6b74', 4); return; }
   u.dead = true; u.hp = 0; u.sel = false;
   if (u.kind === 'building') { buildingDestroyed(u); return; }
@@ -266,10 +270,12 @@ function updateBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i]; let dead = false;
     NETVIS = !!b.vis;
+    if (B_KIND[b.kind]) { if (B_KIND[b.kind].update(b, dt)) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); } continue; }
     if (b.kind === 'mortar') {
       b.t += dt;
       if (b.t >= b.T) {
         if (b.sing) singOpen(b); else if (b.nuke) nukeBoom(b.tx, b.ty, b.splash, b.dmg, b.team, b.src); else explode(b.tx, b.ty, b.splash, b.dmg, b.team, b.src, b.burn, b.pull);
+        if (b.fx) fxArea(b.tx, b.ty, b.splash, b.team, b.src, b.fx);
         if (b.cluster) for (let i = 0; i < b.cluster; i++) bullets.push({ kind: 'mortar', x: b.tx, y: b.ty, x0: b.tx, y0: b.ty, tx: b.tx + rnd(-95, 95), ty: b.ty + rnd(-95, 95), t: 0, T: .3 + Math.random() * .3, arc: 40, dmg: b.dmg * .7, team: b.team, splash: b.splash * .75, col: b.col, src: b.src, h: 0, sc: .5, vis: b.vis });
         dead = true;
       }
@@ -289,7 +295,7 @@ function updateBullets(dt) {
         if (o) {
           if (o === 8) hitBuildingTile(tx, ty, b.dmg * (b.kind === 'flame' ? .6 : 1), b.team, b.src);
           hitTile(tx, ty, b.dmg * (b.kind === 'flame' ? .6 : 1));
-          if (b.splash) explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); else if (b.kind !== 'flame') { sparks(b.x, b.y, 3, b.col); if (Math.random() < .35) FX.dust(b.x, b.y, 1, 6, 25); }
+          if (b.splash) { explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); if (b.fx) fxArea(b.x, b.y, b.splash, b.team, b.src, b.fx); } else if (b.kind !== 'flame') { sparks(b.x, b.y, 3, b.col); if (Math.random() < .35) FX.dust(b.x, b.y, 1, 6, 25); }
           dead = true; break;
         }
         const cell = cellAt(b.x, b.y);
@@ -297,8 +303,9 @@ function updateBullets(dt) {
           const v = cell[k]; if (v.team === b.team || v.dead || v.hidden) continue;
           const rr2 = v.r + (b.kind === 'flame' ? 6 : 3); if (d2(v.x, v.y, b.x, b.y) > rr2 * rr2) continue;
           if (b.hits && b.hits.has(v.id)) continue;
-          if (b.splash && b.kind !== 'plasma') { explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); dead = true; break; }
-          damage(v, (b.kind === 'plasma' ? b.dmg * .6 : b.dmg) * (b.aa && v.fly ? b.aa : 1), b.src);
+          if (b.splash && b.kind !== 'plasma') { explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); if (b.fx) fxArea(b.x, b.y, b.splash, b.team, b.src, b.fx); dead = true; break; }
+          damage(v, (b.kind === 'plasma' ? b.dmg * .6 : b.dmg) * (b.aa && v.fly ? b.aa : 1), b.src, b.fx && b.fx.ap);
+          if (b.fx && !v.dead) hurt(v, 0, b.src, b.fx);
           if (b.slow && !v.dead) v.slowT = Math.max(v.slowT || 0, b.slow * (v.boss ? .4 : 1));
           if (b.kind === 'plasma') { parts.push({ type: 'ring', x: b.x, y: b.y, vx: 0, vy: 0, life: .25, max: .25, size: 30 * b.sc, col: b.col }); sparks(b.x, b.y, 6, b.col); }
           else if (b.kind !== 'flame') { sparks(b.x, b.y, 3, b.col); SFX.play(v.shield > 0 ? 'shield' : v.human || v.kind === 'player' ? 'hitsoft' : 'hit', .3, b.x, b.y); }
@@ -307,7 +314,7 @@ function updateBullets(dt) {
           else { dead = true; break; }
         }
       }
-      if (!dead && b.dist >= b.range) { if (b.splash) explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); else if ((b.kind === 'bullet' || b.kind === 'shell') && Math.random() < .5) FX.dust(b.x, b.y, 1 + (b.kind === 'shell' ? 2 : 0), 5 + (b.sc || 1) * 2, 30); dead = true; }
+      if (!dead && b.dist >= b.range) { if (b.splash) { explode(b.x, b.y, b.splash, b.dmg, b.team, b.src, b.burn, b.pull); if (b.fx) fxArea(b.x, b.y, b.splash, b.team, b.src, b.fx); } else if ((b.kind === 'bullet' || b.kind === 'shell') && Math.random() < .5) FX.dust(b.x, b.y, 1 + (b.kind === 'shell' ? 2 : 0), 5 + (b.sc || 1) * 2, 30); dead = true; }
     }
     if (dead) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
   }
@@ -340,7 +347,7 @@ function chainShot(u, sx, sy, tgt, w, dmg) {
   let cur = tgt, px = sx, py = sy; const hit = new Set();
   for (let k = 0; k <= (w.chain || 3) && cur; k++) {
     beams.push({ pts: zig(px, py, cur.x, cur.y, 7, 10), life: .18, max: .18, col: w.col, w: w.chain > 4 ? 3 : 2 });
-    hit.add(cur.id); const cx = cur.x, cy = cur.y; damage(cur, dmg, u); sparks(cx, cy, 4, w.col);
+    hit.add(cur.id); const cx = cur.x, cy = cur.y; damage(cur, dmg, u, w.fx && w.fx.ap); if (w.fx && !cur.dead) hurt(cur, 0, u, w.fx); sparks(cx, cy, 4, w.col);
     px = cx; py = cy; let next = null, bd = (w.chainR || 160) ** 2;
     const R = w.chainR || 160;
     query(px - R, py - R, px + R, py + R, v => { if (v.team === u.team || v.dead || v.hidden || hit.has(v.id)) return; const q = d2(px, py, v.x, v.y); if (q < bd) { bd = q; next = v; } });
@@ -359,7 +366,7 @@ function beamTick(u, m, dt, mx, my, w) {
     if (cell) { for (const v of cell) { if (v.team === u.team || v.dead || v.hidden) continue; if (d2(v.x, v.y, x, y) < (v.r + 6) ** 2) { hitU = v; break; } } }
     if (hitU) { len = s; break; }
   }
-  if (hitU) damage(hitU, w.dps * dt * diffDmg(u.team), u);
+  if (hitU) { damage(hitU, w.dps * dt * diffDmg(u.team), u, w.fx && w.fx.ap); if (w.fx && !hitU.dead) hurt(hitU, 0, u, w.fx); }
   const ex = sx + ca * len, ey = sy + sa * len;
   beams.push({ x1: sx, y1: sy, x2: ex, y2: ey, life: dt * 1.6, max: dt * 1.6, col: w.col, w: 4 * sc * .7 * (w.bw || 1), hot: true }); u.lastFire = time;
   if (Math.random() < dt * 30) parts.push({ type: 'fire', x: ex, y: ey, vx: rnd(-40, 40), vy: rnd(-40, 40), life: .25, max: .25, size: 6 * sc * .6 });
@@ -422,6 +429,7 @@ function minionAI(d, dt) {
 function updateFires(dt) {
   for (let i = fires.length - 1; i >= 0; i--) {
     const f = fires[i]; f.t -= dt; f.tick -= dt;
+    if (f.zk) { const Z = ZONE_K[f.zk]; NETVIS = !!f.vis; try { if (!Z || f.t <= 0) { if (Z && Z.end) Z.end(f); fires.splice(i, 1); } else Z.tick(f, dt); } finally { NETVIS = false; } continue; }
     if (f.t <= 0) { if (f.vortex) singCollapse(f); else if (!NETVIS && f.r > 20) scarSprite('burn', f.x, f.y, f.r * 1.1, Math.random() * TAU); fires.splice(i, 1); continue; }
     if (f.vortex) { singTick(f, dt); continue; }
     if (Math.random() < dt * f.r * .25) parts.push({ type: 'fire', x: f.x + rnd(-f.r, f.r) * .8, y: f.y + rnd(-f.r, f.r) * .8, vx: rnd(-10, 10), vy: -rnd(20, 50), life: .5, max: .5, size: rnd(6, 14) });

@@ -32,8 +32,11 @@ function abilitiesTick(dt) {
   for (const u of fleet) {
     if (u.dead) continue;
     if (u.abil) for (const a of u.abil) if (a.cd > 0) a.cd -= dt;
-    if (u.overT > 0) { u.overT -= dt; u.rateMul = 1.8; if (u.overT <= 0) u.rateMul = 1; }
+    if (u.overT > 0) { u.overT -= dt; u.rateMul = 1.8 * (u.rateBase || 1); if (u.overT <= 0) u.rateMul = u.rateBase || 1; }
     if (u.regen && time - u.lastHurt > 4 && u.hp < u.maxhp) u.hp = Math.min(u.maxhp, u.hp + u.maxhp * u.regen * dt);
+    if (u.abil) for (const a of u.abil) if (ABIL[a.id] && ABIL[a.id].tick) ABIL[a.id].tick(u, dt, a);
+    const pk = CHASSIS[u.chassis] && CHASSIS[u.chassis].perk; if (pk && PERK_TICK[pk] && state === 'raid') PERK_TICK[pk](u, dt);
+    if (state === 'raid' && u.modules) for (const m of u.modules) if (MOD_TICK[m]) MOD_TICK[m](u, dt);
   }
 }
 function useAbility(u, a, aimX, aimY) {
@@ -51,6 +54,7 @@ function useAbility(u, a, aimX, aimY) {
       if (!u.fly) { const p = findWalkableNear(ex, ey, 0, 70, 24); if (p) { ex = p.x; ey = p.y; } }
       u.jump = { x0: u.x, y0: u.y, x1: ex, y1: ey, t: 0, T: .5 + L / 1600 }; u.jumping = true; break;
     }
+    default: if (!ABIL[a.id] || ABIL[a.id].use(u, a, aimX, aimY) === false) return false;
   }
   a.cd = M.cd; SFX.play('board', .6, u.x, u.y); return true;
 }
@@ -71,6 +75,7 @@ function autoAbilities(u, tgt) {
     if (a.id === 'overcharge' && tgt && d2(u.x, u.y, tgt.x, tgt.y) < (u.engRange * 1.1) ** 2) useAbility(u, a);
     else if (a.id === 'emshield' && u.hp < u.maxhp * .5 && time - u.lastHurt < 1) useAbility(u, a);
     else if (a.id === 'jump' && tgt && !(u.order && u.order.type === 'hold')) { const d = Math.hypot(tgt.x - u.x, tgt.y - u.y); if (d > u.engRange * 1.15 && d < 900) useAbility(u, a); }
+    else if (ABIL[a.id] && ABIL[a.id].auto && ABIL[a.id].auto(u, tgt, a)) useAbility(u, a);
   }
 }
 function useSelectedAbilities() {

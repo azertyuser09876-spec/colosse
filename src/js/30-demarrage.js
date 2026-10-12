@@ -1,6 +1,8 @@
 // Boucle d'images et démarrage du jeu.
 
 // ================= BOUCLE =================
+// compléments de la 3.1 qui touchent des tables déclarées après les données (LOF_KIND, SUPPORT_W…)
+for (const f of LATE) { try { f(); } catch (e) { console.error(e); } }
 function camUpdate(dt) {
   const F = focus(); let z = cam.userZoom;
   if (tactical) z *= .62;

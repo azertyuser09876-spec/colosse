@@ -115,9 +115,9 @@ const chassisUnlocked = id => id === 'crawler' || id === 'drone' || has('c_' + i
 const weaponUnlocked = id => id === 'mg' || id === 'rifle' || id === 'blades' || has('w_' + id);
 const brainUnlocked = id => id === 'escort' || id === 'hunter' || id === 'guard' || has('b_' + id);
 const pweaponUnlocked = id => id === 'pistol' || has('p_' + id);
-const playerMaxHp = () => 150 + 40 * ['u_armor1', 'u_armor2', 'u_armor3'].filter(has).length;
-const playerCap = () => 35 + 20 * ['u_bag1', 'u_bag2', 'u_bag3'].filter(has).length;
-const cmdCap = () => 6 + 3 * ['u_cmd1', 'u_cmd2', 'u_cmd3', 'u_cmd4'].filter(has).length + 2 * (hqLevel() - 1) + save.base.b.reduce((s, b) => s + (b.type === 'uplink' && b.lvl > 0 ? uplinkCmd(b.lvl) : 0), 0);
+const playerMaxHp = () => 150 + 40 * ['u_armor1', 'u_armor2', 'u_armor3'].filter(has).length + 60 * ['u_armor4', 'u_armor5'].filter(has).length;
+const playerCap = () => 35 + 20 * ['u_bag1', 'u_bag2', 'u_bag3'].filter(has).length + 30 * ['u_bag4', 'u_bag5'].filter(has).length;
+const cmdCap = () => 6 + 3 * ['u_cmd1', 'u_cmd2', 'u_cmd3', 'u_cmd4'].filter(has).length + (has('u_cmd5') ? 12 : 0) + (has('u_cmd6') ? 20 : 0) + 2 * (hqLevel() - 1) + save.base.b.reduce((s, b) => s + (b.type === 'uplink' && b.lvl > 0 ? uplinkCmd(b.lvl) : 0), 0);
 const cmdUsed = () => save.robots.filter(r => r.deploy).reduce((s, r) => s + CHASSIS[r.chassis].cmd, 0);
 const fmtCmd = n => Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', TL_DEC);
 function canAfford(cost, mul = 1) { for (const k in cost) if ((save.res[k] || 0) < Math.ceil(cost[k] * mul)) return false; return true; }
@@ -129,7 +129,7 @@ function robotCost(chassis, weapons, brain, modules) {
   for (const m of modules || []) if (m && MODULES[m]) c = addCost(c, MODULES[m].cost);
   if (BRAINS[brain] && BRAINS[brain].cost) c = addCost(c, BRAINS[brain].cost);
   // forge : −4 % par niveau ; chantier titanesque au-delà du niveau 3 : géants −10 % par niveau
-  const disc = (1 - .04 * Math.max(0, forgeLevel() - 1)) * (CHASSIS[chassis].tier >= 7 ? 1 - .1 * Math.max(0, bLevel('shipyard') - 3) : 1);
+  const disc = 1 - .04 * Math.max(0, forgeLevel() - 1);
   for (const k in c) if (k !== 'heart' && k !== 'cores') c[k] = Math.ceil(c[k] * disc);
   return c;
 }

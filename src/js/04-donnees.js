@@ -1,6 +1,25 @@
 // Données du jeu : modules, châssis, armes, ennemis, bâtiments, recherches, régions, contrats.
 
 // ================= MODULES, VÉTÉRANS, FORMATIONS =================
+// ================= REGISTRES D'EXTENSION (3.1) =================
+// Le contenu ajouté en 3.1 (fichiers 04-plus-*.js) se branche ici sans toucher au cœur du jeu :
+const CH_PAINT = {};   // id de châssis → peintre (c, r, P, t, mv, u), repère du robot, nez vers +x
+const W_PAINT = {};    // id d'arme → peintre (c, P, rec, t, m), repère de l'affût déjà mis à l'échelle (canon vers +x)
+const W_FIRE = {};     // kind d'arme → tir (u, m, w, F) ; F = { sx, sy, a, tx, ty, mx, my, tgt, dmg, sc, vol, spr } ; renvoie false si rien n'est parti
+const W_TICK = {};     // kind d'arme → affût continu (u, m, dt, mx, my) appelé à chaque image ; renvoie true pour sauter le tir normal
+const B_KIND = {};     // kind de projectile → { update(b, dt) → true si détruit, draw(c, b) }
+const ZONE_K = {};     // zk de zone (dans fires) → { tick(f, dt), draw(c, f), end?(f) }
+const MOD_FX = {};     // module → (s, sr) : modifie les statistiques calculées par robotStats
+const ABIL = {};       // capacité active → { use(u, a, ax, ay) → false si impossible, auto(u, tgt) → true pour la déclencher, tick?(u, dt) }
+const BRAIN_AI = {};   // cerveau → (u, L, dt, tgt) : comportement en raid
+const PERK_TICK = {};  // perk de châssis → (u, dt) : effet permanent en raid
+const PERK_TXT = {};   // perk de châssis → texte de la forge (HTML court, déjà traduit)
+const MOD_TICK = {};   // module passif → (u, dt) : effet permanent en raid
+const PILOT_TICK = {}; // recherche du pilote → (p, dt) : effet à chaque image quand le pilote est à pied (has(id) vérifié avant l'appel)
+const HURT_IN = [];    // (u, amt, src) → amt : dégâts reçus par une unité qui a u.ext (modules, perks de la 3.1)
+const HURT_OUT = [];   // (src, v, amt) → amt : dégâts infligés par une unité qui a src.ext
+const DEATH_SAVE = []; // (u, src) → true pour empêcher la destruction (renaissance…)
+const LATE = [];       // fonctions lancées une fois tous les fichiers chargés (pour toucher LOF_KIND, SUPPORT_W…)
 const MODULES = {
   armor: { n: TL('Blindage réactif'), cost: { alloy: 15, scrap: 20 }, d: TL('+12 % de blindage, −5 % de vitesse.') },
   plating: { n: TL('Plaques lourdes'), cost: { alloy: 30 }, d: TL('+30 % de PV, −12 % de vitesse.') },
@@ -16,7 +35,7 @@ const MODULES = {
   jump: { n: TL('Réacteurs de saut'), active: 1, cd: 14, cost: { alloy: 25, circuits: 15 }, d: TL('Capacité : bond vers la cible et onde de choc. Recharge 14 s.') },
 };
 const MODULE_KEYS = Object.keys(MODULES);
-const modSlots = ch => [0, 1, 1, 2, 2, 3, 3, 4, 4, 5][CHASSIS[ch].tier];
+const modSlots = ch => [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6][CHASSIS[ch].tier];
 const moduleUnlocked = id => has('m_' + id);
 const TRAITS = {
   sniper: { n: TL('Œil de lynx'), d: TL('+15 % de portée') },
@@ -33,7 +52,7 @@ function xpNeed(ch, rk) { return Math.round(RANK_XP[rk] * (1 + (CHASSIS[ch].tier
 function rankOf(ch, xp) { let r = 0; for (let k = 1; k < 5; k++) if (xp >= xpNeed(ch, k)) r = k; return r; }
 function robotStats(sr) {
   const ch = CHASSIS[sr.chassis], rk = rankOf(sr.chassis, sr.xp || 0), M = sr.modules || [], T = sr.traits || [];
-  const s = { hp: ch.hp * (1 + .07 * rk), armor: ch.armor || 0, spd: ch.spd, cargo: ch.cargo, sight: ch.sight || 1, dmg: 1 + .06 * rk, range: 1, spread: 1 - .08 * rk, turn: 1, regen: 0, dodge: 0, cloak: false, boom: false, rank: rk };
+  const s = { hp: ch.hp * (1 + .07 * rk), armor: ch.armor || 0, spd: ch.spd, cargo: ch.cargo, sight: ch.sight || 1, dmg: 1 + .06 * rk, range: 1, spread: 1 - .08 * rk, turn: 1, regen: 0, dodge: 0, cloak: false, boom: false, rank: rk, ext: {}, wfx: [] };
   for (const m of M) switch (m) {
     case 'armor': s.armor = Math.min(.7, s.armor + .12); s.spd *= .95; break;
     case 'plating': s.hp *= 1.3; s.spd *= .88; break;
@@ -44,12 +63,15 @@ function robotStats(sr) {
     case 'cargo': s.cargo = Math.max(s.cargo + 5, Math.round(s.cargo * 1.6)); break;
     case 'cloak': s.cloak = true; break;
     case 'selfdestruct': s.boom = true; break;
+    default: if (MOD_FX[m]) MOD_FX[m](s, sr);
   }
   for (const t of T) switch (t) {
     case 'sniper': s.range *= 1.15; break; case 'tough': s.hp *= 1.2; break; case 'fast': s.spd *= 1.15; break;
     case 'brute': s.dmg *= 1.15; break; case 'lucky': s.dodge = .12; break; case 'mender': s.regen += .006; break;
   }
   if (ch.perk === 'range') s.range *= 1.2;
+  if (ch.perk === 'regen') s.regen += .01; if (ch.perk === 'cloak') s.cloak = true;
+  if (ch.perkStat) ch.perkStat(s, sr);
   s.hp = Math.round(s.hp); return s;
 }
 function scaledWeapon(id, st) {
@@ -57,7 +79,7 @@ function scaledWeapon(id, st) {
   if (d.dmg) d.dmg *= st.dmg; if (d.dps) d.dps *= st.dmg; if (d.heal) d.heal *= st.dmg;
   if (d.range && d.kind !== 'melee') d.range *= st.range;
   if (d.spread) d.spread *= Math.max(.1, st.spread);
-  d.turnMul = st.turn; return d;
+  d.turnMul = st.turn; if (st.wfx) for (const f of st.wfx) f(d, st); return d;
 }
 
 const FORMATIONS = { free: TL('Libre'), line: TL('Ligne'), wedge: TL('Coin'), circle: TL('Cercle'), column: TL('Colonne') };
@@ -406,7 +428,7 @@ RESEARCH_BY_ID.w_mortar.req = undefined; RESEARCH_BY_ID.w_mortar.lab = 3;
 // ================= DÉMESURE : GÉANTS, NOUVEAUX ROBOTS, ARMES COLOSSALES ET APOCALYPTIQUES =================
 // Trois rangs au-dessus du Colosse (7, 8, 9). Les plus grands fabriquent en raid des renforts de trois rangs en dessous,
 // d'après vos plans : ils se battent et ramassent, puis sont démontés à l'extraction.
-WSIZE_N.push(TL('Colossale'), TL('Apocalyptique')); WSIZE_PL.push(TL('Colossales'), TL('Apocalyptiques'));
+WSIZE_N.push(TL('Colossale'), TL('Apocalyptique'), TL('Cataclysmique'), TL('Stellaire')); WSIZE_PL.push(TL('Colossales'), TL('Apocalyptiques'), TL('Cataclysmiques'), TL('Stellaires'));
 Object.assign(CHASSIS, {
   grillon: { n: TL('Grillon'), tier: 1, hp: 66, r: 11, spd: 240, slots: 1, wsize: 1, cargo: 3, cmd: 1, perk: 'leap', cost: { scrap: 18, circuits: 3 }, d: TL('Sauteur minuscule : il bondit de lui-même au cœur de la mêlée.') },
   herisson: { n: TL('Hérisson'), tier: 2, hp: 270, r: 18, spd: 118, slots: 2, wsize: 1, cargo: 6, cmd: 2, armor: .12, perk: 'spikes', cost: { scrap: 65, alloy: 18, circuits: 6 }, d: TL('Carapace hérissée de pointes : blesse tout ce qui le touche ou tente de l\'écraser.') },
@@ -492,7 +514,7 @@ Object.assign(ENEMIES, {
 });
 
 Object.assign(BUILD, {
-  shipyard: { n: TL('Chantier titanesque'), w: 6, h: 6, max: 3, ui: 'atelier', cost: { scrap: 2500, alloy: 800, circuits: 400, crystals: 200, cores: 10 }, t: 90, d: TL('Cale démesurée où s\'assemblent les géants. Niveau 1 : rang 7 ; niveau 2 : rang 8 ; niveau 3 : rang 9, villes-machines et vaisseaux-mères ; niveaux 4 et 5 : géants 10 % moins chers par niveau.') },
+  shipyard: { n: TL('Chantier titanesque'), w: 6, h: 6, max: 3, ui: 'atelier', cost: { scrap: 2500, alloy: 800, circuits: 400, crystals: 200, cores: 10 }, t: 90, d: TL('Cale démesurée où s\'assemblent les géants. Niveau 1 : rang 7 ; niveau 2 : rang 8 ; niveau 3 : rang 9, villes-machines et vaisseaux-mères ; niveau 4 : rang 10 et armes cataclysmiques ; niveau 5 : rang 11 et armes stellaires.') },
 });
 BUILD_KEYS.push('shipyard'); BLIMIT.shipyard = [0, 0, 0, 0, 1];
 
@@ -713,10 +735,10 @@ function mountScale(ch, i, wid) {
   const C = CHASSIS[ch], s = slotSize(ch, i), ws = (WEAPONS[wid] && WEAPONS[wid].size) || s, base = MSCALE[ch] || 1;
   return base * (.6 + .4 * s / C.wsize) * (.84 + .16 * Math.min(1, ws / s));
 }
-const WSIZE_ADJ = ['', TL('léger'), TL('moyen'), TL('lourd'), TL('titanesque'), TL('colossal'), TL('apocalyptique')];
-const WSIZE_ADJ_PL = ['', TL('légers'), TL('moyens'), TL('lourds'), TL('titanesques'), TL('colossaux'), TL('apocalyptiques')];
+const WSIZE_ADJ = ['', TL('léger'), TL('moyen'), TL('lourd'), TL('titanesque'), TL('colossal'), TL('apocalyptique'), TL('cataclysmique'), TL('stellaire')];
+const WSIZE_ADJ_PL = ['', TL('légers'), TL('moyens'), TL('lourds'), TL('titanesques'), TL('colossaux'), TL('apocalyptiques'), TL('cataclysmiques'), TL('stellaires')];
 // nombre d'affûts d'une taille : « 2 lourds »
-const SLOT_MIX_N = [null, n => TLn(n, '{n} léger', '{n} légers'), n => TLn(n, '{n} moyen', '{n} moyens'), n => TLn(n, '{n} lourd', '{n} lourds'), n => TLn(n, '{n} titanesque', '{n} titanesques'), n => TLn(n, '{n} colossal', '{n} colossaux'), n => TLn(n, '{n} apocalyptique', '{n} apocalyptiques')];
+const SLOT_MIX_N = [null, n => TLn(n, '{n} léger', '{n} légers'), n => TLn(n, '{n} moyen', '{n} moyens'), n => TLn(n, '{n} lourd', '{n} lourds'), n => TLn(n, '{n} titanesque', '{n} titanesques'), n => TLn(n, '{n} colossal', '{n} colossaux'), n => TLn(n, '{n} apocalyptique', '{n} apocalyptiques'), n => TLn(n, '{n} cataclysmique', '{n} cataclysmiques'), n => TLn(n, '{n} stellaire', '{n} stellaires')];
 // « 2 titanesques, 2 lourds, 2 moyens »
 function slotMix(ch) {
   const n = {}; for (const s of slotSizes(ch)) n[s] = (n[s] || 0) + 1;

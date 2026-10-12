@@ -84,7 +84,8 @@ function startRaid(opt) {
     dep.sort((a, b) => CHASSIS[b.chassis].r - CHASSIS[a.chassis].r);
     dep.forEach((sr, i) => {
       const a = i * 2.39996, rad = 60 + CHASSIS[sr.chassis].r + Math.sqrt(i) * 46;
-      const x = clamp(sp.x + Math.cos(a) * rad, 200, WPX - 200), y = clamp(sp.y + Math.sin(a) * rad, 200, WPX - 200);
+      // 3.1 : marge à la taille du robot, pour qu'un géant (jusqu'à 1 100 px de rayon) apparaisse entier dans la carte, volants compris
+      const mg = Math.max(200, CHASSIS[sr.chassis].r + 60), x = clamp(sp.x + Math.cos(a) * rad, mg, WPX - mg), y = clamp(sp.y + Math.sin(a) * rad, mg, WPX - mg);
       const u = makeRobot(sr, x, y); units.push(u); fleet.push(u);
       if (u.r > 40 && !NG) clearTiles((x / TILE) | 0, (y / TILE) | 0, Math.ceil(u.r / TILE) + 1);
     });
@@ -274,8 +275,10 @@ function updatePlayer(dt) {
     }
   }
   if (time - p.lastHurt > 4 && p.hp < p.maxhp) p.hp = Math.min(p.maxhp, p.hp + 7 * dt);
+  for (const k in PILOT_TICK) if (has(k)) PILOT_TICK[k](p, dt);
 }
 function playerFire(p, w, a, sx, sy) {
+  if (w.pfire) { w.pfire(p, w, a, sx, sy); return; } // armes de pilote de la 3.1 : tir sur mesure
   if (w.kind === 'chain') {
     let t = null, bd = w.range * w.range;
     query(mouse.wx - 120, mouse.wy - 120, mouse.wx + 120, mouse.wy + 120, v => { if (v.team !== 0 && !v.dead && !v.hidden && v.etype !== 'cible' && d2(v.x, v.y, mouse.wx, mouse.wy) < (v.r + 60) ** 2 && d2(v.x, v.y, p.x, p.y) < bd) t = v; });

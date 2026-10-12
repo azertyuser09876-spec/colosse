@@ -7,7 +7,7 @@ const RIVAL_CHASSIS = [['crawler', 'drone', 'sentry', 'ant', 'scout'], ['gunship
 function dirName(dx, dy) { const a = Math.atan2(dy, dx), k = Math.round(a / (Math.PI / 4)); return [TL('à l\'est'), TL('au sud-est'), TL('au sud'), TL('au sud-ouest'), TL('à l\'ouest'), TL('au nord-ouest'), TL('au nord'), TL('au nord-est')][(k + 8) % 8]; }
 function rivalWeapons(ch) {
   // chaque affût reçoit une arme de sa taille ou d'une taille en dessous (jamais titanesque)
-  return MOUNTS[ch].map((_, i) => { const s = slotSize(ch, i), pool = CRAFT_WEAPONS.filter(w => { const W_ = WEAPONS[w]; return W_.size <= s && W_.size < 4 && W_.size >= s - 1 && !['repair', 'shield', 'bay', 'nuke'].includes(w); }); return pick(pool.length ? pool : ['mg']); });
+  return MOUNTS[ch].map((_, i) => { const s = slotSize(ch, i), pool = CRAFT_WEAPONS.filter(w => { const W_ = WEAPONS[w]; return W_.size <= s && W_.size < 4 && W_.size >= s - 1 && !W_.noRival && !SUPPORT_W[W_.kind] && !['repair', 'shield', 'bay', 'nuke'].includes(w); }); return pick(pool.length ? pool : ['mg']); });
 }
 function spawnRivals() {
   crews = [];

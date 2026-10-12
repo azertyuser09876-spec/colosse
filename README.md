@@ -140,7 +140,7 @@ Une expédition envoie une escouade de robots fouiller une région **sans vous**
 Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à six fois sa taille, s'ajoutent à la recherche et à la forge.
 
 - **Construire un géant** :
-  - **Chantier titanesque** à la base (QG niveau 5) : son niveau 1, 2 ou 3 permet de rechercher puis d'assembler les géants du rang 7, 8 ou 9 ; les niveaux 4 et 5 les rendent 10 % moins chers chacun ;
+  - **Chantier titanesque** à la base (QG niveau 5) : son niveau 1, 2, 3, 4 ou 5 permet de rechercher puis d'assembler les géants du rang 7, 8, 9, 10 ou 11 (version 3.1 : rangs 10 et 11) ;
   - recherche au laboratoire de niveau 5, dans la suite de chaque famille : Colosse → Rempart → Forge-mère → Ville-machine (chenillés), Béhémoth → Arachné → Cyclope (marcheurs), Arche → Porte-nef → Aéropole → Astre (volants) ;
   - forge de niveau 5 et des Cœurs de Colosse.
 - **Les géants** :
@@ -162,6 +162,17 @@ Au-dessus du Colosse, trois nouveaux rangs de **géants** (7, 8 et 9), jusqu'à 
   - les petits robots alliés passent sous les géants ;
   - à la base, les géants se garent dans la friche autour de l'enceinte ;
   - les géants ne participent pas aux assauts de base en ligne : ils sont trop grands.
+
+### Version 3.1 : le double de tout
+
+Le contenu de fabrication double, réparti sur tous les rangs : l'arbre de recherche passe de 114 à 240 technologies (détail complet dans `CHANGELOG.md`).
+
+- **76 châssis** (40 nouveaux), du Moucheron (un demi-point de commandement) aux deux nouveaux plafonds : **rang 10** (Pangée, un continent sur chenilles ; Éther, une station céleste) et **rang 11** (Gaïa, un monde qui marche ; Constellation, qui libère des géants de rang 7 en plein combat), débloqués par le Chantier titanesque niveaux 4 et 5.
+- La plupart des nouveaux châssis ont une **aptitude** propre, affichée dans la forge : charge, meute, aimant à butin, bouclier frontal, radar, voltige, antimissile, rage, siège, pas sismiques, renaissance, réparation, bouclier, champ englué.
+- **100 armes** (50 nouvelles), presque toutes à mécanique inédite (ricochets, mines, gel, grappin, tourelles larguées, tornade, nanites, faille tectonique, phalange qui abat les projectiles, mur de plasma, bulle temporelle, rayon solaire, lune qui roule, supernova…), avec deux nouvelles tailles : **cataclysmique** (rang 10) et **stellaire** (rang 11). Deux nouvelles familles dans l'arbre : Contrôle et gravité, Drones et déploiements.
+- **26 modules** (dont 8 capacités actives), **7 cerveaux** (Infirmier et Artilleur en plus), 12 armes du pilote et de nouveaux équipements (exosquelette et sac jusqu'au niveau V, propulseurs dorsaux, nanomédecine, bouclier personnel, aimant à butin), 14 protocoles (dont la famille Logistique).
+- États visibles en combat : étourdi (étincelles jaunes), blindage rongé (anneau vert), cible marquée (réticule rouge).
+- Pour les développeurs : chaque ajout vit dans un fichier `src/js/04-plus-*.js` qui s'enregistre dans des registres d'extension (`CH_PAINT`, `W_PAINT`, `W_FIRE`, `W_TICK`, `B_KIND`, `ZONE_K`, `MOD_FX`, `ABIL`, `BRAIN_AI`, `PERK_TICK`…, déclarés en tête de `04-donnees.js`, aides dans `04-plus-a-base.js`). `node outils/construire.js --essai=<nom>` construit une page d'essai `_essai-<nom>.html` avec un seul de ces fichiers.
 
 ### Langues
 
@@ -421,6 +432,11 @@ node outils/construire.js --verifier  vérifie que index.html correspond aux sou
 | `src/js/02-audio.js` | Son synthétisé : effets spatialisés, musique générative, ambiances. |
 | `src/js/03-reglages.js` | Réglages et accessibilité. |
 | `src/js/04-donnees.js` | Châssis, armes, ennemis, bâtiments, recherches, régions, contrats ; affûts gradués et niveaux 6 à 10 des bâtiments. |
+| `src/js/04-plus-a-base.js` | Version 3.1 : aides communes aux ajouts (dégâts avec effets, projectiles et zones sur mesure, unités déployées, recherches). |
+| `src/js/04-plus-armes-a.js`, `-b.js`, `-c.js` | Version 3.1 : les 50 nouvelles armes (tailles 1-3, 4-5, 6-8), mécaniques et dessins. |
+| `src/js/04-plus-chassis-a.js`, `-b.js`, `-c.js` | Version 3.1 : les 40 nouveaux châssis (rangs 1-5, 6-8, 9-11), données et peintres. |
+| `src/js/04-plus-equipement.js` | Version 3.1 : modules, cerveaux, pilote, protocoles, aptitudes des châssis. |
+| `src/js/04-plus-zz-fin.js` | Version 3.1 : remise à jour des listes dérivées une fois tous les ajouts chargés. |
 | `src/js/05-sauvegarde.js` | Sauvegarde de la partie. |
 | `src/js/06-monde.js` | Génération des régions et de la base. |
 | `src/js/07-peintres.js` | Dessin procédural des robots, armes, bâtiments et géants. |

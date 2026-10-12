@@ -2,6 +2,46 @@
 
 Chaque section ci-dessous sert aussi de description à la release GitHub de sa version.
 
+## [3.1.0] Le double de tout : 40 châssis, 50 armes, deux rangs de géants
+
+Tout le contenu de fabrication double, réparti sur tous les rangs (plus de nouveautés en haut de l'échelle qu'en bas) : l'arbre de recherche passe de **114 à 240 technologies**. Chaque nouveauté a son propre dessin animé, ses effets et ses textes dans les dix langues.
+
+**Châssis : 36 → 76**
+- Rangs 1 à 5 (17) : Taupe (avance enterrée, repérée tard), Moucheron (micro-drone à un demi-point de commandement), Sanglier (charge), Tatou (bouclier), Luciole (drone-infirmier), Crabe (bouclier frontal), Héron (radar), Chacal (chasse en meute), Chameau (soute et aimant à butin), Ours (rage), Bourdon (antimissile), Mangouste (esquive), Fourgon (fabrique de petits robots), Donjon (siège), Minotaure (pas sismiques), Chimère (autoréparation), Condor (esquive).
+- Rang 6 (6) : Terrassier, Kraken, Sphinx, Galion, Phénix (renaît une fois par raid), Hospitalier.
+- Rangs 7 et 8 (10) : Bastille, Tarasque, Golem, Manticore, Séraphin, Baleine ; Vigie, Titanide, Nébuleuse, Caravansérail.
+- Rang 9 (3) : Orogène, une montagne qui marche ; Maelström, un vaisseau-tempête ; Arcologie, une ville-jardin qui fabrique jusqu'au rang 5.
+- **Deux nouveaux plafonds** : le Chantier titanesque niveau 4 débloque le **rang 10** (Pangée, un continent sur chenilles ; Éther, une station céleste), le niveau 5 le **rang 11** (Gaïa, un monde qui marche sur six jambes ; Constellation, une forteresse stellaire qui libère des géants de rang 7 en plein combat).
+- Quatorze aptitudes nouvelles, affichées dans la forge : charge, meute, aimant, bouclier frontal, radar, voltige, antimissile, rage, siège, pas sismiques, renaissance, réparation, bouclier, champ englué.
+
+**Armes : 50 → 100**, presque toutes à mécanique inédite, avec deux nouvelles tailles (7 **cataclysmique**, 8 **stellaire**)
+- Légères : ricocheur, lame boomerang, lance-mines, projecteur cryogénique (ralentit puis gèle), désignateur laser (cible marquée).
+- Moyennes : canon à fléchettes, lance-corrosif (ronge le blindage), disrupteur (étourdit), drones-suicides, grappin magnétique, canon sonique.
+- Lourdes : lance-tourelles, bombardement en tapis, bombe cryogénique, puits gravitationnel, paratonnerre, foreuse perforante, marteau-pilon.
+- Titanesques : générateur de tornade, nuée de nanites, faille tectonique, phalange antimissile (abat les projectiles), projecteur de stase, lance-essaims, prisme réfracteur.
+- Colossales : batterie de railguns, générateur sismique, escadrille de bombardiers, mur de plasma (arrête les tirs), missile à têtes multiples, distordeur temporel, torpille fouisseuse, cage de foudre.
+- Apocalyptiques : rayon solaire, canon à antimatière, soulèvement gravitationnel, tempête de lames, volcan artificiel, ancre orbitale, cristalliseur (laisse des cristaux à récolter), sentinelles orbitales.
+- Cataclysmiques : lance d'étoile, effondreur, ouragan, lanceur de lune, faucheuse quantique.
+- Stellaires : supernova, essaim stellaire, gravitron, éclipse.
+- Deux nouvelles familles dans l'arbre : **Contrôle et gravité**, **Drones et déploiements**.
+
+**Modules, cerveaux, pilote, protocoles**
+- 14 modules de plus (12 → 26) : coque ablative, servomoteurs, ordinateur de tir, réacteur auxiliaire, siphon de nanites, carapace électrifiée, collecteur magnétique, radar de bord, refroidissement cryo, et cinq capacités actives (leurre holographique, écran de fumée, drone de réparation, onde de choc, poseur de mines).
+- Deux cerveaux : **Infirmier** (suit les blessés, à l'abri) et **Artilleur** (tient l'ennemi à portée maximale).
+- Pilote : pistolet-mitrailleur, lance-flammes portatif, fusil cryogénique, fusil électromagnétique, lance-grenades ; Exosquelette IV et V, Sac renforcé IV et V, propulseurs dorsaux, nanomédecine, bouclier personnel, aimant à butin.
+- Protocoles : Liaisons de commandement V et VI, balise de soutien, extraction d'urgence, et une famille **Logistique** (récupération avancée, formation accélérée, chaînes accélérées).
+- En combat, de nouveaux états se voient sur les unités : étourdi, blindage rongé, cible marquée.
+
+**Équilibrage**
+- Le Chantier titanesque ne baisse plus le prix des géants : ses niveaux 4 et 5 débloquent les rangs 10 et 11.
+- Commandement : +12 et +20 points avec les Liaisons de commandement V et VI, pour déployer les nouveaux géants (62 à 84 points chacun).
+
+**Corrections**
+- Les robots à pattes équipés du cerveau Récolteur ramassent de nouveau normalement.
+- Un géant volant déployé près du bord de la carte n'apparaît plus en partie hors de la carte.
+
+**Serveur** : inchangé (rien à mettre à jour). En raid partagé, tous les joueurs doivent être en 3.1 pour voir les nouveaux robots des autres.
+
 ## [3.0.0] Dix langues, opérations et grande rénovation
 
 **Dix langues**

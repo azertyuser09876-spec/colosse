@@ -27,7 +27,7 @@ function gait(u, L, r, t, mv, o = {}) {
     for (let k = 0; k < n; k++) { const l = L[k], g = o.groups ? o.groups[k] : k % 2, ph = t * (o.f || 7) + g * Math.PI * 2 / ng; out[k] = { hx: l[0] * r, hy: l[1] * r, fx: (l[2] + Math.sin(ph) * mv * (o.amp || .28)) * r, fy: l[3] * r, lift: Math.max(0, Math.cos(ph)) * mv }; }
     return out;
   }
-  const ca = Math.cos(u.ang), sa = Math.sin(u.ang), G = u.gt || (u.gt = { T: time, F: [] }), dt = clamp(time - G.T, 0, .1), lead = dur * .6, vx = u.vx || 0, vy = u.vy || 0; G.T = time;
+  const ca = Math.cos(u.ang), sa = Math.sin(u.ang), G = u.gaitS || (u.gaitS = { T: time, F: [] }), dt = clamp(time - G.T, 0, .1), lead = dur * .6, vx = u.vx || 0, vy = u.vy || 0; G.T = time;
   const busy = new Array(ng).fill(0); for (const F of G.F) if (F && F.p < 1) busy[F.g]++;
   for (let k = 0; k < n; k++) {
     const l = L[k], rx = u.x + (l[2] * ca - l[3] * sa) * r, ry = u.y + (l[2] * sa + l[3] * ca) * r, g = o.groups ? o.groups[k] : k % ng;
@@ -81,6 +81,7 @@ function glowCore(c, x, y, r, P, t) {
 
 function paintChassis(c, id, r, P, t, mv, u) {
   c.lineJoin = 'round';
+  if (CH_PAINT[id]) { c.lineCap = 'round'; CH_PAINT[id](c, r, P, t, mv, u); return; }
   switch (id) {
     case 'crawler': {
       c.lineCap = 'round'; c.strokeStyle = P.dark; c.lineWidth = r * .2;
@@ -242,6 +243,7 @@ function paintMount(c, wid, s, P, rec, t, m) {
   if (typeof WLOOK !== 'undefined' && WLOOK[wid]) wid = WLOOK[wid];
   c.save(); c.scale(s, s); c.translate(-rec * 2.5, 0);
   const dark = '#181c1e';
+  if (W_PAINT[wid]) { W_PAINT[wid](c, P, rec, t, m); c.restore(); return; }
   switch (wid) {
     case 'mg': case 'e_mg': c.fillStyle = P.body2; circ(c, 0, 0, 4.5); c.fill(); c.fillStyle = dark; c.fillRect(2, -2.7, 10, 1.9); c.fillRect(2, .8, 10, 1.9); c.fillStyle = P.plate; circ(c, 0, 0, 2.6); c.fill(); break;
     case 'rifle': c.fillStyle = P.body2; rr(c, -4, -3, 8, 6, 2); c.fill(); c.fillStyle = dark; c.fillRect(2, -1, 15, 2); c.fillStyle = P.plate; c.fillRect(-1, -3.8, 6, 1.6); c.fillStyle = P.acc; c.fillRect(4, -3.8, 1.2, 1.6); break;

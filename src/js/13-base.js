@@ -207,7 +207,7 @@ function bEffect(b, L) {
     case 'pad': return L > 1 ? TL('Balise +{n} %', { n: 20 * (L - 1) }) + ' · ' + TL('ancrage −{n} %', { n: Math.round(padAnchor(L) * 100) }) + '.' : TL('Lance les raids. Les niveaux suivants renforcent la balise.');
     case 'uplink': return TLn(uplinkCmd(L), '+{n} point de commandement.', '+{n} points de commandement.');
     case 'repairbay': return TL('Réparation gratuite : {n} % par minute.', { n: 5 * L });
-    case 'shipyard': return TL('Géants jusqu\'au rang {n}', { n: 6 + Math.min(3, L) }) + (L > 3 ? ' · ' + TL('géants −{n} %', { n: 10 * (L - 3) }) : '') + '.';
+    case 'shipyard': return TL('Géants jusqu\'au rang {n}', { n: 6 + L }) + '.';
     case 'warehouse': return TL('Stock des producteurs +{n} %', { n: 40 * L }) + ' · ' + TL('{n} % de vos stocks à l\'abri des pillages de joueurs', { n: Math.round(whProtect(L) * 100) }) + ' · ' + TL('pertes face aux pillards −{n} %', { n: Math.round(whKeep(L) * 100) }) + '.';
     case 'radar': return TL('Révèle {n} px autour de l\'insertion', { n: fmt(900 + 450 * L) }) + (L >= 2 ? ' · ' + TL('localise les pylônes') : '') + (L >= 3 ? ' · ' + TL('suit les équipes rivales') : '') + '.';
     case 'contracts': return TLn(2 + L, '{n} contrat proposé par région', '{n} contrats proposés par région') + (L > 1 ? ' · ' + TL('récompenses +{n} %', { n: 15 * (L - 1) }) : '') + '.';

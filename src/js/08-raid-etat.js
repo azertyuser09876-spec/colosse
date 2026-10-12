@@ -36,7 +36,7 @@ function makeMount(wid, def, ox, oy) { return { wid, w: def, ox, oy, aim: 0, cd:
 function calcEngRange(u) {
   let r = 0, ra = 0;
   for (const m of u.mounts) {
-    const w = m.w; if (w.kind === 'repair' || w.kind === 'shield' || w.kind === 'bay') continue;
+    const w = m.w; if (w.kind === 'repair' || w.kind === 'shield' || w.kind === 'bay' || w.support) continue;
     const v = w.kind === 'melee' ? u.r + 30 * u.mscale : Math.min(w.range, u.r > 120 ? 2600 : 1300) * .85;
     if (ARTILLERY[w.kind] || w.big) ra = Math.max(ra, v * .8); else r = Math.max(r, v);
   }
@@ -49,6 +49,8 @@ function makeRobot(sr, x, y) {
   u.abil = u.modules.filter(m => MODULES[m] && MODULES[m].active).map(m => ({ id: m, cd: 2 }));
   if (ch.perk === 'leap' && !u.abil.some(a => a.id === 'jump')) u.abil.push({ id: 'jump', cd: 2 });
   u.fortify = ch.perk === 'fortify'; u.spikes = ch.perk === 'spikes'; u.fabC = ch.fab || null;
+  u.ext = Object.keys(st.ext).length ? st.ext : null; u.perk = ch.perk || null; // modules et perks de la 3.1 (crochets HURT_IN, HURT_OUT)
+  u.rateBase = st.ext.rate || 1; u.rateMul = u.rateBase; // cadence de base (module « Réacteur auxiliaire »)
   const fit = fitLoadout(sr.chassis, sr.weapons);
   u.wm = Array.isArray(sr.wm) && !fit.moved ? sr.wm.slice() : null; u.split = !!sr.split;
   u.mounts = fit.weapons.map((w, i) => { const m = MOUNTS[sr.chassis][i], mm = makeMount(w, scaledWeapon(w, st), m[0] * ch.r, m[1] * ch.r); mm.slot = slotSize(sr.chassis, i); mm.ds = mountScale(sr.chassis, i, w); mm.main = mm.slot >= ch.wsize; return mm; });
@@ -58,7 +60,7 @@ function makeRobot(sr, x, y) {
 function refreshRobot(u) {
   const st = robotStats({ chassis: u.chassis, xp: u.xp, modules: u.modules, traits: u.traits }), f = u.hp / u.maxhp;
   u.maxhp = st.hp; u.hp = st.hp * f; u.armor = st.armor; u.spd = st.spd; u.cargoMax = st.cargo; u.sightMul = st.sight; u.rank = st.rank;
-  u.regen = st.regen; u.dodge = st.dodge; u.cloak = st.cloak; u.selfBoom = st.boom;
+  u.regen = st.regen; u.dodge = st.dodge; u.cloak = st.cloak; u.selfBoom = st.boom; u.ext = Object.keys(st.ext).length ? st.ext : null;
   for (const m of u.mounts) m.w = scaledWeapon(m.wid, st);
   u.engRange = calcEngRange(u);
 }

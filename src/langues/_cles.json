@@ -864,7 +864,7 @@
  },
  "Artilleur": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-equipement.js"
  },
  "Bastion": {
   "pl": 0,
@@ -889,7 +889,7 @@
  },
  "Châssis": {
   "pl": 0,
-  "f": "04-donnees.js 24-interface.js",
+  "f": "04-donnees.js 04-plus-chassis-a.js 04-plus-chassis-b.js 04-plus-chassis-c.js 24-interface.js",
   "c": "L('Rang {n}', { n: CHASSIS[id.slice(2)].tier }) : TL('Châssis')) : id[0] === 'w' ? (WEAPONS[id.slice(2)] ? WSIZE_N[WEAPO"
  },
  "Châssis Fourmi": {
@@ -1014,19 +1014,19 @@
  },
  "Armes légères": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-a.js"
  },
  "Armes moyennes": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-a.js"
  },
  "Armes lourdes": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-a.js"
  },
  "Armes titanesques": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-b.js"
  },
  "{d} Réservé au Colosse et à l'Arche.": {
   "pl": 0,
@@ -1034,7 +1034,7 @@
  },
  "Modules": {
   "pl": 0,
-  "f": "04-donnees.js 24-interface.js",
+  "f": "04-donnees.js 04-plus-equipement.js 24-interface.js",
   "c": "l = ms && mk.length ? `<div><div class=\"slot-h\">${TL('Modules')} · ${TLn(ms, '{n} emplacement', '{n} emplacements')}</di"
  },
  "+12 % de blindage.": {
@@ -1083,7 +1083,7 @@
  },
  "Cerveaux": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-equipement.js"
  },
  "Cerveau Récolteur": {
   "pl": 0,
@@ -1099,7 +1099,7 @@
  },
  "Pilote": {
   "pl": 0,
-  "f": "04-donnees.js 22-rendu.js 28-missions.js",
+  "f": "04-donnees.js 04-plus-equipement.js 22-rendu.js 28-missions.js",
   "c": "c.fillText(player.inside ? player.inside.name : TL('Pilote'), 22, 98); bar(c, 90, 90, 186, 8, u.hp / u.maxhp, u.hp"
  },
  "Dévastateur à courte portée.": {
@@ -1160,7 +1160,7 @@
  },
  "Protocoles": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-equipement.js"
  },
  "Liaison de commandement I": {
   "pl": 0,
@@ -1584,11 +1584,27 @@
   "pl": 0,
   "f": "04-donnees.js"
  },
+ "Cataclysmique": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "Stellaire": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
  "Colossales": {
   "pl": 0,
   "f": "04-donnees.js"
  },
  "Apocalyptiques": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "Cataclysmiques": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "Stellaires": {
   "pl": 0,
   "f": "04-donnees.js"
  },
@@ -1884,17 +1900,17 @@
   "pl": 0,
   "f": "04-donnees.js"
  },
- "Cale démesurée où s'assemblent les géants. Niveau 1 : rang 7 ; niveau 2 : rang 8 ; niveau 3 : rang 9, villes-machines et vaisseaux-mères ; niveaux 4 et 5 : géants 10 % moins chers par niveau.": {
+ "Cale démesurée où s'assemblent les géants. Niveau 1 : rang 7 ; niveau 2 : rang 8 ; niveau 3 : rang 9, villes-machines et vaisseaux-mères ; niveau 4 : rang 10 et armes cataclysmiques ; niveau 5 : rang 11 et armes stellaires.": {
   "pl": 0,
   "f": "04-donnees.js"
  },
  "Armes colossales": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-b.js"
  },
  "Armes apocalyptiques": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-a-base.js 04-plus-armes-c.js"
  },
  "Châssis Grillon": {
   "pl": 0,
@@ -2014,11 +2030,11 @@
  },
  "{d} Arme colossale : se monte sur les géants des rangs 7 et 8.": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-b.js"
  },
  "{d} Arme apocalyptique : réservée aux géants de rang 9.": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-armes-c.js"
  },
  "Chenillé d'entrée de gamme, disponible dès le départ.": {
   "pl": 0,
@@ -2150,7 +2166,7 @@
  },
  "Autres": {
   "pl": 0,
-  "f": "04-donnees.js"
+  "f": "04-donnees.js 04-plus-zz-fin.js"
  },
  "Les Cendres": {
   "pl": 0,
@@ -2248,6 +2264,14 @@
   "pl": 0,
   "f": "04-donnees.js"
  },
+ "cataclysmique": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "stellaire": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
  "légers": {
   "pl": 0,
   "f": "04-donnees.js"
@@ -2269,6 +2293,14 @@
   "f": "04-donnees.js"
  },
  "apocalyptiques": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "cataclysmiques": {
+  "pl": 0,
+  "f": "04-donnees.js"
+ },
+ "stellaires": {
   "pl": 0,
   "f": "04-donnees.js"
  },
@@ -2300,7 +2332,1776 @@
  "{n} apocalyptique|{n} apocalyptiques": {
   "pl": 1,
   "f": "04-donnees.js",
-  "c": "=> TLn(n, '{n} colossal', '{n} colossaux'), n => TLn(n, '{n} apocalyptique', '{n} apocalyptiques')]; // « 2 titanesques"
+  "c": "=> TLn(n, '{n} colossal', '{n} colossaux'), n => TLn(n, '{n} apocalyptique', '{n} apocalyptiques'), n => TLn(n, '{n} ca"
+ },
+ "{n} cataclysmique|{n} cataclysmiques": {
+  "pl": 1,
+  "f": "04-donnees.js",
+  "c": "'{n} apocalyptique', '{n} apocalyptiques'), n => TLn(n, '{n} cataclysmique', '{n} cataclysmiques'), n => TLn(n, '{n} st"
+ },
+ "{n} stellaire|{n} stellaires": {
+  "pl": 1,
+  "f": "04-donnees.js",
+  "c": "'{n} cataclysmique', '{n} cataclysmiques'), n => TLn(n, '{n} stellaire', '{n} stellaires')]; // « 2 titanesques, 2 lour"
+ },
+ "Armes cataclysmiques": {
+  "pl": 0,
+  "f": "04-plus-a-base.js 04-plus-armes-c.js"
+ },
+ "Armes stellaires": {
+  "pl": 0,
+  "f": "04-plus-a-base.js 04-plus-armes-c.js"
+ },
+ "Contrôle et gravité": {
+  "pl": 0,
+  "f": "04-plus-a-base.js"
+ },
+ "Drones et déploiements": {
+  "pl": 0,
+  "f": "04-plus-a-base.js"
+ },
+ "Ricocheur": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Balle qui ricoche sur les murs et saute sur trois cibles de plus.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "{n} dps": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js 04-plus-armes-c.js 13-base.js 24-interface.js",
+  "c": "o || 1) * (d.pellets || 1) * d.rate; return TL('{n} dps', { n: Math.round(dps) }) + ' · ' + TL('portée {n} px', {"
+ },
+ "{n} ricochet|{n} ricochets": {
+  "pl": 1,
+  "f": "04-plus-armes-a.js",
+  "c": "stat: w => AA_ST(TL('{n} dps', { n: w.dps }), TLn(w.bounces, '{n} ricochet', '{n} ricochets'), TL('{n} px', { n: w.r"
+ },
+ "{n} px": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js 04-plus-armes-c.js 24-interface.js",
+  "c": "return TL('soin {n}/s', { n: w.heal }) + ' · ' + TL('{n} px', { n: w.range }); case 'shield': return TL('bouclier {"
+ },
+ "Lame boomerang": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Lame tournoyante qui fauche tout à l'aller et au retour.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "aller-retour": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Lance-mines": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Sème des mines qui sautent au passage des ennemis (six à la fois).": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "{n} dégâts": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js 04-plus-armes-c.js 24-interface.js",
+  "c": "rones de combat'); case 'singularity': return TL('{n} dégâts', { n: fmt(w.dmg) }) + ' · ' + TL('trou noir {n} s', {"
+ },
+ "{n} mine|{n} mines": {
+  "pl": 1,
+  "f": "04-plus-armes-a.js",
+  "c": "stat: w => AA_ST(TL('{n} dégâts', { n: w.dmg }), TLn(w.maxMines, '{n} mine', '{n} mines'), TL('{n} px', { n: w.range })"
+ },
+ "Projecteur cryogénique": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Jet glacé continu : ralentit, puis gèle sur place ce qu'il arrose trop longtemps.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "{n} dps continu": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js 24-interface.js"
+ },
+ "gèle": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Désignateur laser": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Marque la cible : elle subit 25 % de dégâts en plus de toutes les armes pendant 3 s.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "+{n} % de dégâts subis": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js"
+ },
+ "Canon à fléchettes": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "L'obus éclate devant la cible en douze fléchettes perforantes.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "{n} × {dmg} dégâts": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "perforant": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Lance-corrosif": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Globe d'acide en cloche : la flaque ronge le blindage de ce qui y passe.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "flaque corrosive": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Disrupteur": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Onde en éventail qui étourdit et repousse tout ce qui est devant.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "étourdit": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "repousse": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Drones-suicides": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Deux petits drones qui rôdent, choisissent une proie et plongent dessus.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "zone": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 24-interface.js",
+  "c": "s', { n: Math.round(dps) }) + (w.splash ? ' · ' + TL('zone') : '') + ' · ' + (w.kind === 'melee' ? TL('contact') : TL('{"
+ },
+ "Grappin magnétique": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Câble aimanté : agrippe la cible, la ralentit et traîne les plus légères jusqu'à vous.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "attire": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Canon sonique": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Onde de choc large qui traverse les rangs, repousse et brise les arbres.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "traverse": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Lance-tourelles": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Largue une tourelle à minigun qui tient la position 20 s (deux à la fois).": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "tourelle {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "{n} au plus": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Bombardement en tapis": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Dix obus qui labourent une bande de terrain.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Bombe cryogénique": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Obus glacé en cloche : gèle tout dans un large rayon et laisse une plaque de givre.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "rayon {n}": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 04-plus-armes-b.js 04-plus-armes-c.js 24-interface.js",
+  "c": ": return TL('{n} dégâts', { n: w.dmg }) + ' · ' + TL('rayon {n}', { n: w.splash }); } const dps = (w.dmg || 0) * (w."
+ },
+ "Puits gravitationnel": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Ouvre pendant 5 s un puits qui attire et englue les ennemis.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "puits {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Paratonnerre": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Plante une tige qui foudroie les ennemis autour pendant 8 s.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "foudre {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Foreuse perforante": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Ogive-foreuse qui perce blindages, murs et rangs entiers.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "perce tout": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Marteau-pilon": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "Frappe le sol devant le robot : onde de choc qui assomme et repousse.": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js"
+ },
+ "contact": {
+  "pl": 0,
+  "f": "04-plus-armes-a.js 09-combat.js 24-interface.js",
+  "c": ": TL('antiaérien'), art: TL('artillerie'), melee: TL('contact'), heavy: TL('antiblindé'), light: TL('anti-infanterie'),"
+ },
+ "Générateur de tornade": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Lâche une tornade qui erre parmi les ennemis, les aspire et arrache le décor.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "tornade {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "aspire": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Nuée de nanites": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Un nuage de nanites qui poursuit l'ennemi et dévore son blindage.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "nuage {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "ronge le blindage": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Faille tectonique": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Ouvre une faille jusqu'à la cible : le sol explose tout du long.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} éruption de {dmg}|{n} éruptions de {dmg}": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js"
+ },
+ "au sol": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Phalange antimissile": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Abat les roquettes, obus et missiles ennemis qui passent à portée, et grille les drones.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "abat les projectiles": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} dps antiaérien": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Projecteur de stase": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Fige tout dans une bulle de stase ; les cibles prisonnières encaissent 30 % de plus.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "fige {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Lance-essaims": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Un flot continu de micro-missiles répartis sur huit cibles.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} cible|{n} cibles": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js 04-plus-armes-c.js 24-interface.js",
+  "c": "ps', { n: Math.round(w.dmg * w.rate) }) + ' · ' + TLn(w.targets, '{n} cible', '{n} cibles') + ' · ' + TL('{n} px', { n:"
+ },
+ "Prisme réfracteur": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Rayon continu qui se diffracte sur sa cible et frappe quatre ennemis voisins.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "+{n} rayon de {dps} dps|+{n} rayons de {dps} dps": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js"
+ },
+ "Batterie de railguns": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Cinq rails parallèles qui traversent tout.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} rail de {dmg}|{n} rails de {dmg}": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js"
+ },
+ "traverse tout": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Générateur sismique": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Le géant frappe le sol : une onde sismique balaie tout ce qui marche autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "onde de {n} px": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Escadrille de bombardiers": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Trois bombardiers survolent la cible et la couvrent de bombes.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} bombe de {dmg}|{n} bombes de {dmg}": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js"
+ },
+ "Mur de plasma": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Dresse un mur de plasma qui brûle les ennemis et arrête leurs tirs.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "mur de {n} px": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "arrête les tirs": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Missile à têtes multiples": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Un missile qui se divise en huit ogives guidées sur huit cibles.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} ogive de {dmg}|{n} ogives de {dmg}": {
+  "pl": 1,
+  "f": "04-plus-armes-b.js"
+ },
+ "Distordeur temporel": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Une bulle où le temps se fige pour l'ennemi et s'accélère pour vos robots.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "tirs ennemis ÷{n}": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "cadence alliée +{n} %": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Torpille fouisseuse": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Une torpille qui file sous terre et jaillit sous la cible.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "passe sous le décor": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Cage de foudre": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Plante six pylônes reliés par la foudre : ce qui est dedans n'en sort pas.": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} par arc": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} dps dedans": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "{n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-b.js"
+ },
+ "Rayon solaire": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Un rayon orbital balaie une ligne de 1 600 px qui passe par la cible : il vitrifie le sol et brûle la forêt.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "balayage de {n} px": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Canon à antimatière": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Orbe lent qui grossit en avançant et absorbe les tirs ennemis, puis s'annihile dans une immense explosion.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "absorbe les tirs": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Soulèvement gravitationnel": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Soulève les ennemis d'une large zone pendant 2,5 s, puis les écrase au sol.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "soulève et écrase": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Tempête de lames": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Douze lames géantes tournent autour du robot pendant 8 s et rasent tout ce qu'elles touchent.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} lames pendant {s} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Volcan artificiel": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Fait surgir un volcan qui crache des bombes de lave pendant 10 s.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} par bombe": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} bombes/s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Ancre orbitale": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Une flèche orbitale cloue la cible au sol et creuse un cratère de verre.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "cloue {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Cristalliseur": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Change les ennemis en cristal pendant 3 s, puis les fait voler en éclats. Laisse des cristaux à récolter.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "cristallise {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Sentinelles orbitales": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Largue trois tourelles lourdes autour de la cible pendant 20 s.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} tourelle lourde|{n} tourelles lourdes": {
+  "pl": 1,
+  "f": "04-plus-armes-c.js"
+ },
+ "{s} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js 24-interface.js",
+  "c": "}) : TL('{m} min', { m: Math.floor(s / 60) })) : TL('{s} s', { s }); } function weaponStat(id) { const w = WEAPONS[id"
+ },
+ "Lance d'étoile": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Se charge, puis un rayon d'étoile de 260 px de large suit la cible pendant 8 s et creuse le paysage.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} dps pendant {s} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "charge {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js 24-interface.js"
+ },
+ "Effondreur": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Fissure le sol, puis ouvre un gouffre de 8 s qui engloutit les ennemis au sol.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Ouragan": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Un ouragan avance vers les ennemis pendant 12 s : vents, aspiration et éclairs.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} éclairs/s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Lanceur de lune": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Un rocher colossal tiré en cloche, qui roule ensuite sur 1 800 px en écrasant tout.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "roule {n} px": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Faucheuse quantique": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Frappe d'un coup les douze plus gros ennemis de la zone, à travers murs et blindage.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Supernova": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Se charge 4 s, puis une nova de 3 000 px souffle tous les ennemis autour du robot.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Essaim stellaire": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Quarante éclats d'étoile tournent autour du robot, puis piquent chacun sur un ennemi.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{n} frappe de {dmg}|{n} frappes de {dmg}": {
+  "pl": 1,
+  "f": "04-plus-armes-c.js 24-interface.js"
+ },
+ "Gravitron": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Le robot devient un puits de gravité pendant 8 s : il attire, broie et dévie les tirs ennemis.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "dévie les tirs": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Éclipse": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Un pic de matière noire, puis une ombre de 10 s qui aveugle et marque les ennemis.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "aveugle {n} s": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{d} Arme cataclysmique : réservée aux géants de rang 10 et plus.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "{d} Arme stellaire : réservée aux géants de rang 11.": {
+  "pl": 0,
+  "f": "04-plus-armes-c.js"
+ },
+ "Taupe": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Robot fouisseur : il avance à moitié enterré, et l'ennemi ne le repère que tout près.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Moucheron": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Micro-drone volant presque gratuit : un demi-point de commandement, à lâcher en nuée.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Sanglier": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Petit chenillé trapu armé de défenses d'acier : il charge et blesse ce qu'il percute.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Tatou": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Marcheur cuirassé à deux affûts légers, protégé par un bouclier qui se recharge.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Luciole": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Drone infirmier : il répare peu à peu les robots alliés autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Crabe": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Large carapace et deux pinces armées : il encaisse beaucoup moins de dégâts de face.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Héron": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Aéronef de reconnaissance : il voit très loin et marque les ennemis pour toute la flotte.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Chacal": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Chasseur de meute rapide : plus il a de congénères autour de lui, plus il frappe fort.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Chameau": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Porteur à longues pattes : une soute énorme et un aimant qui attire le butin.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Ours": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bipède massif aux bras-canons : il tire bien plus vite quand il est gravement blessé.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bourdon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Gros volant à quatre rotors carénés : il abat les missiles ennemis qui passent à sa portée.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Mangouste": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Prédateur souple et très rapide : il esquive une partie des tirs.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Fourgon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Camion blindé : sa soute assemble en raid de petits robots de rang 1, d'après vos plans.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Donjon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bunker crénelé sur quatre chenilles : à l'arrêt, il se cale et gagne en portée et en dégâts.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Minotaure": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bipède cornu aux sabots énormes : ses pas assomment les ennemis autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Chimère": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Quadrupède hybride : une tête de lion, une queue-serpent armée, et il se répare tout seul.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Condor": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Grand rapace volant aux plumes-lames : il esquive les tirs et porte une arme lourde.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Taupe": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Fouisseur que l'ennemi repère tard.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Moucheron": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Micro-drone volant à un demi-point de commandement.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Sanglier": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Petit chenillé qui charge l'ennemi.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Tatou": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Marcheur cuirassé à bouclier.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Luciole": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Drone volant qui répare les alliés.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Crabe": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Marcheur à pinces, très solide de face.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Héron": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Volant de reconnaissance qui marque les ennemis.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Chacal": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Quadrupède rapide qui chasse en meute.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Chameau": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Porteur à grande soute qui attire le butin.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Ours": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bipède massif qui s'enrage quand il est blessé.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Bourdon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Volant lourd qui abat les missiles.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Mangouste": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Chasseur très rapide qui esquive les tirs.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Fourgon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Camion blindé qui fabrique de petits robots en raid.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Donjon": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bunker chenillé qui se cale pour le siège.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Minotaure": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Bipède cornu dont les pas assomment.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Chimère": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Quadrupède hybride qui se répare seul.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Châssis Condor": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "Grand rapace volant qui esquive les tirs.": {
+  "pl": 0,
+  "f": "04-plus-chassis-a.js"
+ },
+ "TERRASSIER": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Bulldozer géant : sa lame rase le décor et il charge tout ce qui se trouve devant lui.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "KRAKEN": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Pieuvre de siège : huit tentacules qui rampent partout, et un champ qui englue les ennemis proches.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "SPHINX": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Grand félin cuirassé : deux affûts titanesques et un bouclier qui se recharge hors combat.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "GALION": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Galion volant : huit affûts en bordée, et des tourelles qui abattent les missiles.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "PHÉNIX": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Oiseau de feu rapide : quand il tombe, il renaît une fois de ses cendres.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "HOSPITALIER": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Hôpital chenillé : il répare les alliés autour de lui et assemble des robots jusqu'au rang 3.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "BASTILLE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Forteresse étoilée sur chenilles : huit affûts dont deux colossaux, et des tourelles qui abattent les missiles.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "TARASQUE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Dragon-tortue à six pattes : sa carapace encaisse, et il enrage quand il est blessé.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "GOLEM": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Colosse de pierre et d'acier : chacun de ses pas étourdit les petits ennemis.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "MANTICORE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Lion-scorpion : sa queue porte un affût colossal, et il gagne en portée quand il se cale.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "SÉRAPHIN": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Vaisseau angélique à six ailes : il répare les alliés autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "BALEINE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Baleine volante : une soute immense, et un aimant qui ramasse le butin au passage.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "VIGIE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Citadelle-observatoire : dix affûts dont quatre colossaux, une vue immense, et plus de portée quand elle se cale.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "TITANIDE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Hexapode titanesque : dix affûts dont quatre colossaux, et des pas qui font trembler le sol.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "NÉBULEUSE": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Anneau de nacelles autour d'un cœur de gaz : dix affûts dont quatre colossaux, et un champ qui englue les ennemis.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "CARAVANSÉRAIL": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Ville-marché chenillée : une soute géante, un aimant à butin, et des ateliers qui assemblent des robots jusqu'au rang 3.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Terrassier": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Bulldozer géant qui charge. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Kraken": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Pieuvre de siège qui englue l'ennemi. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Sphinx": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Grand félin à bouclier. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Galion": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Galion volant à huit affûts. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Phénix": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Oiseau de feu qui renaît une fois. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Châssis Hospitalier": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 6. Hôpital chenillé qui répare et fabrique. Exige un Cœur de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Bastille": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Forteresse étoilée sur chenilles. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Tarasque": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Dragon-tortue à six pattes. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géant Golem": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Colosse de pierre et d'acier. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Manticore": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Lion-scorpion à queue armée. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géant Séraphin": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Vaisseau angélique qui répare. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Baleine": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 7. Baleine volante à soute immense. Exige le Chantier titanesque et deux Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Vigie": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 8. Citadelle-observatoire. Exige le Chantier titanesque niveau 2 et trois Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Titanide": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 8. Hexapode titanesque. Exige le Chantier titanesque niveau 2 et trois Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géante Nébuleuse": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 8. Anneau volant autour d'un cœur de gaz. Exige le Chantier titanesque niveau 2 et trois Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Géant Caravansérail": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "Rang 8. Ville-marché qui fabrique des robots. Exige le Chantier titanesque niveau 2 et trois Cœurs de Colosse.": {
+  "pl": 0,
+  "f": "04-plus-chassis-b.js"
+ },
+ "OROGÈNE": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Une montagne qui marche sur quatre piliers : douze affûts dont quatre apocalyptiques, retranchés dans des forteresses à flanc de roche.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "MAELSTRÖM": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Vaisseau-tempête enveloppé de nuées : douze affûts dont quatre apocalyptiques, et un champ qui englue tout ce qui l'approche.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "ARCOLOGIE": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Ville-jardin en terrasses sur chenilles : elle répare la flotte autour d'elle, porte une soute immense et fabrique des robots jusqu'au rang 5.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "PANGÉE": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Un continent sur chenilles : seize affûts dont quatre cataclysmiques, et ses usines lâchent des Colosses.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "ÉTHER": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Station céleste aux anneaux tournants : quatorze affûts dont quatre cataclysmiques, des tourelles qui abattent les missiles, et des baies qui lâchent des Colosses.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "GAÏA": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Un monde qui marche sur six jambes : dix-huit affûts dont quatre stellaires, et chacun de ses pas fait trembler le continent.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "CONSTELLATION": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Forteresse stellaire autour d'un soleil captif : seize affûts dont quatre stellaires, et sa baie libère des géants de rang 7.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géant Orogène": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 9. Une montagne qui marche, couronnée de forteresses.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géant Maelström": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 9. Vaisseau-tempête qui englue ses ennemis.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géante Arcologie": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 9. Ville-jardin qui répare la flotte et fabrique jusqu'au rang 5.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géante Pangée": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 10. Un continent sur chenilles. Exige le Chantier titanesque niveau 4.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géant Éther": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 10. Station céleste volante. Exige le Chantier titanesque niveau 4.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géante Gaïa": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 11. Un monde qui marche. Exige le Chantier titanesque niveau 5.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Géante Constellation": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Rang 11. Forteresse stellaire qui libère des géants. Exige le Chantier titanesque niveau 5.": {
+  "pl": 0,
+  "f": "04-plus-chassis-c.js"
+ },
+ "Logistique": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Coque ablative": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "−30 % de dégâts reçus tant que le robot a plus de 70 % de ses PV.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Servomoteurs": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+15 % de vitesse, tourelles deux fois plus vives.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Ordinateur de tir": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+20 % de dégâts contre les blindés (20 % de blindage ou plus), les géants et les boss.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Réacteur auxiliaire": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+20 % de cadence de tir, −10 % de PV.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Siphon de nanites": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Rend au robot 8 % des dégâts qu'il inflige.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Carapace électrifiée": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Renvoie à l'attaquant 25 % des dégâts reçus au contact et 10 % des dégâts à distance (jusqu'à 500 px).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Collecteur magnétique": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Attire le butin à moins de 280 px et le range dans sa soute.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Radar de bord": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Toutes les 0,5 s, révèle les ennemis camouflés à moins de 600 px et les marque : +10 % de dégâts subis.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Refroidissement cryo": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Armes continues +20 % de dégâts, armes à charge 40 % plus rapides, tourelles 20 % plus vives.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Leurre holographique": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité : un double holographique attire les tirs ennemis à moins de 900 px pendant 8 s. Recharge 30 s.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Écran de fumée": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité : nuage de fumée de 7 s ; les alliés dedans sont camouflés et esquivent 40 % des tirs. Recharge 25 s.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Drone de réparation": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité : un drone suit le robot et répare les alliés proches pendant 15 s. Recharge 32 s.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Onde de choc": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité : onde autour du robot qui blesse, étourdit 1,2 s et repousse les ennemis. Recharge 20 s.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Poseur de mines": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité : sème 5 mines autour du robot, actives 40 s. Recharge 24 s.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Encaisse mieux tant que la coque est intacte.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Plus rapide, tourelles plus vives.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Plus de dégâts contre les cibles lourdes.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Cadence de tir accrue, coque plus fragile.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Les dégâts infligés réparent le robot.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Renvoie une partie des coups à l'attaquant.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Le robot aspire le butin autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Révèle et marque les ennemis proches.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Rayons plus puissants, charges plus rapides.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité active : un leurre attire les tirs.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité active : nuage qui cache les alliés.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité active : drone qui répare les alliés.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité active : onde qui étourdit et repousse.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Capacité active : champ de mines autour du robot.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+{n} {res}": {
+  "pl": 0,
+  "f": "04-plus-equipement.js 09-combat.js 13-base.js",
+  "c": "> 0) { it.amt -= got; floatText(it.x, it.y - 10, TL('+{n} {res}', { n: got, res: RES[it.res].n }), RES[it.res].c); SFX."
+ },
+ "Infirmier": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Suit l'allié le plus abîmé (ou le pilote), se place derrière lui à l'abri de l'ennemi et recule si on l'approche. Idéal avec des armes de soin.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Tire à 90 % de la portée de sa plus longue arme, derrière le pilote, et recule quand un ennemi approche.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Cerveau Infirmier": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Un robot de soutien qui reste près des blessés.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Cerveau Artilleur": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Un robot qui tient l'ennemi à distance maximale.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Pistolet-mitrailleur": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Lance-flammes portatif": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Fusil cryogénique": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Fusil électromagnétique": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Lance-grenades du pilote": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Rafales rapides, chargeur de 40.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Jet de flammes continu qui traverse les groupes.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Chaque balle ralentit et marque la cible.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Un trait qui traverse tout, obstacles légers compris.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Grenades en cloche, tirées vers le curseur.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Exosquelette IV": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+60 points de vie.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Exosquelette V": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Sac renforcé IV": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+30 kg de capacité.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Sac renforcé V": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Propulseurs dorsaux": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "L'esquive se recharge 70 % plus vite et porte 30 % plus loin.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Nanomédecine": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Le pilote se soigne de 16 PV/s après 2 s sans blessure.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Bouclier personnel": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Bouclier de 25 % des PV du pilote, rechargé après 3 s sans dégâts.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Aimant à butin": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Le pilote attire le butin à 260 px.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Liaison de commandement V": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+12 points de commandement.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Liaison de commandement VI": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+20 points de commandement.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Balise de soutien": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Pendant l'ancrage, la balise répare les robots à moins de 400 px (2 % des PV par seconde).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Extraction d'urgence": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "L'ancrage se charge 15 % plus vite (cumulable avec l'Ancrage rapide).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Récupération avancée": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "+15 % de butin sur les ennemis abattus.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Formation accélérée": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Les robots gagnent 30 % d'expérience en plus.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Chaînes accélérées": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "Les géants fabriquent leurs renforts 25 % plus vite.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Camouflage</b> : repéré à 40 % de la distance de vue ennemie, sauf quand il tire.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Régénération</b> : répare 1 % de ses PV par seconde hors combat.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Aura de réparation</b> : répare en continu les alliés proches.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Bouclier</b> : bouclier de 30 % de ses PV, rechargé hors combat.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Champ englué</b> : ralentit les ennemis proches.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Charge</b> : fonce sur les ennemis plus petits, les percute (40 dégâts + 2 % de ses PV) et les repousse.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Meute</b> : +10 % de dégâts par congénère à moins de 500 px (+40 % au plus).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Aimant</b> : attire et ramasse le butin autour de lui (300 px).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Bouclier frontal</b> : −40 % de dégâts venant de l'avant.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Radar</b> : révèle les ennemis camouflés à 700 px et les marque (+10 % de dégâts subis).": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Voltige</b> : esquive 22 % des tirs.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Antimissile</b> : abat 4 fois par seconde une roquette, un obus ou un missile ennemi à l'approche.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Rage</b> : +50 % de cadence sous 40 % de PV.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Siège</b> : à l'arrêt depuis 1,5 s, +25 % de portée et +20 % de dégâts.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Pas sismiques</b> : en marchant, étourdit les petits ennemis autour de lui.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "<b>Renaissance</b> : une fois par raid, renaît de ses cendres avec 40 % de PV.": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
+ },
+ "{name} renaît de ses cendres !": {
+  "pl": 0,
+  "f": "04-plus-equipement.js"
  },
  "Cette partie vient d'une version plus récente de Colosse : mettez le jeu à jour pour la continuer. Vous pouvez jouer en attendant, mais rien ne sera enregistré ; votre partie reste intacte.": {
   "pl": 0,
@@ -2471,11 +4272,6 @@
   "pl": 0,
   "f": "09-combat.js"
  },
- "+{n} {res}": {
-  "pl": 0,
-  "f": "09-combat.js 13-base.js",
-  "c": "> 0) { it.amt -= got; floatText(it.x, it.y - 10, TL('+{n} {res}', { n: got, res: RES[it.res].n }), RES[it.res].c); SFX."
- },
  "Cœur de Colosse récupéré. Ramenez-le vivant.": {
   "pl": 0,
   "f": "09-combat.js 16-direct.js"
@@ -2552,11 +4348,6 @@
   "pl": 0,
   "f": "09-combat.js",
   "c": "} const W_ROLE_TXT = { aa: TL('antiaérien'), art: TL('artillerie'), melee: TL('contact'), heavy: TL('antiblindé'), light"
- },
- "contact": {
-  "pl": 0,
-  "f": "09-combat.js 24-interface.js",
-  "c": ": TL('antiaérien'), art: TL('artillerie'), melee: TL('contact'), heavy: TL('antiblindé'), light: TL('anti-infanterie'),"
  },
  "antiblindé": {
   "pl": 0,
@@ -3093,10 +4884,6 @@
   "pl": 0,
   "f": "13-base.js"
  },
- "géants −{n} %": {
-  "pl": 0,
-  "f": "13-base.js"
- },
  "Stock des producteurs +{n} %": {
   "pl": 0,
   "f": "13-base.js"
@@ -3153,11 +4940,6 @@
  "Bouclier de {n} sur les bâtiments à moins de 320 px pendant les attaques.": {
   "pl": 0,
   "f": "13-base.js"
- },
- "{n} dps": {
-  "pl": 0,
-  "f": "13-base.js 24-interface.js",
-  "c": "o || 1) * (d.pellets || 1) * d.rate; return TL('{n} dps', { n: Math.round(dps) }) + ' · ' + TL('portée {n} px', {"
  },
  "portée {n} px": {
   "pl": 0,
@@ -6283,20 +8065,10 @@
   "f": "24-interface.js",
   "c": "n {s} s', { m: Math.floor(s / 60), s: s % 60 }) : TL('{m} min', { m: Math.floor(s / 60) })) : TL('{s} s', { s }); } func"
  },
- "{s} s": {
-  "pl": 0,
-  "f": "24-interface.js",
-  "c": "}) : TL('{m} min', { m: Math.floor(s / 60) })) : TL('{s} s', { s }); } function weaponStat(id) { const w = WEAPONS[id"
- },
  "soin {n}/s": {
   "pl": 0,
   "f": "24-interface.js",
-  "c": "d]; switch (w.kind) { case 'repair': return TL('soin {n}/s', { n: w.heal }) + ' · ' + TL('{n} px', { n: w.range })"
- },
- "{n} px": {
-  "pl": 0,
-  "f": "24-interface.js",
-  "c": "return TL('soin {n}/s', { n: w.heal }) + ' · ' + TL('{n} px', { n: w.range }); case 'shield': return TL('bouclier {"
+  "c": "ure switch (w.kind) { case 'repair': return TL('soin {n}/s', { n: w.heal }) + ' · ' + TL('{n} px', { n: w.range })"
  },
  "bouclier {n}": {
   "pl": 0,
@@ -6316,45 +8088,13 @@
   "pl": 1,
   "f": "24-interface.js"
  },
- "{n} dégâts": {
-  "pl": 0,
-  "f": "24-interface.js",
-  "c": "rones de combat'); case 'singularity': return TL('{n} dégâts', { n: fmt(w.dmg) }) + ' · ' + TL('trou noir {n} s', {"
- },
  "trou noir {n} s": {
   "pl": 0,
   "f": "24-interface.js"
  },
- "{n} frappe de {dmg}|{n} frappes de {dmg}": {
-  "pl": 1,
-  "f": "24-interface.js"
- },
- "{n} dps continu": {
-  "pl": 0,
-  "f": "24-interface.js"
- },
- "{n} cible|{n} cibles": {
-  "pl": 1,
-  "f": "24-interface.js",
-  "c": "ps', { n: Math.round(w.dmg * w.rate) }) + ' · ' + TLn(w.chain + 1, '{n} cible', '{n} cibles'); case 'fusion': return"
- },
  "{n} dégâts en ligne": {
   "pl": 0,
   "f": "24-interface.js"
- },
- "charge {n} s": {
-  "pl": 0,
-  "f": "24-interface.js"
- },
- "rayon {n}": {
-  "pl": 0,
-  "f": "24-interface.js",
-  "c": ": return TL('{n} dégâts', { n: w.dmg }) + ' · ' + TL('rayon {n}', { n: w.splash }); } const dps = (w.dmg || 0) * (w."
- },
- "zone": {
-  "pl": 0,
-  "f": "24-interface.js",
-  "c": "s', { n: Math.round(dps) }) + (w.splash ? ' · ' + TL('zone') : '') + ' · ' + (w.kind === 'melee' ? TL('contact') : TL('{"
  },
  "À rechercher": {
   "pl": 0,
@@ -7442,7 +9182,7 @@
  "Blindage": {
   "pl": 0,
   "f": "24-interface.js",
-  "c": "de vie'), v => fmt(v), 'log', 380000], ['armor', TL('Blindage'), v => Math.round(v * 100) + ' %', 'lin', .75], ['spd',"
+  "c": "de vie'), v => fmt(v), 'log', 2000000], ['armor', TL('Blindage'), v => Math.round(v * 100) + ' %', 'lin', .75], ['spd',"
  },
  "Vitesse": {
   "pl": 0,
@@ -7452,7 +9192,7 @@
  "Portée": {
   "pl": 0,
   "f": "24-interface.js",
-  "c": "n} dps', { n: fmt(v) }), 'log', 40000], ['range', TL('Portée'), v => v ? TL('{n} px', { n: fmt(v) }) : TL('contact'), 'l"
+  "c": "} dps', { n: fmt(v) }), 'log', 150000], ['range', TL('Portée'), v => v ? TL('{n} px', { n: fmt(v) }) : TL('contact'), 'l"
  },
  "1 affût {size}": {
   "pl": 0,
@@ -7564,7 +9304,7 @@
  "Forge {n}": {
   "pl": 0,
   "f": "24-interface.js",
-  "c": "+20 % de portée.')); const sumParts = [`<span>${TL('Forge {n}', { n: '<b>' + forgeLevel() + '</b>' })} · ${TL('rangs j"
+  "c": "(PERK_TXT[ch.perk]); const sumParts = [`<span>${TL('Forge {n}', { n: '<b>' + forgeLevel() + '</b>' })} · ${TL('rangs j"
  },
  "rangs jusqu'à {n}": {
   "pl": 0,
@@ -8094,6 +9834,50 @@
  "Groupe {g} vide. Maj+{g} pour l'assigner.": {
   "pl": 0,
   "f": "25-entrees.js"
+ },
+ "Le double de tout : 40 châssis, 50 armes, deux rangs de géants": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Quarante nouveaux châssis, du minuscule Moucheron aux géants : la Taupe qui avance enterrée, le Crabe à pinces, l'Ours qui enrage, le Kraken et ses tentacules, la Manticore, la Baleine volante, la Vigie, le Caravansérail… Chacun a son dessin animé, et la plupart une aptitude propre : charge, meute, bouclier frontal, radar, antimissile, siège, pas sismiques, renaissance.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Deux nouveaux plafonds : le Chantier titanesque monte aux niveaux 4 et 5 pour assembler les géants de rang 10 (Pangée, un continent sur chenilles, et Éther, une station céleste) et de rang 11 (Gaïa, un monde qui marche, et Constellation, qui libère des géants en plein combat).": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Cinquante nouvelles armes, presque toutes à mécanique inédite : balles qui ricochent, lames boomerang, mines, jet qui gèle, grappin, tourelles larguées, tornades, nuées de nanites, failles tectoniques, phalange qui abat les missiles, mur de plasma, bulle temporelle, rayon solaire, lune qui roule, supernova… et deux nouvelles tailles d'armes, cataclysmique et stellaire.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Quatorze nouveaux modules, dont cinq capacités actives (leurre holographique, écran de fumée, drone de réparation, onde de choc, poseur de mines), et deux nouveaux cerveaux : Infirmier et Artilleur.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Pilote : cinq nouvelles armes (pistolet-mitrailleur, lance-flammes, fusil cryogénique, fusil électromagnétique, lance-grenades), deux niveaux de plus pour l'exosquelette et le sac, propulseurs dorsaux, nanomédecine, bouclier personnel et aimant à butin. Sept nouveaux protocoles, dont une famille Logistique.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "L'arbre de recherche passe de 114 à 240 technologies, avec deux nouvelles familles d'armes : Contrôle et gravité, Drones et déploiements.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Nouveaux états visibles en combat : étourdi, blindage rongé, cible marquée.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Le Chantier titanesque ne baisse plus le prix des géants : ses niveaux 4 et 5 débloquent les rangs 10 et 11.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Commandement : +12 et +20 points avec les Liaisons de commandement V et VI, pour déployer les nouveaux géants (de 62 à 84 points chacun).": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
+ },
+ "Correction : les robots à pattes équipés du cerveau Récolteur ramassent de nouveau normalement.": {
+  "pl": 0,
+  "f": "26-nouveautes.js"
  },
  "Dix langues, opérations et grande rénovation": {
   "pl": 0,

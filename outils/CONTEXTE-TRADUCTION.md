@@ -16,10 +16,13 @@ français ; utilisez la forme naturelle et polie de votre langue pour un jeu vid
 | robot, flotte, escouade | les unités du joueur ; escouade = petit groupe envoyé en expédition |
 | châssis | le modèle de robot (corps) |
 | affût | emplacement d'arme sur un robot (hardpoint) ; « affûts gradués » = tailles d'emplacements décroissantes |
-| arme légère / moyenne / lourde / titanesque / colossale / apocalyptique | tailles d'armes 1 à 6 |
-| cerveau (Escorte, Chasseur, Gardien, Récolteur, Cortex tactique) | programme de comportement d'un robot |
+| arme légère / moyenne / lourde / titanesque / colossale / apocalyptique / cataclysmique / stellaire | tailles d'armes 1 à 8 |
+| cerveau (Escorte, Chasseur, Gardien, Récolteur, Cortex tactique, Infirmier, Artilleur) | programme de comportement d'un robot |
+| module, capacité (active) | équipement d'un robot ; une capacité se déclenche puis se recharge |
+| aptitude (en gras dans la forge : « <b>Charge</b> : … ») | talent propre à un châssis |
+| Chantier titanesque | bâtiment où s'assemblent les géants (rangs 7 à 11) |
 | commandement (points de) | limite de la taille de l'armée déployée |
-| rang (T1…T9), Recrue, Confirmé, Vétéran, Élite… | niveau de châssis ou grade d'un robot |
+| rang (T1…T11), Recrue, Confirmé, Vétéran, Élite… | niveau de châssis ou grade d'un robot |
 | raid | sortie dans le monde ouvert |
 | balise, ancrage, fenêtre d'extraction, lift orbital | la balise se « charge » (ancrage) ; quand elle est pleine, une fenêtre de 16 s s'ouvre et tout ce qui est dans le cercle est remonté |
 | pylône relais | structure à activer qui révèle la carte et accélère l'ancrage |

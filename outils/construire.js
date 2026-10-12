@@ -2,14 +2,16 @@
 // Construit index.html à partir des sources de src/ (aucune dépendance : Node.js seul).
 //   node outils/construire.js            reconstruit index.html
 //   node outils/construire.js --verifier vérifie seulement que index.html est à jour (sortie 1 sinon)
+//   node outils/construire.js --essai=armes-a   page d'essai _essai-armes-a.html avec seulement ce fichier 04-plus-* (plus le socle et la fin)
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const RACINE = path.join(__dirname, '..'), SRC = path.join(RACINE, 'src'), CIBLE = path.join(RACINE, 'index.html');
 const verifier = process.argv.includes('--verifier');
+const essai = (process.argv.find(a => a.startsWith('--essai=')) || '').slice(8);
 
 const page = fs.readFileSync(path.join(SRC, 'page.html'), 'utf8');
 const style = fs.readFileSync(path.join(SRC, 'style.css'), 'utf8');
-const fichiers = fs.readdirSync(path.join(SRC, 'js')).filter(f => /^\d\d-.*\.js$/.test(f)).sort();
+const fichiers = fs.readdirSync(path.join(SRC, 'js')).filter(f => /^\d\d-.*\.js$/.test(f)).filter(f => !essai || !f.startsWith('04-plus-') || f === '04-plus-a-base.js' || f === '04-plus-zz-fin.js' || essai.split(',').some(t => f === '04-plus-' + t + '.js')).sort();
 if (!fichiers.length) { console.error('Aucun fichier dans src/js.'); process.exit(1); }
 const morceaux = fichiers.map(f => fs.readFileSync(path.join(SRC, 'js', f), 'utf8').replace(/\s+$/, '') + '\n');
 // catalogues de traduction (src/langues/xx.json : phrase française → traduction), intégrés au jeu
@@ -43,7 +45,10 @@ const annexes = [
 const textes = new Map();
 for (const [f, re, val] of annexes) { const p = path.join(RACINE, f); if (!fs.existsSync(p)) continue; if (!textes.has(p)) textes.set(p, fs.readFileSync(p, 'utf8')); textes.set(p, textes.get(p).replace(re, val)); }
 const aJour = [...textes].filter(([p, n]) => n !== fs.readFileSync(p, 'utf8'));
-if (verifier) {
+if (essai) {
+  const f = path.join(RACINE, '_essai-' + essai.replace(/,/g, '+') + '.html'); fs.writeFileSync(f, sortie);
+  console.log('Page d\'essai construite : ' + path.basename(f) + ' (' + fichiers.length + ' fichiers).');
+} else if (verifier) {
   const actuel = fs.existsSync(CIBLE) ? fs.readFileSync(CIBLE, 'utf8') : '';
   if (actuel !== sortie || aJour.length) { console.error('index.html (ou la version de sw.js / Android) n\'est pas à jour : lancez « node outils/construire.js ».'); process.exit(1); }
   console.log('index.html est à jour (version ' + version + ').');
